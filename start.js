@@ -64,9 +64,24 @@ const appDataStaticDirectories = [
   "pptx-to-json",
 ].map((name) => join(appDataDirectory, name));
 
+// Volumes mounted by the host (e.g. a Kubernetes/OpenShift PVC owned by an
+// arbitrary non-root UID) may already have sufficient permissions without
+// letting this process chmod them. Treat chmod as best-effort so a restricted
+// environment doesn't crash the whole process on startup.
+const chmodBestEffort = (path, mode) => {
+  try {
+    chmodSync(path, mode);
+  } catch (error) {
+    if (error && (error.code === "EPERM" || error.code === "EACCES")) {
+      return;
+    }
+    throw error;
+  }
+};
+
 const ensureReadableDirectory = (dirPath) => {
   mkdirSync(dirPath, { recursive: true, mode: appDataDirectoryMode });
-  chmodSync(dirPath, appDataDirectoryMode);
+  chmodBestEffort(dirPath, appDataDirectoryMode);
 };
 
 const ensureReadableExportFiles = (dirPath) => {
@@ -74,10 +89,10 @@ const ensureReadableExportFiles = (dirPath) => {
     const entryPath = join(dirPath, entry.name);
 
     if (entry.isDirectory()) {
-      chmodSync(entryPath, appDataDirectoryMode);
+      chmodBestEffort(entryPath, appDataDirectoryMode);
       ensureReadableExportFiles(entryPath);
     } else if (entry.isFile()) {
-      chmodSync(entryPath, 0o644);
+      chmodBestEffort(entryPath, 0o644);
     }
   }
 };
@@ -117,7 +132,7 @@ const copyUserConfigBackup = () => {
   try {
     if (readJsonConfig(userConfigPath)) {
       copyFileSync(userConfigPath, userConfigBackupPath);
-      chmodSync(userConfigBackupPath, 0o644);
+      chmodBestEffort(userConfigBackupPath, 0o644);
     }
   } catch (error) {
     console.warn("Failed to update user config backup:", error);
@@ -139,10 +154,6 @@ const writeUserConfig = (config) => {
 
   try {
     renameSync(tempPath, userConfigPath);
-    chmodSync(userConfigPath, 0o644);
-    if (!existsSync(userConfigBackupPath)) {
-      copyUserConfigBackup();
-    }
   } catch (error) {
     try {
       unlinkSync(tempPath);
@@ -150,6 +161,11 @@ const writeUserConfig = (config) => {
       // Best-effort cleanup.
     }
     throw error;
+  }
+
+  chmodBestEffort(userConfigPath, 0o644);
+  if (!existsSync(userConfigBackupPath)) {
+    copyUserConfigBackup();
   }
 };
 
