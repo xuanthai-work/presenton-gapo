@@ -35,6 +35,7 @@ from templates.v2.models.layouts import (
     SimilarComponentsList,
     SlideLayout,
     SlideLayouts,
+    slide_layout_llm_json_schema,
 )
 from templates.v2.tools import PreviewSlideTool
 from utils.llm_messages import (
@@ -324,6 +325,10 @@ def test_generate_slide_layout_requests_complete_layout(monkeypatch, caplog):
     assert preview_call["tools"][0]["function"]["strict"] is False
     assert preview_call["response_format"]["type"] == "json_schema"
     assert preview_call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
+    assert (
+        preview_call["response_format"]["json_schema"]["schema"]
+        == slide_layout_llm_json_schema()
+    )
     assert "max_tokens" not in preview_call
     assert preview_call["messages"][0]["role"] == "system"
     assert preview_call["messages"][0]["content"] == GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT
@@ -346,6 +351,10 @@ def test_generate_slide_layout_requests_complete_layout(monkeypatch, caplog):
     final_call = captured["calls"][1]
     assert final_call["response_format"]["type"] == "json_schema"
     assert final_call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
+    assert (
+        final_call["response_format"]["json_schema"]["schema"]
+        == slide_layout_llm_json_schema()
+    )
     assert "max_tokens" not in final_call
     # tool message + user message — both are dicts after messages_to_openai
     assert final_call["messages"][-2]["role"] == "tool"
@@ -402,6 +411,10 @@ def test_generate_slide_layout_accepts_direct_schema_response(monkeypatch, caplo
     call = captured["calls"][0]
     assert call["response_format"]["type"] == "json_schema"
     assert call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
+    assert (
+        call["response_format"]["json_schema"]["schema"]
+        == slide_layout_llm_json_schema()
+    )
     messages = [record.getMessage() for record in caplog.records]
     assert any("slide 1: slide layout JSON returned" in message for message in messages)
 
@@ -513,6 +526,10 @@ def test_generate_slide_layout_uses_json_schema_response_for_google(monkeypatch)
     call = captured["calls"][0]
     assert call["response_format"]["type"] == "json_schema"
     assert call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
+    assert (
+        call["response_format"]["json_schema"]["schema"]
+        == slide_layout_llm_json_schema()
+    )
     assert call["messages"][0]["content"] == GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT
 
 
@@ -563,6 +580,10 @@ def test_generate_preview_candidate_returns_last_preview_tool_json(monkeypatch, 
     assert len(captured["calls"]) == 1
     call = captured["calls"][0]
     assert call["response_format"]["type"] == "json_schema"
+    assert (
+        call["response_format"]["json_schema"]["schema"]
+        == slide_layout_llm_json_schema()
+    )
     assert "max_tokens" not in call
     messages = [record.getMessage() for record in caplog.records]
     assert any(
