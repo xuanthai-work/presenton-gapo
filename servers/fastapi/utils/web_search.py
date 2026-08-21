@@ -41,11 +41,9 @@ def get_selected_web_search_provider() -> WebSearchProvider:
     value = (get_web_search_provider_env() or WebSearchProvider.AUTO.value).strip().lower()
     try:
         return WebSearchProvider(value)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported web search provider: {value}",
-        ) from exc
+    except ValueError:
+        # Pruned providers (searxng, ...) fall back to AUTO so upgrades keep working.
+        return WebSearchProvider.AUTO
 
 
 def should_use_native_web_search() -> bool:

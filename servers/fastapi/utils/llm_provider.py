@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import HTTPException
 from google import genai
 from openai import OpenAI
@@ -128,10 +130,22 @@ def _supports_thinking(model: str) -> bool:
     return any(normalized.startswith(prefix) for prefix in prefixes)
 
 
-def use_responses_api() -> bool:
-    """Return True when native web-search should use OpenAI Responses API.
+def use_responses_api(tools: Any = None, *, reasoning: Any = None) -> bool:
+    """Return True when this OpenAI call should use the Responses API.
 
-    Native web search only runs for OpenAI/Google providers (see
-    ``utils/web_search.py``). Google handles search via google_search tool.
+    Native web search and OpenAI reasoning both require Responses. All other
+    OpenAI traffic uses Chat Completions.
     """
-    return get_llm_provider() == LLMProvider.OPENAI
+    if get_llm_provider() != LLMProvider.OPENAI:
+        return False
+    if reasoning:
+        return True
+    for tool in tools or ():
+        if isinstance(tool, dict) and tool.get("type") == "web_search":
+            return True
+        to_openai = getattr(tool, "to_openai", None)
+        if callable(to_openai):
+            payload = to_openai()
+            if isinstance(payload, dict) and payload.get("type") == "web_search":
+                return True
+    return False

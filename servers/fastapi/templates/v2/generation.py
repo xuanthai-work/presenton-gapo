@@ -1119,7 +1119,7 @@ async def _generate_preview_candidate(
                 "response_format": JSONSchemaResponse(
                     name="SlideLayoutResponse",
                     strict=False,
-                    json_schema=SlideLayout,
+                    json_schema=SlideLayout.model_json_schema(),
                 ),
             }
             if max_tokens is not None:
@@ -1364,7 +1364,7 @@ async def _generate_with_validation_retries(
                     response_format=JSONSchemaResponse(
                         name=response_name,
                         strict=False,
-                        json_schema=output_model,
+                        json_schema=output_model.model_json_schema(),
                     ),
                     max_tokens=max_tokens,
                     stream=True,

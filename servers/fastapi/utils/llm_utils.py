@@ -29,11 +29,13 @@ from utils.llm_messages import (
     build_response_format,
     messages_to_google,
     messages_to_openai,
+    google_system_instruction as extract_google_system_instruction,
     tool_calls_from_google_response,
     tool_calls_from_openai_response,
 )
 from utils.llm_provider import get_llm_provider, use_responses_api
 from utils.dict_utils import to_plain_data
+from utils.schema_utils import get_schema_validation_errors
 
 LOGGER = logging.getLogger(__name__)
 CLIENT_DISCONNECT_POLL_SECONDS = 0.1
@@ -208,15 +210,14 @@ def get_generate_kwargs(
     ``client.chat.completions.create(**get_generate_kwargs(...))`` for OpenAI.
     """
     provider = get_llm_provider()
-    responses_api = use_responses_api() and provider == LLMProvider.OPENAI
+    reasoning_enabled = bool(reasoning is not None and reasoning.enabled)
+    responses_api = use_responses_api(tools, reasoning=reasoning_enabled)
 
     kwargs: dict[str, Any] = {
         "model": model,
         "messages": messages_to_provider_payload(messages),
+        "stream": stream,
     }
-
-    if stream:
-        kwargs["stream"] = True
 
     if max_tokens is not None:
         if provider == LLMProvider.GOOGLE:
@@ -255,12 +256,55 @@ def get_generate_kwargs(
     if extra_body:
         kwargs["extra_body"] = extra_body
 
+    if provider == LLMProvider.GOOGLE:
+        instruction = extract_google_system_instruction(messages)
+        if instruction:
+            kwargs["system_instruction"] = instruction
+
     return kwargs
 
 
 # ---------------------------------------------------------------------------
 # Provider-specific chat.completion / generate_content dispatch
 # ---------------------------------------------------------------------------
+
+
+def _to_responses_text_format(response_format: Any) -> Any:
+    """Unwrap Chat Completions ``response_format`` into Responses ``text.format``."""
+    if not isinstance(response_format, dict):
+        return response_format
+    inner = response_format.get("json_schema")
+    if response_format.get("type") == "json_schema" and isinstance(inner, dict):
+        return {
+            "type": "json_schema",
+            "name": inner.get("name"),
+            "schema": inner.get("schema"),
+            "strict": inner.get("strict", False),
+        }
+    return response_format
+
+
+def _tools_for_responses_api(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flatten Chat Completions function-tool wrappers for Responses."""
+    converted: list[dict[str, Any]] = []
+    for tool in tools:
+        if not isinstance(tool, dict):
+            converted.append(tool)
+            continue
+        nested = tool.get("function")
+        if tool.get("type") == "function" and isinstance(nested, dict):
+            converted.append(
+                {
+                    "type": "function",
+                    "name": nested.get("name"),
+                    "description": nested.get("description"),
+                    "parameters": nested.get("parameters"),
+                    "strict": nested.get("strict", False),
+                }
+            )
+            continue
+        converted.append(tool)
+    return converted
 
 
 async def _dispatch_chat_completion(
@@ -276,6 +320,9 @@ async def _dispatch_chat_completion(
     extra_body: dict[str, Any] | None = None,
     google_search_tool: dict[str, Any] | None = None,
     google_generation_config: dict[str, Any] | None = None,
+    google_system_instruction: str | None = None,
+    google_thinking_config: dict[str, Any] | None = None,
+    google_max_output_tokens: int | None = None,
 ):
     """Call the provider's native SDK with the prepared kwargs.
 
@@ -285,7 +332,7 @@ async def _dispatch_chat_completion(
     provider = get_llm_provider()
     if provider == LLMProvider.OPENAI:
         # Use Responses API for native web search; otherwise Chat Completions.
-        use_responses = use_responses_api()
+        use_responses = use_responses_api(tools, reasoning=reasoning)
         if use_responses:
             responses_kwargs: dict[str, Any] = {
                 "model": model,
@@ -293,9 +340,11 @@ async def _dispatch_chat_completion(
                 "stream": stream,
             }
             if tools:
-                responses_kwargs["tools"] = tools
+                responses_kwargs["tools"] = _tools_for_responses_api(tools)
             if response_format is not None:
-                responses_kwargs["text"] = {"format": response_format}
+                responses_kwargs["text"] = {
+                    "format": _to_responses_text_format(response_format),
+                }
             if max_tokens is not None:
                 responses_kwargs["max_output_tokens"] = max_tokens
             if reasoning:
@@ -323,22 +372,31 @@ async def _dispatch_chat_completion(
             "model": model,
             "contents": messages,
         }
+        config = gen_kwargs.setdefault("config", {})
         if tools:
-            gen_kwargs["tools"] = tools
+            config.setdefault("tools", []).append(
+                {"function_declarations": tools}
+            )
         if google_search_tool is not None:
-            # google_search tool is configured at the GenerateContent level
-            # via the ``config`` parameter.
-            config = gen_kwargs.setdefault("config", {})
-            config["tools"] = list(config.get("tools") or []) + [google_search_tool]
+            config.setdefault("tools", []).append(google_search_tool)
         if google_generation_config is not None:
-            config = gen_kwargs.setdefault("config", {})
             for key, value in google_generation_config.items():
                 config[key] = value
-        if max_tokens is not None:
-            config = gen_kwargs.setdefault("config", {})
-            config["max_output_tokens"] = max_tokens
+        token_limit = (
+            google_max_output_tokens
+            if google_max_output_tokens is not None
+            else max_tokens
+        )
+        if token_limit is not None:
+            config["max_output_tokens"] = token_limit
+        if google_thinking_config is not None:
+            config["thinking_config"] = google_thinking_config
+        if google_system_instruction:
+            config["system_instruction"] = google_system_instruction
+        if not config:
+            gen_kwargs.pop("config", None)
         if stream:
-            return client.aio.models.generate_content_stream(**gen_kwargs)
+            return await client.aio.models.generate_content_stream(**gen_kwargs)
         return await asyncio.to_thread(
             client.models.generate_content, **gen_kwargs
         )
@@ -555,6 +613,23 @@ async def stream_generate_events(
     extra_body = kwargs.pop("extra_body", None)
     google_search_tool = kwargs.pop("google_search_tool", None)
     generation_config = kwargs.pop("generation_config", None)
+    system_instruction = kwargs.pop("system_instruction", None)
+    thinking_config = kwargs.pop("thinking_config", None)
+    max_output_tokens = kwargs.pop("max_output_tokens", None)
+    token_limit = max_tokens if max_tokens is not None else max_output_tokens
+
+    dispatch_kwargs = dict(
+        tools=tools,
+        response_format=response_format,
+        max_tokens=token_limit,
+        reasoning=reasoning,
+        extra_body=extra_body,
+        google_search_tool=google_search_tool,
+        google_generation_config=generation_config,
+        google_system_instruction=system_instruction,
+        google_thinking_config=thinking_config,
+        google_max_output_tokens=max_output_tokens,
+    )
 
     if not stream:
         # Non-streaming path: synthesize a single completion event.
@@ -563,13 +638,7 @@ async def stream_generate_events(
             model=model,
             messages=messages,
             stream=False,
-            tools=tools,
-            response_format=response_format,
-            max_tokens=max_tokens,
-            reasoning=reasoning,
-            extra_body=extra_body,
-            google_search_tool=google_search_tool,
-            google_generation_config=generation_config,
+            **dispatch_kwargs,
         )
         if provider == LLMProvider.GOOGLE:
             tool_calls = tool_calls_from_google_response(response)
@@ -590,19 +659,13 @@ async def stream_generate_events(
         model=model,
         messages=messages,
         stream=True,
-        tools=tools,
-        response_format=response_format,
-        max_tokens=max_tokens,
-        reasoning=reasoning,
-        extra_body=extra_body,
-        google_search_tool=google_search_tool,
-        google_generation_config=generation_config,
+        **dispatch_kwargs,
     )
 
     await _raise_if_client_disconnected(disconnect_checker)
 
     if provider == LLMProvider.OPENAI:
-        if use_responses_api():
+        if use_responses_api(tools, reasoning=reasoning):
             async for event in _iterate_openai_responses_stream(native_stream):
                 yield event
             return
@@ -713,34 +776,16 @@ async def _generate_structured_content(
         if force_stream is False
         else disconnect_checker is not None or text_chunk_callback is not None
     )
-    if not use_stream:
-        native_kwargs = dict(kwargs)
-        native_kwargs["stream"] = False
-        response = await _dispatch_chat_completion(
-            client,
-            model=native_kwargs.pop("model"),
-            messages=native_kwargs.pop("messages"),
-            stream=False,
-            tools=native_kwargs.pop("tools", None),
-            response_format=native_kwargs.pop("response_format", None),
-            max_tokens=native_kwargs.pop("max_tokens", None),
-            reasoning=native_kwargs.pop("reasoning", None),
-            extra_body=native_kwargs.pop("extra_body", None),
-            google_search_tool=native_kwargs.pop("google_search_tool", None),
-            google_generation_config=native_kwargs.pop("generation_config", None),
-        )
-        return extract_structured_content(_completion_content(response))
-
     completion_content: Any = None
     streamed_text: list[str] = []
     stream_kwargs = dict(kwargs)
-    stream_kwargs["stream"] = True
+    stream_kwargs["stream"] = use_stream
     async for event in stream_generate_events(
         client,
         disconnect_checker=disconnect_checker,
         **stream_kwargs,
     ):
-        if isinstance(event, _StreamCompletionChunk):
+        if isinstance(event, _StreamCompletionChunk) or getattr(event, "type", None) == "completion":
             completion_content = event.content
         elif getattr(event, "type", None) == "content":
             chunk = getattr(event, "chunk", None)
@@ -762,6 +807,9 @@ async def _generate_structured_content(
 def _completion_content(response: Any) -> Any:
     if response is None:
         return None
+    output_text = getattr(response, "output_text", None)
+    if isinstance(output_text, str) and output_text:
+        return output_text
     content = getattr(response, "content", None)
     if content is not None:
         return content

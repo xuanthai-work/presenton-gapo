@@ -33,6 +33,10 @@ def get_selected_image_provider() -> ImageProvider | None:
         ImageProvider: The selected image provider.
     """
     image_provider_env = get_image_provider_env()
-    if image_provider_env:
+    if not image_provider_env:
+        return None
+    try:
         return ImageProvider(image_provider_env)
-    return None
+    except ValueError:
+        # Pruned providers (pexels, pixabay, comfyui, ...) must not crash upgrades.
+        return None

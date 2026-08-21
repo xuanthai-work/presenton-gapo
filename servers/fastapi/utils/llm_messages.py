@@ -217,8 +217,20 @@ class JSONSchemaResponse:
     """Structured-output response-format descriptor."""
 
     name: str
-    json_schema: dict[str, Any] | None = None
+    json_schema: dict[str, Any] | type | None = None
     strict: bool = False
+
+
+def _json_schema_dict(schema: Any) -> dict[str, Any]:
+    """Return a JSON-serializable schema dict from a dict or Pydantic model."""
+    if isinstance(schema, dict):
+        return schema
+    model_json_schema = getattr(schema, "model_json_schema", None)
+    if callable(model_json_schema):
+        dumped = model_json_schema()
+        if isinstance(dumped, dict):
+            return dumped
+    return {}
 
 
 @dataclass
@@ -242,7 +254,7 @@ def build_response_format(
     if not isinstance(payload, JSONSchemaResponse):
         # Fallback: treat as a dict (legacy passthrough).
         return payload  # type: ignore[return-value]
-    schema = payload.json_schema or {}
+    schema = _json_schema_dict(payload.json_schema)
     if provider == LLMProvider.OPENAI:
         return {
             "type": "json_schema",
@@ -444,16 +456,14 @@ def messages_to_openai(messages: Iterable[Message]) -> list[dict[str, Any]]:
 
 
 def messages_to_google(messages: Iterable[Message]) -> list[dict[str, Any]]:
-    """Translate local Message dataclasses to google-genai ``contents`` payload."""
+    """Translate local Message dataclasses to google-genai ``contents`` payload.
+
+    System prompts are not valid Gemini content roles; peel them off with
+    ``google_system_instruction`` and pass via ``config.system_instruction``.
+    """
     payload: list[dict[str, Any]] = []
     for message in messages:
         if isinstance(message, SystemMessage):
-            payload.append(
-                {
-                    "role": "system",
-                    "parts": _content_to_google(message.content),
-                }
-            )
             continue
         if isinstance(message, UserMessage):
             payload.append(
@@ -522,6 +532,16 @@ def messages_to_google(messages: Iterable[Message]) -> list[dict[str, Any]]:
             }
         )
     return payload
+
+
+def google_system_instruction(messages: Iterable[Message]) -> str | None:
+    """Join SystemMessage contents for Gemini ``config.system_instruction``."""
+    parts = [
+        message.content
+        for message in messages
+        if isinstance(message, SystemMessage) and message.content
+    ]
+    return "\n\n".join(parts) or None
 
 
 # ---------------------------------------------------------------------------
@@ -619,6 +639,7 @@ __all__ = [
     "build_reasoning_kwargs",
     "build_response_format",
     "messages_to_google",
+    "google_system_instruction",
     "messages_to_openai",
     "tool_calls_from_google_response",
     "tool_calls_from_openai_response",

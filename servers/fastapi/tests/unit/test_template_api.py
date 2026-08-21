@@ -560,7 +560,7 @@ def test_create_template_async_task_updates_slide_status_before_batch_completes(
         new=AsyncMock(return_value=PptxToJsonDocument(**_two_raw_layouts())),
     ), patch(
         "api.v1.ppt.endpoints.template.generate_slide_layout",
-        new=Mock(side_effect=fake_generate_slide_layout),
+        new=AsyncMock(side_effect=fake_generate_slide_layout),
     ), patch(
         "api.v1.ppt.endpoints.template.merge_similar_components",
         new=Mock(return_value=MERGED_COMPONENTS),
@@ -779,7 +779,7 @@ def test_create_template_slide_layouts_returns_generated_layout(
 
     with patch(
         "api.v1.ppt.endpoints.template.generate_slide_layout",
-        new=Mock(return_value=GENERATED_LAYOUTS.layouts[0]),
+        new=AsyncMock(return_value=GENERATED_LAYOUTS.layouts[0]),
     ) as generate_mock, patch(
         "api.v1.ppt.endpoints.template.random.randint",
         return_value=4801,
@@ -885,7 +885,7 @@ def test_create_template_slide_layouts_preserves_image_url_indexes(
 
     with patch(
         "api.v1.ppt.endpoints.template.generate_slide_layout",
-        new=Mock(return_value=GENERATED_LAYOUTS.layouts[0]),
+        new=AsyncMock(return_value=GENERATED_LAYOUTS.layouts[0]),
     ) as generate_mock:
         asyncio.run(
             create_template_slide_layouts(

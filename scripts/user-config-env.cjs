@@ -4,6 +4,21 @@ const VALID_LLM_PROVIDERS = new Set([
   "custom",
 ]);
 
+const VALID_IMAGE_PROVIDERS = new Set([
+  "gemini_flash",
+  "nanobanana_pro",
+  "gpt-image-1.5",
+  "openai_compatible",
+]);
+
+const VALID_WEB_SEARCH_PROVIDERS = new Set([
+  "auto",
+  "native",
+  "tavily",
+  "exa",
+  "brave",
+]);
+
 const USER_CONFIG_ENV_KEYS = [
   "LLM",
   "OPENAI_API_KEY",
@@ -110,6 +125,15 @@ const sanitizeExistingConfig = (existingConfig) => {
   const config = { ...existingConfig };
   if (config.LLM && !VALID_LLM_PROVIDERS.has(config.LLM)) {
     delete config.LLM;
+  }
+  if (config.IMAGE_PROVIDER && !VALID_IMAGE_PROVIDERS.has(config.IMAGE_PROVIDER)) {
+    delete config.IMAGE_PROVIDER;
+  }
+  if (
+    config.WEB_SEARCH_PROVIDER &&
+    !VALID_WEB_SEARCH_PROVIDERS.has(config.WEB_SEARCH_PROVIDER)
+  ) {
+    delete config.WEB_SEARCH_PROVIDER;
   }
   return config;
 };

@@ -332,10 +332,9 @@ def test_get_selected_image_provider_none(monkeypatch):
     assert get_selected_image_provider() is None
 
 
-def test_get_selected_image_provider_invalid_env_raises(monkeypatch):
-    monkeypatch.setenv("IMAGE_PROVIDER", "not-a-real-provider")
-    with pytest.raises(ValueError):
-        get_selected_image_provider()
+def test_get_selected_image_provider_invalid_env_is_disabled(monkeypatch):
+    monkeypatch.setenv("IMAGE_PROVIDER", "pexels")
+    assert get_selected_image_provider() is None
 
 
 def test_dynamic_outline_and_structure_factories_validate():

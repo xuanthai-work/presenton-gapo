@@ -8,8 +8,6 @@ services:
     ports:
       # Set PRESENTON_HTTP_HOST_PORT to change the host port.
       - "${PRESENTON_HTTP_HOST_PORT:-5001}:80"
-      # Required for OAuth callback (OpenAI redirects browser directly to localhost:1455)
-      - "1455:1455"
     volumes:
       - ./app_data:/app_data
       - ./servers/fastapi/templates:/app/servers/fastapi/templates:ro
@@ -40,10 +38,10 @@ services:
       - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY:-}
       - DATABASE_URL=${DATABASE_URL:-}
       - DISABLE_ANONYMOUS_TRACKING=${DISABLE_ANONYMOUS_TRACKING:-}
-      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-llama3.1:latest}
+      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-}
       - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY:-}
-      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-http://host.docker.internal:11434}
-      - MEM0_ENABLED=${MEM0_ENABLED:-true}
+      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-}
+      - MEM0_ENABLED=${MEM0_ENABLED:-false}
       - MEM0_DIR=${MEM0_DIR:-/app_data/mem0}
       - MEM0_EMBEDDER_PROVIDER=${MEM0_EMBEDDER_PROVIDER:-fastembed}
       - MEM0_EMBEDDER_MODEL=${MEM0_EMBEDDER_MODEL:-BAAI/bge-small-en-v1.5}
@@ -76,8 +74,6 @@ services:
     ports:
       # Set PRESENTON_HTTP_HOST_PORT to change the host port.
       - "${PRESENTON_HTTP_HOST_PORT:-5001}:80"
-      # Required for OAuth callback (OpenAI redirects browser directly to localhost:1455)
-      - "1455:1455"
     volumes:
       - ./app_data:/app_data
     environment:
@@ -107,10 +103,10 @@ services:
       - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY:-}
       - DATABASE_URL=${DATABASE_URL:-}
       - DISABLE_ANONYMOUS_TRACKING=${DISABLE_ANONYMOUS_TRACKING:-}
-      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-llama3.1:latest}
+      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-}
       - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY:-}
-      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-http://host.docker.internal:11434}
-      - MEM0_ENABLED=${MEM0_ENABLED:-true}
+      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-}
+      - MEM0_ENABLED=${MEM0_ENABLED:-false}
       - MEM0_DIR=${MEM0_DIR:-/app_data/mem0}
       - MEM0_EMBEDDER_PROVIDER=${MEM0_EMBEDDER_PROVIDER:-fastembed}
       - MEM0_EMBEDDER_MODEL=${MEM0_EMBEDDER_MODEL:-BAAI/bge-small-en-v1.5}
@@ -134,8 +130,6 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "${PRESENTON_HTTP_HOST_PORT:-5001}:80"
-      # Required for OAuth callback (OpenAI redirects browser directly to localhost:1455)
-      - "1455:1455"
     volumes:
       - .:/app
       - presenton_root_node_modules:/app/node_modules
@@ -169,10 +163,10 @@ services:
       - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY:-}
       - DATABASE_URL=${DATABASE_URL:-}
       - DISABLE_ANONYMOUS_TRACKING=${DISABLE_ANONYMOUS_TRACKING:-}
-      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-llama3.1:latest}
+      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-}
       - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY:-}
-      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-http://host.docker.internal:11434}
-      - MEM0_ENABLED=${MEM0_ENABLED:-true}
+      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-}
+      - MEM0_ENABLED=${MEM0_ENABLED:-false}
       - MEM0_DIR=${MEM0_DIR:-/app_data/mem0}
       - MEM0_EMBEDDER_PROVIDER=${MEM0_EMBEDDER_PROVIDER:-fastembed}
       - MEM0_EMBEDDER_MODEL=${MEM0_EMBEDDER_MODEL:-BAAI/bge-small-en-v1.5}
@@ -203,8 +197,6 @@ services:
               capabilities: [gpu]
     ports:
       - "${PRESENTON_HTTP_HOST_PORT:-5001}:80"
-      # Required for OAuth callback (OpenAI redirects browser directly to localhost:1455)
-      - "1455:1455"
     volumes:
       - .:/app
       - presenton_root_node_modules:/app/node_modules
@@ -237,10 +229,10 @@ services:
       - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY:-}
       - DATABASE_URL=${DATABASE_URL:-}
       - DISABLE_ANONYMOUS_TRACKING=${DISABLE_ANONYMOUS_TRACKING:-}
-      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-llama3.1:latest}
+      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-}
       - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY:-}
-      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-http://host.docker.internal:11434}
-      - MEM0_ENABLED=${MEM0_ENABLED:-true}
+      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-}
+      - MEM0_ENABLED=${MEM0_ENABLED:-false}
       - MEM0_DIR=${MEM0_DIR:-/app_data/mem0}
       - MEM0_EMBEDDER_PROVIDER=${MEM0_EMBEDDER_PROVIDER:-fastembed}
       - MEM0_EMBEDDER_MODEL=${MEM0_EMBEDDER_MODEL:-BAAI/bge-small-en-v1.5}

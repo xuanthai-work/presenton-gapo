@@ -140,7 +140,6 @@ async def create_db_and_tables():
                         WebhookSubscription.__table__,
                         AsyncTaskModel.__table__,
                         AsyncPresentationGenerationTaskModel.__table__,
-                        OllamaPullStatus.__table__,
                         User.__table__,
                         AccessToken.__table__,
                         ProviderSettings.__table__,

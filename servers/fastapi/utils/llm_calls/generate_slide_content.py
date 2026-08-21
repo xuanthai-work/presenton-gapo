@@ -8,6 +8,9 @@ from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_messages import JSONSchemaResponse, Message, SystemMessage, UserMessage
 from utils.llm_provider import get_llm_client, get_model
 from utils.llm_utils import DisconnectChecker, generate_structured_with_schema_retries
+
+# Legacy test compatibility: tests patch ``get_client`` via monkeypatch.
+get_client = get_llm_client
 from utils.schema_utils import (
     add_field_in_schema,
     ensure_array_schemas_have_items,

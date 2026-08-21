@@ -14,6 +14,14 @@ def test_auto_uses_native_search_for_supported_llm(monkeypatch):
     assert web_search.should_expose_external_web_search_tool() is False
 
 
+def test_pruned_web_search_provider_falls_back_to_auto(monkeypatch):
+    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "searxng")
+
+    assert web_search.get_selected_web_search_provider() == WebSearchProvider.AUTO
+    assert web_search.should_use_native_web_search() is True
+
+
 def test_auto_reports_unavailable_without_configured_external_provider(monkeypatch):
     monkeypatch.setenv("LLM", LLMProvider.CUSTOM.value)
     monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
