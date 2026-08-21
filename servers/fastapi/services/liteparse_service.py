@@ -171,20 +171,23 @@ class LiteParseService:
                     "liteparse_runner.mjs",
                 )
             ),
-            # PyInstaller bundle layout
-            os.path.abspath(
-                os.path.join(
-                    cwd, "..", "..", "app", "resources", "document-extraction", "liteparse_runner.mjs"
-                )
-            ),
+            # Repo root scripts/ layout (web-only after Electron removal)
             os.path.abspath(
                 os.path.join(
                     cwd,
                     "..",
                     "..",
-                    "electron",
-                    "resources",
-                    "document-extraction",
+                    "scripts",
+                    "liteparse_runner.mjs",
+                )
+            ),
+            os.path.abspath(
+                os.path.join(
+                    service_dir,
+                    "..",
+                    "..",
+                    "..",
+                    "scripts",
                     "liteparse_runner.mjs",
                 )
             ),

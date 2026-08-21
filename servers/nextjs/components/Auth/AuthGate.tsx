@@ -56,7 +56,7 @@ export default function AuthGate() {
       setStatus({
         configured: true,
         authenticated: true,
-        username: "electron",
+        username: "local",
         role: "admin",
       });
       setIsLoading(false);

@@ -13,8 +13,6 @@ import { useSmartChartInjection } from "./useSmartChartInjection";
 
 const SLIDE_WIDTH = 1280;
 const SLIDE_HEIGHT = 720;
-const USE_LINUX_IN_PAGE_RENDERER =
-  process.env.NEXT_PUBLIC_PRESENTON_ELECTRON_PLATFORM === "linux";
 
 const SANITIZE_CONFIG: DOMPurifyConfig = {
   USE_PROFILES: { html: true, svg: true, svgFilters: true },
@@ -108,78 +106,6 @@ function useSlideFontAssets(fonts: unknown, enabled: boolean) {
   }, [enabled, fonts]);
 }
 
-function LinuxInPageSmartHtmlSlide({
-  html,
-  fonts,
-  fixedSize,
-  title,
-  executeScripts,
-}: {
-  html: string;
-  fonts?: unknown;
-  fixedSize: boolean;
-  title: string;
-  executeScripts: boolean;
-}) {
-  const tailwindReady = useTailwindRuntimeReady();
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const slideRef = useRef<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(0);
-  const [instanceId] = useState(
-    () => `smart-slide-preview-${Math.random().toString(36).slice(2)}`
-  );
-  const [sanitizedHtml, setSanitizedHtml] = useState("");
-
-  useEffect(() => {
-    setSanitizedHtml(DOMPurify.sanitize(html, SANITIZE_CONFIG));
-  }, [html]);
-
-  useSlideFontAssets(fonts, executeScripts);
-  useSmartChartInjection({
-    html: executeScripts && tailwindReady && sanitizedHtml ? html : "",
-    instanceId,
-    domRevision: sanitizedHtml,
-    containerRef: slideRef,
-  });
-
-  useEffect(() => {
-    if (fixedSize) return;
-    const element = containerRef.current;
-    if (!element) return;
-    const update = () => setWidth(element.clientWidth);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [fixedSize]);
-
-  const scale = fixedSize ? 1 : width ? Math.min(width / SLIDE_WIDTH, 1) : 0;
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative w-full overflow-hidden bg-white"
-      style={{
-        width: fixedSize ? SLIDE_WIDTH : undefined,
-        height: fixedSize ? SLIDE_HEIGHT : SLIDE_HEIGHT * (scale || 1),
-      }}
-    >
-      <div
-        ref={slideRef}
-        data-smart-slide-instance={instanceId}
-        className="pointer-events-none absolute left-1/2 top-0 h-[720px] w-[1280px] select-none overflow-hidden bg-white"
-        aria-label={title}
-        style={{
-          transform: `translateX(-50%) scale(${scale || 1})`,
-          transformOrigin: "top center",
-          opacity: scale ? 1 : 0,
-        }}
-        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-      />
-    </div>
-  );
-}
-
 function IframeSmartHtmlSlide({
   html,
   fonts,
@@ -252,18 +178,6 @@ export default function SmartHtmlSlide({
   title?: string;
   executeScripts?: boolean;
 }) {
-  if (USE_LINUX_IN_PAGE_RENDERER) {
-    return (
-      <LinuxInPageSmartHtmlSlide
-        fixedSize={fixedSize}
-        fonts={fonts}
-        html={html}
-        title={title}
-        executeScripts={executeScripts}
-      />
-    );
-  }
-
   return (
     <IframeSmartHtmlSlide
       fixedSize={fixedSize}

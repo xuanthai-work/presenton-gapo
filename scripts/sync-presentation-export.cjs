@@ -1,6 +1,6 @@
 /**
  * Download presenton-export release into repo-root `presentation-export/`.
- * Same release host as Electron (`electron/scripts/sync-export-runtime.cjs`); Docker uses this at build time.
+ * Docker uses this at build time.
  *
  * Version resolution defaults to package.json → presentationExportVersion.
  * EXPORT_RUNTIME_VERSION is only honored with --allow-version-override so build

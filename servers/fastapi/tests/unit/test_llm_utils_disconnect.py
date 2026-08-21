@@ -61,6 +61,31 @@ def test_regular_generation_keeps_existing_retry_behavior(monkeypatch):
     assert all(call["stream"] is False for call in client.calls)
 
 
+def test_explicit_stream_false_skips_sse_even_with_disconnect_checker(monkeypatch):
+    monkeypatch.setenv("LLM", "ollama")
+    client = RetryClient()
+    client.responses = [{"result": "ok"}]
+
+    async def is_disconnected():
+        return False
+
+    result = asyncio.run(
+        generate_structured_with_schema_retries(
+            client,
+            "test-model",
+            messages=[],
+            response_format=object(),
+            json_schema={},
+            disconnect_checker=is_disconnected,
+            stream=False,
+        )
+    )
+
+    assert result == {"result": "ok"}
+    assert len(client.calls) == 1
+    assert client.calls[0]["stream"] is False
+
+
 def test_disconnect_cancels_generation_without_retrying(monkeypatch):
     monkeypatch.setenv("LLM", "ollama")
     client = StreamingClient()

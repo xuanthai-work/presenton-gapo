@@ -55,8 +55,12 @@ You need to select a layout for each slide based on the mentioned guidelines.
 - Prefer exact chart types and image placements, reusing layouts if needed.
 - Treat a numeric table on a chart-requested slide as chart data, not a request for a table-only layout.
 
-# Output Rules: 
-- One layout index for each slide.
+# Output Rules
+- Return exactly one layout index per outline slide ({n_slides} integers).
+- Layout indexes are 0-based and MUST be between {min_index} and {max_index} inclusive.
+- There are {n_layouts} layouts (### Slide Layout: {min_index} ... {max_index}).
+- Never use -1, null, or any number outside 0..{max_index}. If unsure, still pick the closest valid layout in range.
+- Human slide numbers in user text are 1-based (slide 1 = first outline). That is not the layout index.
 - Example: [0, 1, 2, 3, 4]
 
 {presentation_layout}
@@ -95,14 +99,32 @@ You're a professional presentation designer with creative freedom to design enga
 {user_instruction_header}
 
 Extract visual constraints from User Instructions and Original User Request; User
-Instructions win conflicts. The supplied slide count is authoritative. Slide numbers are
-one-based, and "all" or "every" includes the title slide. Prefer exact chart types and
-image placements over variety, reusing layouts if needed. A numeric table on a
-chart-requested slide is chart data, not a request for a table-only layout.
+Instructions win conflicts. The supplied slide count is authoritative. Human slide
+numbers in those instructions are one-based (slide 1 = first outline), and "all" or
+"every" includes the title slide. Prefer exact chart types and image placements over
+variety, reusing layouts if needed. A numeric table on a chart-requested slide is chart
+data, not a request for a table-only layout.
 
-Select layout index for each of the {n_slides} slides based on what will best serve the presentation's goals.
+Select a layout index for each of the {n_slides} outline slides.
+
+# Layout index output rules (required)
+- Each value is a layout index from the catalog below, not a human slide number.
+- Layout indexes are 0-based integers from {min_index} to {max_index} inclusive ({n_layouts} layouts).
+- Return exactly {n_slides} integers, e.g. [0, 1, 2].
+- Never use -1, null, or an index outside 0..{max_index}. If no layout is a perfect match, still choose the closest valid index in range.
 
 """
+
+
+def _layout_index_prompt_vars(presentation_layout: PresentationLayoutModel, n_slides: int) -> dict:
+    n_layouts = len(presentation_layout.slides)
+    max_index = max(n_layouts - 1, 0)
+    return {
+        "n_slides": n_slides,
+        "n_layouts": n_layouts,
+        "min_index": 0,
+        "max_index": max_index,
+    }
 
 
 def get_messages(
@@ -117,15 +139,18 @@ def get_messages(
         intent_sections.append(f"# User Instructions:\n{instructions}")
     if source_content:
         intent_sections.append(f"# Original User Request:\n{source_content}")
+    index_vars = _layout_index_prompt_vars(presentation_layout, n_slides)
     system_prompt = GET_MESSAGES_SYSTEM_PROMPT.format(
         user_instruction_header="\n\n".join(intent_sections),
-        n_slides=n_slides,
+        **index_vars,
     )
 
     return [
         SystemMessage(content=system_prompt),
         UserMessage(
             content=(
+                f"Valid layout indexes: integers from {index_vars['min_index']} to "
+                f"{index_vars['max_index']} inclusive. Do not use -1.\n\n"
                 f"{presentation_layout.to_string()}\n\n"
                 "--------------------------------------\n\n"
                 f"{data}"
@@ -146,12 +171,23 @@ def get_messages_for_slides_markdown(
         intent_sections.append(f"# User Instructions:\n{instructions}")
     if source_content:
         intent_sections.append(f"# Original User Request:\n{source_content}")
+    index_vars = _layout_index_prompt_vars(presentation_layout, n_slides)
     system_prompt = STRUCTURE_FROM_SLIDES_MARKDOWN_SYSTEM_PROMPT.format(
         user_intent="\n\n".join(intent_sections),
         presentation_layout=presentation_layout.to_string(with_schema=True),
+        **index_vars,
     )
 
-    return [SystemMessage(content=system_prompt), UserMessage(content=data)]
+    return [
+        SystemMessage(content=system_prompt),
+        UserMessage(
+            content=(
+                f"Valid layout indexes: integers from {index_vars['min_index']} to "
+                f"{index_vars['max_index']} inclusive. Do not use -1.\n\n"
+                f"{data}"
+            )
+        ),
+    ]
 
 
 async def generate_presentation_structure(
@@ -205,6 +241,7 @@ async def generate_presentation_structure(
             strict=False,
             validate_schema=True,
             disconnect_checker=disconnect_checker,
+            stream=False,
         )
         return PresentationStructureModel(**content)
     except Exception as e:

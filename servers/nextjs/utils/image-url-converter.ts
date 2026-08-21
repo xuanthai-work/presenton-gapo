@@ -2,7 +2,7 @@ import { resolveBackendAssetUrl } from "./api";
 
 /**
  * Normalizes DOM image URLs through the shared backend asset resolver.
- * This keeps Docker/web on same-origin proxy paths and Electron on FastAPI origin.
+ * Keeps web on same-origin proxy paths so NextJS image optimization works.
  */
 export function convertImageUrlsForEnvironment() {
   if (typeof document === "undefined") return;

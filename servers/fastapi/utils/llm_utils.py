@@ -69,10 +69,20 @@ async def _generate_structured_content(
     *,
     disconnect_checker: Optional[DisconnectChecker],
     text_chunk_callback: Optional[TextChunkCallback] = None,
+    force_stream: Optional[bool] = None,
     **kwargs: Any,
 ) -> Optional[dict]:
-    if disconnect_checker is None and text_chunk_callback is None:
-        response = await asyncio.to_thread(client.generate, **kwargs)
+    use_stream = (
+        True
+        if force_stream is True
+        else False
+        if force_stream is False
+        else disconnect_checker is not None or text_chunk_callback is not None
+    )
+    if not use_stream:
+        response = await asyncio.to_thread(
+            client.generate, **{**kwargs, "stream": False}
+        )
         return extract_structured_content(response.content)
 
     completion_content: Any = None
@@ -304,10 +314,13 @@ async def generate_structured_with_schema_retries(
     validate_schema_max_loop_count: int = 4,
     disconnect_checker: Optional[DisconnectChecker] = None,
     text_chunk_callback: Optional[TextChunkCallback] = None,
+    stream: Optional[bool] = None,
 ) -> dict:
     """
     Parse retries (inner loop) plus optional JSON Schema validation feedback loops (outer loop),
     matching the overflow-mitigation behavior from structured generation with validate_schema.
+
+    stream=False forces a single chat.completion (no SSE), even if disconnect_checker is set.
     """
     max_validation_loops = max(1, validate_schema_max_loop_count)
     working_messages: list[Message] = list(messages)
@@ -324,6 +337,7 @@ async def generate_structured_with_schema_retries(
                     if validation_attempt == 0 and attempt == 0
                     else None
                 ),
+                force_stream=stream,
                 **get_generate_kwargs(
                     model=model,
                     messages=working_messages,

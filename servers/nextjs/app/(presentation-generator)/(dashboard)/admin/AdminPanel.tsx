@@ -446,7 +446,7 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
             Manage access
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#6B7280]">
-            Create login accounts and manage admin-owned API/MCP access keys.
+            Create login accounts and manage admin-owned API access keys.
             User workspaces remain private.
           </p>
 
@@ -585,7 +585,7 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
                     <KeyRound className="h-4 w-4 text-[#5146E5]" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-[#101323]">API and MCP keys</h2>
+                    <h2 className="text-sm font-semibold text-[#101323]">API keys</h2>
                     <p className="mt-0.5 text-xs text-[#667085]">
                       Keys are hidden by default. Generate as many as you need.
                     </p>
@@ -766,7 +766,7 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
                   Revoke API key?
                 </DialogTitle>
                 <DialogDescription className="pt-1 text-sm leading-6 text-[#667085]">
-                  Any application using this key will lose API and MCP access
+                  Any application using this key will lose API access
                   immediately. This action cannot be undone.
                 </DialogDescription>
               </DialogHeader>

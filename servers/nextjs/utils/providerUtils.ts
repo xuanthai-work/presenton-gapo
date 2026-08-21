@@ -53,9 +53,7 @@ export interface ReachableOllamaModelsResult {
   usedFallback: boolean;
 }
 
-function isElectronRuntime(): boolean {
-  return typeof window !== "undefined" && !!window.electron;
-}
+
 
 function normalizeOllamaUrl(url?: string): string {
   return (url || "").trim().replace(/\/+$/, "");
@@ -74,7 +72,7 @@ export function clearOllamaModelsCache(ollamaUrl?: string) {
 }
 
 export function getDefaultOllamaUrl(): string {
-  return isElectronRuntime() ? LOCALHOST_OLLAMA_URL : DOCKER_HOST_OLLAMA_URL;
+  return DOCKER_HOST_OLLAMA_URL;
 }
 
 /**
@@ -287,8 +285,7 @@ export const getReachableOllamaModels = async (
     const models = await getAvailableOllamaModels(preferredUrl);
     return { models, resolvedUrl: preferredUrl, usedFallback: false };
   } catch (error) {
-    const shouldTryLocalFallback =
-      !isElectronRuntime() && preferredUrl === DOCKER_HOST_OLLAMA_URL;
+    const shouldTryLocalFallback = preferredUrl === DOCKER_HOST_OLLAMA_URL;
     if (!shouldTryLocalFallback) {
       throw error;
     }

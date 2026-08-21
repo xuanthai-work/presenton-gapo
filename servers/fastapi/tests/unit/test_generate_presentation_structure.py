@@ -38,9 +38,12 @@ def test_structure_prompt_preserves_visual_intent_from_original_request():
     prompt = str(messages[0].content)
 
     assert f"# Original User Request:\n{request}" in prompt
-    assert "Slide numbers are\none-based" in prompt
-    assert "Prefer exact chart types and\nimage placements" in prompt
+    assert "one-based" in prompt
+    assert "Prefer exact chart types and image placements" in prompt
     assert '"all" or "every" includes the title slide' in prompt
+    assert "Never use -1" in prompt
+    assert "from 0 to 1 inclusive" in prompt
+    assert "Do not use -1." in str(messages[1].content)
 
 
 def test_slides_markdown_structure_prompt_includes_both_intent_sources():
@@ -55,3 +58,5 @@ def test_slides_markdown_structure_prompt_includes_both_intent_sources():
 
     assert "# User Instructions:\nUse a bar chart" in prompt
     assert "# Original User Request:\nClimate presentation" in prompt
+    assert "Never use -1" in prompt
+    assert "Do not use -1." in str(messages[1].content)

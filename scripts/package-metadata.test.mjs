@@ -13,47 +13,13 @@ async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(repoRoot, relativePath), "utf8"));
 }
 
-test("application versions stay aligned", async () => {
-  const [
-    rootPackage,
-    rootLock,
-    electronPackage,
-    electronLock,
-    electronVersion,
-  ] =
-    await Promise.all([
-      readJson("package.json"),
-      readJson("package-lock.json"),
-      readJson("electron/package.json"),
-      readJson("electron/package-lock.json"),
-      readJson("electron/version.json"),
-    ]);
+test("Docker pins the presentation export version", async () => {
+  const [rootPackage, dockerfile, dockerfileDev] = await Promise.all([
+    readJson("package.json"),
+    readFile(path.join(repoRoot, "Dockerfile"), "utf8"),
+    readFile(path.join(repoRoot, "Dockerfile.dev"), "utf8"),
+  ]);
 
-  assert.equal(electronPackage.version, rootPackage.version);
-  assert.equal(rootLock.version, rootPackage.version);
-  assert.equal(rootLock.packages[""].version, rootPackage.version);
-  assert.equal(electronLock.version, electronPackage.version);
-  assert.equal(electronLock.packages[""].version, electronPackage.version);
-  assert.equal(electronVersion.version, electronPackage.version);
-  for (const downloadUrl of Object.values(electronVersion.downloads)) {
-    assert.match(downloadUrl, new RegExp(`electron-v${electronPackage.version}/`));
-    assert.match(downloadUrl, new RegExp(`Presenton-${electronPackage.version}\\.`));
-  }
-});
-
-test("Docker and Electron use the same pinned presentation export", async () => {
-  const [rootPackage, electronPackage, dockerfile, dockerfileDev] =
-    await Promise.all([
-      readJson("package.json"),
-      readJson("electron/package.json"),
-      readFile(path.join(repoRoot, "Dockerfile"), "utf8"),
-      readFile(path.join(repoRoot, "Dockerfile.dev"), "utf8"),
-    ]);
-
-  assert.equal(
-    electronPackage.exportVersion,
-    rootPackage.presentationExportVersion,
-  );
   assert.match(dockerfile, /COPY package\.json \/app\//);
   assert.match(
     dockerfile,
@@ -64,4 +30,5 @@ test("Docker and Electron use the same pinned presentation export", async () => 
     dockerfileDev,
     /sync-presentation-export\.cjs --force/,
   );
+  assert.ok(rootPackage.presentationExportVersion, "presentationExportVersion is set");
 });

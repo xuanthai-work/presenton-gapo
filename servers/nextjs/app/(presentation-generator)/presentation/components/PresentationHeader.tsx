@@ -199,31 +199,12 @@ const PresentationHeader = ({
     titleBlurIntentRef.current = "cancel";
   };
 
-  const exportViaIpc = async (
-    format: "pptx" | "pdf",
-    title: string
-  ): Promise<void> => {
-    if (!window.electron?.exportPresentation) {
-      throw new Error("Electron export bridge is unavailable");
-    }
-    const result = await window.electron.exportPresentation(
-      presentation_id,
-      title,
-      format
-    );
-    if (!result?.success) {
-      throw new Error(result?.message || "Export failed");
-    }
-  };
-
   const handleExportPptx = async () => {
     if (isStreaming) return;
 
     const exportId = uuidv4();
     const exportStartedAt = Date.now();
-    const exportRuntime = window.electron?.exportPresentation
-      ? "electron"
-      : "browser_api";
+    const exportRuntime = "browser_api" as const;
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
@@ -243,29 +224,25 @@ const PresentationHeader = ({
         "pptx"
       );
       const safePptxTitle = safePptxFileName.replace(/\.pptx$/i, "");
-      if (exportRuntime === "electron") {
-        await exportViaIpc("pptx", safePptxTitle);
-      } else {
-        const response = await fetch("/api/export-presentation", {
-          method: "POST",
-          body: JSON.stringify({
-            format: "pptx",
-            id: presentation_id,
-            title: safePptxTitle,
-          }),
-        });
+      const response = await fetch("/api/export-presentation", {
+        method: "POST",
+        body: JSON.stringify({
+          format: "pptx",
+          id: presentation_id,
+          title: safePptxTitle,
+        }),
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to export PPTX");
-        }
-
-        const { path: pptxPath } = await response.json();
-        if (!pptxPath) {
-          throw new Error("No path returned from export");
-        }
-
-        downloadLink(pptxPath, safePptxFileName);
+      if (!response.ok) {
+        throw new Error("Failed to export PPTX");
       }
+
+      const { path: pptxPath } = await response.json();
+      if (!pptxPath) {
+        throw new Error("No path returned from export");
+      }
+
+      downloadLink(pptxPath, safePptxFileName);
       await trackExportLifecycle(
         MixpanelEvent.Presentation_Export_Completed,
         "pptx",
@@ -303,9 +280,7 @@ const PresentationHeader = ({
 
     const exportId = uuidv4();
     const exportStartedAt = Date.now();
-    const exportRuntime = window.electron?.exportPresentation
-      ? "electron"
-      : "browser_api";
+    const exportRuntime = "browser_api" as const;
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
@@ -325,27 +300,23 @@ const PresentationHeader = ({
         "pdf"
       );
       const safePdfTitle = safePdfFileName.replace(/\.pdf$/i, "");
-      if (exportRuntime === "electron") {
-        await exportViaIpc("pdf", safePdfTitle);
-      } else {
-        const response = await fetch("/api/export-presentation", {
-          method: "POST",
-          body: JSON.stringify({
-            format: "pdf",
-            id: presentation_id,
-            title: safePdfTitle,
-          }),
-        });
+      const response = await fetch("/api/export-presentation", {
+        method: "POST",
+        body: JSON.stringify({
+          format: "pdf",
+          id: presentation_id,
+          title: safePdfTitle,
+        }),
+      });
 
-        if (response.ok) {
-          const { path: pdfPath } = await response.json();
-          if (!pdfPath) {
-            throw new Error("No path returned from export");
-          }
-          downloadLink(pdfPath, safePdfFileName);
-        } else {
-          throw new Error("Failed to export PDF");
+      if (response.ok) {
+        const { path: pdfPath } = await response.json();
+        if (!pdfPath) {
+          throw new Error("No path returned from export");
         }
+        downloadLink(pdfPath, safePdfFileName);
+      } else {
+        throw new Error("Failed to export PDF");
       }
       await trackExportLifecycle(
         MixpanelEvent.Presentation_Export_Completed,
@@ -418,7 +389,7 @@ const PresentationHeader = ({
       | MixpanelEvent.Presentation_Export_Completed
       | MixpanelEvent.Presentation_Export_Failed,
     format: "pptx" | "pdf",
-    exportRuntime: "electron" | "browser_api",
+    exportRuntime: "browser_api",
     exportId: string,
     exportStartedAt: number,
     error?: unknown

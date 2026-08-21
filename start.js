@@ -44,7 +44,6 @@ const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
 
 const fastapiPort = 8000;
 const nextjsPort = 3000;
-const appmcpPort = 8001;
 
 const appDataDirectory = process.env.APP_DATA_DIRECTORY;
 if (!appDataDirectory) {
@@ -617,20 +616,6 @@ const startServers = async (nginxReadyPromise) => {
     watchManagedProcess("FastAPI", fastApiProcess, restartFastApi);
   };
   watchManagedProcess("FastAPI", fastApiProcess, restartFastApi);
-
-  const appmcpProcess = spawn(
-    "python",
-    ["mcp_server.py", "--port", appmcpPort.toString()],
-    {
-      cwd: fastapiDir,
-      stdio: "ignore",
-      env: process.env,
-    }
-  );
-
-  appmcpProcess.on("error", (err) => {
-    console.error("App MCP process failed to start:", err);
-  });
 
   let nextjsProcess = spawnNextjsProcess();
   const restartNextjs = () => {

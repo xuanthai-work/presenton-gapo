@@ -26,7 +26,7 @@ def get_fastapi_public_base_url() -> str | None:
     """
     Public origin where FastAPI serves /app_data and /static (no trailing slash).
 
-    Uses NEXT_PUBLIC_FAST_API (same value Electron and the export runtime inject for the UI).
+    Uses NEXT_PUBLIC_FAST_API (the value Next.js injects for the UI).
     When unset, callers keep path-only URLs for same-origin / reverse-proxy setups (e.g. Docker).
     """
     v = (os.getenv("NEXT_PUBLIC_FAST_API") or "").strip().rstrip("/")
@@ -55,11 +55,6 @@ def get_presenton_oauth_client_id() -> str:
 
 def is_disable_auth_enabled():
     return _is_truthy(get_disable_auth_env())
-
-
-def is_presenton_electron_desktop():
-    """True when running inside the Presenton Electron desktop app."""
-    return _is_truthy(os.getenv("PRESENTON_ELECTRON"))
 
 
 def get_llm_provider_env():

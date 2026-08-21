@@ -28,7 +28,6 @@ import { IMAGE_PROVIDERS, LLM_PROVIDERS } from "@/utils/providerConstants";
 
 const GITHUB_REPOSITORY_URL = "https://github.com/presenton/presenton";
 const DISCORD_INVITE_URL = "https://discord.com/invite/9ZsKKxudNE";
-const APP_UPDATE_URL = "https://presenton.ai/download";
 
 const actionCardBase =
   "absolute aspect-[16/9] h-[46.238px] w-[82.201px] rounded-[4.474px] border border-white/50 bg-cover bg-center bg-no-repeat shadow-[0_8px_18px_rgba(16,24,40,0.18)] transition-all duration-500 ease-out opacity-100 translate-y-0 scale-100";
@@ -223,7 +222,6 @@ function DashboardHeader() {
   const llmConfig = useSelector(
     (state: RootState) => state.userConfig.llm_config,
   );
-  const [isElectronApp, setIsElectronApp] = useState(false);
 
   const textProvider = LLM_PROVIDERS[llmConfig.LLM || "openai"];
   const imageProvider = llmConfig.DISABLE_IMAGE_GENERATION
@@ -235,8 +233,6 @@ function DashboardHeader() {
   );
 
   useEffect(() => {
-    setIsElectronApp(Boolean(window.electron));
-
     let isMounted = true;
 
     return () => {
@@ -347,41 +343,6 @@ function DashboardHeader() {
             </Link>
           </div>
 
-          {isElectronApp && (
-            <Link
-              href={APP_UPDATE_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Update Presenton"
-              title="Update Presenton"
-              className="relative flex h-[42.24px] w-[42.24px] shrink-0 items-center justify-center rounded-full border-[1.32px] border-[#D9D6FE] bg-[#FAFAFF] transition-colors hover:bg-[#F3F0FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8] focus-visible:ring-offset-2"
-              onClick={() =>
-                trackEvent(MixpanelEvent.Navigation, {
-                  from: pathname,
-                  to: APP_UPDATE_URL,
-                  source: "dashboard_header_update_app",
-                  app_version: window.env?.APP_VERSION,
-                })
-              }
-            >
-              <Image
-                src={dashboardHeaderAsset("update-arrow.svg")}
-                alt=""
-                aria-hidden="true"
-                width={16}
-                height={16}
-                className="h-4 w-4 -rotate-90"
-              />
-              <Image
-                src={dashboardHeaderAsset("update-badge.svg")}
-                alt=""
-                aria-hidden="true"
-                width={14}
-                height={14}
-                className="absolute left-[26.44px] top-[-2.32px] h-[13.2px] w-[13.2px]"
-              />
-            </Link>
-          )}
         </div>
       </div>
     </header>
