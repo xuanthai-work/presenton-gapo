@@ -14,10 +14,6 @@ import { getApiUrl, normalizeBackendAssetUrls } from "@/utils/api";
 import { store } from "@/store/store";
 import type { RootState } from "@/store/store";
 import {
-  isChatGptAuthRequiredMessage,
-  requestChatGptReauth,
-} from "@/utils/chatgptAuth";
-import {
   mergeSingleSlidePreservingResolvedAssets,
   mergeSlidesPreservingResolvedAssets,
 } from "../utils/streamAssetMerge";
@@ -536,18 +532,6 @@ export const usePresentationStreaming = (
             window.history.replaceState({}, "", newUrl.toString());
             break;
           case "error":
-            if (isChatGptAuthRequiredMessage(data.detail)) {
-              requestChatGptReauth({
-                message: data.detail,
-                source: "presentation-stream",
-              });
-              finalizeFailure(
-                data.detail ||
-                  "Your ChatGPT session expired. Please sign in again from Settings.",
-                { showToast: false }
-              );
-              break;
-            }
             if (
               !scheduleRetry(
                 data.detail || "server returned stream error response"

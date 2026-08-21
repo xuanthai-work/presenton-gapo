@@ -21,7 +21,7 @@ def _request(*, headers: dict[str, str]) -> Request:
 
 def test_internal_session_token_wins_over_mcp_bearer_token():
     request = _request(
-        headers={"Authorization": "Bearer sk-presenton-api-key"}
+        headers={"Authorization": "Bearer sk-test-api-key"}
     )
     request.state.internal_session_token = "middleware-generated-jwt"
 
@@ -35,7 +35,7 @@ def test_browser_cookie_wins_over_internal_and_bearer_tokens():
     request = _request(
         headers={
             "Cookie": cookie_header,
-            "Authorization": "Bearer sk-presenton-api-key",
+            "Authorization": "Bearer sk-test-api-key",
         }
     )
     request.state.internal_session_token = "middleware-generated-jwt"

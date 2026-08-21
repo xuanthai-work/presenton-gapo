@@ -26,7 +26,6 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { ConfigurationSelects } from "./ConfigurationSelects";
 import { RootState } from "@/store/store";
-import { ImagesApi } from "../../services/api/images";
 import CurrentConfig from "./CurrentConfig";
 import { LLMConfig } from "@/types/llm_config";
 import {
@@ -41,7 +40,6 @@ import {
 
 type GenerationMode = "smart" | "standard";
 
-const STOCK_IMAGE_PROVIDERS = new Set(["pexels", "pixabay"]);
 const FILE_TYPE_WORD = new Set([".doc", ".docx", ".docm", ".odt", ".rtf"]);
 const FILE_TYPE_PRESENTATION = new Set([".ppt", ".pptx", ".pptm", ".odp"]);
 const FILE_TYPE_SPREADSHEET = new Set([".xls", ".xlsx", ".xlsm", ".ods", ".csv", ".tsv"]);
@@ -80,36 +78,10 @@ const getSelectedTextModel = (config?: LLMConfig): string => {
   switch (config.LLM) {
     case "openai":
       return config.OPENAI_MODEL || "";
-    case "deepseek":
-      return config.DEEPSEEK_MODEL || "";
     case "google":
       return config.GOOGLE_MODEL || "";
-    case "vertex":
-      return config.VERTEX_MODEL || "";
-    case "azure":
-      return config.AZURE_OPENAI_MODEL || "";
-    case "bedrock":
-      return config.BEDROCK_MODEL || "";
-    case "openrouter":
-      return config.OPENROUTER_MODEL || "";
-    case "fireworks":
-      return config.FIREWORKS_MODEL || "";
-    case "together":
-      return config.TOGETHER_MODEL || "";
-    case "cerebras":
-      return config.CEREBRAS_MODEL || "";
-    case "litellm":
-      return config.LITELLM_MODEL || "";
-    case "lmstudio":
-      return config.LMSTUDIO_MODEL || "";
-    case "anthropic":
-      return config.ANTHROPIC_MODEL || "";
-    case "ollama":
-      return config.OLLAMA_MODEL || "";
     case "custom":
       return config.CUSTOM_MODEL || "";
-    case "codex":
-      return config.CODEX_MODEL || "";
     default:
       return "";
   }
@@ -117,7 +89,6 @@ const getSelectedTextModel = (config?: LLMConfig): string => {
 
 const getSelectedImageQuality = (config?: LLMConfig): string => {
   if (!config) return "";
-  if (config.IMAGE_PROVIDER === "dall-e-3") return config.DALL_E_3_QUALITY || "";
   if (config.IMAGE_PROVIDER === "gpt-image-1.5") return config.GPT_IMAGE_1_5_QUALITY || "";
   return "";
 };
@@ -310,37 +281,6 @@ const UploadPage = () => {
     }
   };
 
-  const ensureStockImageProviderReady = async (): Promise<boolean> => {
-    if (llmConfig?.DISABLE_IMAGE_GENERATION) {
-      return true;
-    }
-
-    const selectedProvider = (llmConfig?.IMAGE_PROVIDER || "").toLowerCase();
-    if (!STOCK_IMAGE_PROVIDERS.has(selectedProvider)) {
-      return true;
-    }
-
-    try {
-      const providerApiKey =
-        selectedProvider === "pexels"
-          ? llmConfig?.PEXELS_API_KEY
-          : llmConfig?.PIXABAY_API_KEY;
-      await ImagesApi.searchStockImages("business", 1, {
-        provider: selectedProvider,
-        apiKey: providerApiKey,
-        strictApiKey: true,
-      });
-      return true;
-    } catch (error: any) {
-      notify.error(
-        "Image provider unavailable",
-        error?.message ||
-        `Unable to reach ${selectedProvider} right now. Please check your API key/settings and try again.`
-      );
-      return false;
-    }
-  };
-
   /**
    * Validates the current configuration and files
    * @returns boolean indicating if the configuration is valid
@@ -388,13 +328,6 @@ const UploadPage = () => {
     }
 
     try {
-      const isStockProviderReady =
-        generationMode === "smart" || (await ensureStockImageProviderReady());
-      if (!isStockProviderReady) {
-        trackUploadValidationFailure("stock_image_provider_unreachable");
-        return;
-      }
-
       const hasUploadedAssets = files.length > 0;
 
       if (hasUploadedAssets) {

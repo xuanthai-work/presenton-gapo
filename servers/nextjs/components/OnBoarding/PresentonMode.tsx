@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Button } from '../ui/button';
-import { ArrowUpRight, Blocks, Check, ChevronDown, ChevronLeft, ChevronUp, Eye, EyeOff, Info, Laptop, Loader2, Search } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronLeft, ChevronUp, Eye, EyeOff, Info, Loader2, Search } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-import { DALLE_3_QUALITY_OPTIONS, GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS, LLM_PROVIDERS, WEB_SEARCH_PROVIDERS } from '@/utils/providerConstants';
+import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS, LLM_PROVIDERS, WEB_SEARCH_PROVIDERS } from '@/utils/providerConstants';
 import { cn } from '@/lib/utils';
 import { LLMConfig } from '@/types/llm_config';
 import { RootState } from '@/store/store';
@@ -14,37 +13,18 @@ import ToolTip from '../ToolTip';
 import { Switch } from '../ui/switch';
 import { Select, SelectItem, SelectContent, SelectValue, SelectTrigger } from '../ui/select';
 import { MixpanelEvent, trackEvent } from '@/utils/mixpanel';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { getLLMConfigValidationError, handleSaveLLMConfig } from '@/utils/storeHelpers';
-import { getDefaultOllamaUrl, isOllamaModelAvailable } from '@/utils/providerUtils';
 import { getApiErrorMessage, getApiUrl } from '@/utils/api';
-import CodexConfig from '../CodexConfig';
-import { CODEX_MODELS } from '@/utils/codexModels';
-import VertexAzureManualFields from '@/components/VertexAzureManualFields';
-import BedrockManualFields from '@/components/BedrockManualFields';
 import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageFields';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import Image from 'next/image';
-import OllamaConfig from '../OllamaConfig';
-import OnboardingPresentonAccount from './OnboardingPresentonAccount';
 
-const MANUAL_MODEL_PROVIDERS = new Set(["vertex", "azure", "bedrock"]);
-const LOCAL_PROVIDERS = ["ollama", "lmstudio"];
-const OTHER_PROVIDERS = Object.values(LLM_PROVIDERS).filter(
-    (provider) => provider.value !== "codex" && !LOCAL_PROVIDERS.includes(provider.value)
+const TEXT_PROVIDERS = Object.values(LLM_PROVIDERS).filter(
+    (provider) => ['openai', 'google', 'custom'].includes(provider.value)
 );
-const OTHER_PROVIDER_VALUES = new Set(OTHER_PROVIDERS.map((provider) => provider.value));
-type TextProviderTab = "chatgpt" | "local" | "other";
-
-const getTextProviderTab = (provider?: string): TextProviderTab => {
-    if (provider === "codex" || provider === "chatgpt") return "chatgpt";
-    if (LOCAL_PROVIDERS.includes(provider || "")) return "local";
-    return "other";
-};
+const TEXT_PROVIDER_VALUES = new Set(TEXT_PROVIDERS.map((provider) => provider.value));
 
 const WEB_SEARCH_PROVIDER_OPTIONS = [
     WEB_SEARCH_PROVIDERS.auto,
-    WEB_SEARCH_PROVIDERS.searxng,
     WEB_SEARCH_PROVIDERS.tavily,
     WEB_SEARCH_PROVIDERS.exa,
     WEB_SEARCH_PROVIDERS.brave,
@@ -60,16 +40,10 @@ const PresentonMode = ({
     setProviderStep: (step: number) => void,
 }) => {
     const pathname = usePathname();
-    const router = useRouter();
     const userConfigState = useSelector((state: RootState) => state.userConfig);
     const [openProviderSelect, setOpenProviderSelect] = useState(false);
-    const [textProviderTab, setTextProviderTab] = useState<TextProviderTab>("chatgpt");
-    const [chatGptAuthenticated, setChatGptAuthenticated] = useState(false);
 
     const [showApiKey, setShowApiKey] = useState(false);
-    const [deepseekAdvancedOpen, setDeepseekAdvancedOpen] = useState(() =>
-        !!(userConfigState.llm_config.DEEPSEEK_BASE_URL || '').trim()
-    );
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [openModelSelect, setOpenModelSelect] = useState(false);
     const [modelsLoading, setModelsLoading] = useState(false);
@@ -79,25 +53,17 @@ const PresentonMode = ({
         userConfigState.llm_config
     );
     const llmConfigRef = useRef(llmConfig);
-    const isManualModelProvider = MANUAL_MODEL_PROVIDERS.has(llmConfig.LLM || "");
-    const isActiveNonChatProvider =
-        (textProviderTab === "local" && LOCAL_PROVIDERS.includes(llmConfig.LLM || "")) ||
-        (textProviderTab === "other" && OTHER_PROVIDER_VALUES.has(llmConfig.LLM || ""));
+    const isActiveTextProvider = TEXT_PROVIDER_VALUES.has(llmConfig.LLM || "");
 
     const handleProviderChange = (provider: string) => {
         trackEvent(MixpanelEvent.Onboarding_Text_Provider_Selected, {
             provider,
             provider_label: LLM_PROVIDERS[provider]?.label || provider,
-            provider_group: LOCAL_PROVIDERS.includes(provider) ? "local" : "other",
-            text_provider_tab: textProviderTab,
             selection_source: "provider_control",
         });
         setLlmConfig(prev => ({
             ...prev,
             LLM: provider,
-            ...(provider === "ollama" && !prev.OLLAMA_URL?.trim()
-                ? { OLLAMA_URL: getDefaultOllamaUrl() }
-                : {}),
         }));
         setOpenProviderSelect(false);
         setAvailableModels([]);
@@ -114,34 +80,10 @@ const PresentonMode = ({
         switch (llmConfig.LLM) {
             case 'openai':
                 return 'OPENAI_MODEL';
-            case 'deepseek':
-                return 'DEEPSEEK_MODEL';
             case 'google':
                 return 'GOOGLE_MODEL';
-            case 'vertex':
-                return 'VERTEX_MODEL';
-            case 'azure':
-                return 'AZURE_OPENAI_MODEL';
-            case 'bedrock':
-                return 'BEDROCK_MODEL';
-            case 'openrouter':
-                return 'OPENROUTER_MODEL';
-            case 'fireworks':
-                return 'FIREWORKS_MODEL';
-            case 'together':
-                return 'TOGETHER_MODEL';
-            case 'cerebras':
-                return 'CEREBRAS_MODEL';
-            case 'anthropic':
-                return 'ANTHROPIC_MODEL';
-            case 'ollama':
-                return 'OLLAMA_MODEL';
             case 'custom':
                 return 'CUSTOM_MODEL';
-            case 'litellm':
-                return 'LITELLM_MODEL';
-            case 'lmstudio':
-                return 'LMSTUDIO_MODEL';
             default:
                 return '';
         }
@@ -150,32 +92,10 @@ const PresentonMode = ({
         switch (llmConfig.LLM) {
             case 'openai':
                 return 'OPENAI_API_KEY';
-            case 'deepseek':
-                return 'DEEPSEEK_API_KEY';
             case 'google':
                 return 'GOOGLE_API_KEY';
-            case 'vertex':
-                return 'VERTEX_API_KEY';
-            case 'azure':
-                return 'AZURE_OPENAI_API_KEY';
-            case 'bedrock':
-                return 'BEDROCK_API_KEY';
-            case 'openrouter':
-                return 'OPENROUTER_API_KEY';
-            case 'fireworks':
-                return 'FIREWORKS_API_KEY';
-            case 'together':
-                return 'TOGETHER_API_KEY';
-            case 'cerebras':
-                return 'CEREBRAS_API_KEY';
-            case 'anthropic':
-                return 'ANTHROPIC_API_KEY';
             case 'custom':
                 return 'CUSTOM_LLM_API_KEY';
-            case 'litellm':
-                return 'LITELLM_API_KEY';
-            case 'lmstudio':
-                return 'LMSTUDIO_API_KEY';
             default:
                 return '';
         }
@@ -190,128 +110,33 @@ const PresentonMode = ({
 
     const currentApiKey = currentApiKeyField ? ((llmConfig as Record<string, unknown>)[currentApiKeyField] as string || '') : '';
     const currentModel = currentModelField ? ((llmConfig as Record<string, unknown>)[currentModelField] as string || '') : '';
-    const currentDeepseekBaseUrl = (llmConfig.DEEPSEEK_BASE_URL || '').trim();
-    const currentLitellmUrl = (llmConfig.LITELLM_BASE_URL || '').trim();
-    const currentLmStudioUrl = (llmConfig.LMSTUDIO_BASE_URL || '').trim();
-    const currentFireworksUrl = (llmConfig.FIREWORKS_BASE_URL || '').trim();
-    const currentTogetherUrl = (llmConfig.TOGETHER_BASE_URL || '').trim();
-    const currentOllamaUrl = llmConfig.OLLAMA_URL || '';
     const providerApiKeyLabel =
         llmConfig.LLM === 'custom'
             ? 'Custom LLM API Key'
-            : llmConfig.LLM === 'deepseek'
-                ? 'DeepSeek API Key'
-            : llmConfig.LLM === 'vertex'
-                ? 'Vertex API Key'
-                : llmConfig.LLM === 'azure'
-                    ? 'Azure OpenAI API Key'
-                    : llmConfig.LLM === 'bedrock'
-                        ? 'Bedrock API Key (optional)'
-                    : llmConfig.LLM === 'openrouter'
-                        ? 'OpenRouter API Key'
-                        : llmConfig.LLM === 'fireworks'
-                            ? 'Fireworks API Key'
-                            : llmConfig.LLM === 'together'
-                                ? 'Together API Key'
-                        : llmConfig.LLM === 'cerebras'
-                            ? 'Cerebras API Key'
-                            : llmConfig.LLM === 'litellm'
-                                ? 'LiteLLM API key (optional)'
-                                : llmConfig.LLM === 'lmstudio'
-                                    ? 'LM Studio API key (optional)'
-                                : `${llmConfig.LLM} API Key`;
-
-    useEffect(() => {
-        if (currentDeepseekBaseUrl) setDeepseekAdvancedOpen(true);
-    }, [currentDeepseekBaseUrl]);
+            : `${llmConfig.LLM} API Key`;
 
     const getSelectedTextModel = (config: LLMConfig): string => {
         switch (config.LLM) {
             case 'openai':
                 return config.OPENAI_MODEL || '';
-            case 'deepseek':
-                return config.DEEPSEEK_MODEL || '';
             case 'google':
                 return config.GOOGLE_MODEL || '';
-            case 'vertex':
-                return config.VERTEX_MODEL || '';
-            case 'azure':
-                return config.AZURE_OPENAI_MODEL || '';
-            case 'bedrock':
-                return config.BEDROCK_MODEL || '';
-            case 'openrouter':
-                return config.OPENROUTER_MODEL || '';
-            case 'fireworks':
-                return config.FIREWORKS_MODEL || '';
-            case 'together':
-                return config.TOGETHER_MODEL || '';
-            case 'cerebras':
-                return config.CEREBRAS_MODEL || '';
-            case 'anthropic':
-                return config.ANTHROPIC_MODEL || '';
-            case 'ollama':
-                return config.OLLAMA_MODEL || '';
             case 'custom':
                 return config.CUSTOM_MODEL || '';
-            case 'litellm':
-                return config.LITELLM_MODEL || '';
-            case 'lmstudio':
-                return config.LMSTUDIO_MODEL || '';
-            case 'chatgpt':
-            case 'codex':
-                return config.CODEX_MODEL || '';
             default:
                 return '';
         }
     };
 
     const getSelectedImageQuality = (config: LLMConfig): string => {
-        if (config.IMAGE_PROVIDER === 'dall-e-3') return config.DALL_E_3_QUALITY || '';
         if (config.IMAGE_PROVIDER === 'gpt-image-1.5') return config.GPT_IMAGE_1_5_QUALITY || '';
         return '';
     };
 
-    const handleTextProviderTabChange = (tab: string) => {
-        const nextTab = tab as TextProviderTab;
-        const nextProvider =
-            nextTab === "chatgpt"
-                ? "codex"
-                : nextTab === "local"
-                    ? "ollama"
-                    : OTHER_PROVIDERS[0].value;
-        const providerMatchesTab =
-            (nextTab === "chatgpt" && (llmConfig.LLM === "codex" || llmConfig.LLM === "chatgpt")) ||
-            (nextTab === "local" && LOCAL_PROVIDERS.includes(llmConfig.LLM || "")) ||
-            (nextTab === "other" && OTHER_PROVIDER_VALUES.has(llmConfig.LLM || ""));
-
-        trackEvent(MixpanelEvent.Onboarding_Text_Provider_Tab_Selected, {
-            tab: nextTab,
-            previous_tab: textProviderTab,
-        });
-        if (!providerMatchesTab) {
-            trackEvent(MixpanelEvent.Onboarding_Text_Provider_Selected, {
-                provider: nextProvider,
-                provider_label: LLM_PROVIDERS[nextProvider]?.label || nextProvider,
-                provider_group: nextTab,
-                text_provider_tab: nextTab,
-                selection_source: "tab_default",
-            });
-        }
-        setTextProviderTab(nextTab);
-    };
-
     const fetchAvailableModels = async () => {
-        if (isManualModelProvider) return;
         if (llmConfig.LLM === 'openai' && !currentApiKey) return;
-        if (llmConfig.LLM === 'deepseek' && !currentApiKey) return;
         if (llmConfig.LLM === 'google' && !currentApiKey) return;
-        if (llmConfig.LLM === 'anthropic' && !currentApiKey) return;
-        if (llmConfig.LLM === 'openrouter' && !currentApiKey) return;
-        if (llmConfig.LLM === 'fireworks' && !currentApiKey) return;
-        if (llmConfig.LLM === 'together' && !currentApiKey) return;
-        if (llmConfig.LLM === 'cerebras' && !currentApiKey) return;
         if (llmConfig.LLM === 'custom' && !llmConfig.CUSTOM_LLM_URL) return;
-        if (llmConfig.LLM === 'litellm' && !currentLitellmUrl) return;
         setModelsLoading(true);
         try {
             let response: Response;
@@ -325,31 +150,11 @@ const PresentonMode = ({
                         api_key: currentApiKey
                     }),
                 });
-            } else if (llmConfig.LLM === 'anthropic') {
-                response = await fetch(getApiUrl('/api/v1/ppt/anthropic/models/available'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        api_key: currentApiKey
-                    }),
-                });
             } else {
                 const openAiCompatibleUrl =
                     llmConfig.LLM === 'custom'
                         ? llmConfig.CUSTOM_LLM_URL
-                        : llmConfig.LLM === 'deepseek'
-                            ? currentDeepseekBaseUrl || LLM_PROVIDERS[llmConfig.LLM!]?.url || ''
-                        : llmConfig.LLM === 'litellm'
-                            ? currentLitellmUrl
-                            : llmConfig.LLM === 'lmstudio'
-                                ? currentLmStudioUrl || LLM_PROVIDERS[llmConfig.LLM!]?.url || ''
-                            : llmConfig.LLM === 'fireworks'
-                                ? currentFireworksUrl || LLM_PROVIDERS[llmConfig.LLM!]?.url || ''
-                                : llmConfig.LLM === 'together'
-                                    ? currentTogetherUrl || LLM_PROVIDERS[llmConfig.LLM!]?.url || ''
-                            : LLM_PROVIDERS[llmConfig.LLM!]?.url || '';
+                        : LLM_PROVIDERS[llmConfig.LLM!]?.url || '';
                 response = await fetch(getApiUrl('/api/v1/ppt/openai/models/available'), {
                     method: 'POST',
                     headers: {
@@ -381,25 +186,9 @@ const PresentonMode = ({
                     const preferredDefault =
                         llmConfig.LLM === 'openai'
                             ? 'gpt-4.1'
-                            : llmConfig.LLM === 'deepseek'
-                                ? 'deepseek-chat'
                             : llmConfig.LLM === 'google'
                                 ? 'models/gemini-2.5-flash'
-                                : llmConfig.LLM === 'anthropic'
-                                    ? 'claude-sonnet-4-20250514'
-                                    : llmConfig.LLM === 'openrouter'
-                                        ? 'openai/gpt-4o'
-                                        : llmConfig.LLM === 'fireworks'
-                                            ? 'accounts/fireworks/models/llama-v3p1-8b-instruct'
-                                            : llmConfig.LLM === 'together'
-                                                ? 'openai/gpt-oss-20b'
-                                        : llmConfig.LLM === 'cerebras'
-                                            ? 'llama-3.3-70b'
-                                            : llmConfig.LLM === 'litellm'
-                                                ? 'gpt-4.1'
-                                            : llmConfig.LLM === 'lmstudio'
-                                                ? 'openai/gpt-oss-20b'
-                                                : normalizedModels[0];
+                                : normalizedModels[0];
 
                     const nextModel = normalizedModels.includes(preferredDefault) ? preferredDefault : normalizedModels[0];
                     setLlmConfig(prev => ({
@@ -420,54 +209,19 @@ const PresentonMode = ({
         } catch (error) {
             console.error('Error fetching models:', error);
             notify.error(
-                llmConfig.LLM === "ollama" ? "Could not connect to Ollama" : "Could not load models",
+                "Could not load models",
                 error instanceof Error
                     ? error.message
                     : "The server could not list models. Check your API key or endpoint and try again."
             );
             setAvailableModels([]);
             setModelsChecked(true);
-            if (llmConfig.LLM === "ollama") {
-                setLlmConfig(prev => ({ ...prev, OLLAMA_MODEL: "" }));
-            }
         } finally {
             setModelsLoading(false);
         }
     };
 
     const renderQualitySelector = (llmConfig: LLMConfig) => {
-        if (llmConfig.IMAGE_PROVIDER === "dall-e-3") {
-            return (
-                <div className="w-full ">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        DALL·E 3 Image Quality
-                    </label>
-                    <div className="">
-                        <Select value={llmConfig.DALL_E_3_QUALITY || 'standard'} onValueChange={(value) => {
-                            trackEvent(MixpanelEvent.Onboarding_Image_Quality_Selected, {
-                                image_provider: "dall-e-3",
-                                quality: value,
-                            });
-                            setLlmConfig((prev) => ({
-                                ...prev,
-                                DALL_E_3_QUALITY: value
-                            }));
-                        }}>
-                            <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
-                                <SelectValue placeholder="Select a quality" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {DALLE_3_QUALITY_OPTIONS.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                    </div>
-                </div>
-            );
-        }
-
         if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
             return (
                 <div className="w-full">
@@ -559,89 +313,6 @@ const PresentonMode = ({
                                 }))
                             }
                         />
-                    ) : provider.value === "comfyui" ? (
-                        <>
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    ComfyUI Server URL
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="http://192.168.1.7:8188"
-                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                                    value={llmConfig.COMFYUI_URL || ""}
-                                    onChange={(e) => {
-                                        setLlmConfig(prev => ({
-                                            ...prev,
-                                            COMFYUI_URL: e.target.value
-                                        }));
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    Workflow JSON
-                                </label>
-                                <textarea
-                                    placeholder='Paste your ComfyUI workflow JSON here (export via "Export (API)" in ComfyUI)'
-                                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 font-mono text-xs outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                                    rows={3}
-                                    value={llmConfig.COMFYUI_WORKFLOW || ""}
-                                    onChange={(e) => {
-                                        setLlmConfig((prev) => ({
-                                            ...prev,
-                                            COMFYUI_WORKFLOW: e.target.value
-                                        }));
-                                    }}
-                                />
-                            </div>
-                        </>
-                    ) : provider.value === "open_webui" ? (
-                        <>
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    Open WebUI URL
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="http://localhost:3000/api/v1"
-                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                                    value={llmConfig.OPEN_WEBUI_IMAGE_URL || ""}
-                                    onChange={(e) => {
-                                        setLlmConfig(prev => ({
-                                            ...prev,
-                                            OPEN_WEBUI_IMAGE_URL: e.target.value
-                                        }));
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    API Key (optional)
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showApiKey ? "text" : "password"}
-                                        placeholder="API key"
-                                        className="h-12 w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-12 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                                        value={llmConfig.OPEN_WEBUI_IMAGE_API_KEY || ""}
-                                        onChange={(e) => {
-                                            setLlmConfig(prev => ({
-                                                ...prev,
-                                                OPEN_WEBUI_IMAGE_API_KEY: e.target.value
-                                            }));
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowApiKey((prev) => !prev)}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer bg-white px-2 py-1"
-                                    >
-                                        {showApiKey ? <Eye className="h-4 w-4 text-gray-500" /> : <EyeOff className="h-4 w-4 text-gray-500" />}
-                                    </button>
-                                </div>
-                            </div>
-                        </>
                     ) : (
                         <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -677,36 +348,8 @@ const PresentonMode = ({
         );
     };
 
-    const checkCurrentAuthStatus = async () => {
-        try {
-            const res = await fetch(getApiUrl("/api/v1/ppt/codex/auth/status"));
-            if (!res.ok) {
-                return false;
-            }
-            const data = await res.json();
-            if (data.status === "authenticated") {
-                return true;
-            } else {
-                return false;
-            }
-        } catch {
-            return false;
-        }
-    };
     const handleSaveConfig = async () => {
         try {
-            if (llmConfig.LLM === 'codex') {
-                const isAuthenticated = await checkCurrentAuthStatus();
-                if (!isAuthenticated) {
-                    trackEvent(MixpanelEvent.Onboarding_Validation_Failed, {
-                        step_name: "text_provider",
-                        provider: "codex",
-                        validation_error: "Please sign in to ChatGPT to continue.",
-                    });
-                    notify.error("Sign in required", "Please sign in to ChatGPT to continue.");
-                    return;
-                }
-            }
             const validationError = getLLMConfigValidationError(llmConfig);
             if (validationError) {
                 trackEvent(MixpanelEvent.Onboarding_Validation_Failed, {
@@ -720,19 +363,9 @@ const PresentonMode = ({
             }
             setSavingConfig(true);
 
-            if (
-                llmConfig.LLM === "ollama" &&
-                llmConfig.OLLAMA_MODEL &&
-                !(await isOllamaModelAvailable(llmConfig.OLLAMA_MODEL, currentOllamaUrl))
-            ) {
-                throw new Error(
-                    `The selected model "${llmConfig.OLLAMA_MODEL}" is not available at ${currentOllamaUrl || "the default Ollama URL"}. Check models and select an available model.`
-                );
-            }
             await handleSaveLLMConfig(llmConfig);
             trackEvent(MixpanelEvent.Onboarding_Configuration_Saved, {
                 text_provider: llmConfig.LLM || "",
-                text_provider_tab: getTextProviderTab(llmConfig.LLM),
                 image_generation_enabled: !llmConfig.DISABLE_IMAGE_GENERATION,
                 image_step_skipped: !!llmConfig.DISABLE_IMAGE_GENERATION,
                 image_provider: llmConfig.DISABLE_IMAGE_GENERATION ? "disabled" : llmConfig.IMAGE_PROVIDER || "",
@@ -750,9 +383,7 @@ const PresentonMode = ({
                 pathname,
                 text_provider: textProvider,
                 text_provider_label: LLM_PROVIDERS[textProvider]?.label || textProvider || '',
-                text_provider_tab: getTextProviderTab(textProvider),
                 text_model: textModel,
-                uses_chatgpt_login: textProvider === 'chatgpt' || textProvider === 'codex',
                 image_generation_enabled: imageGenerationEnabled,
                 image_step_skipped: !imageGenerationEnabled,
                 image_provider: imageProvider,
@@ -785,13 +416,6 @@ const PresentonMode = ({
     };
 
     const validateTextProvider = async () => {
-        if (llmConfig.LLM === 'codex') {
-            const isAuthenticated = await checkCurrentAuthStatus();
-            if (!isAuthenticated) {
-                notify.error("Sign in required", "Please sign in to ChatGPT to continue.");
-                return false;
-            }
-        }
         const validationError = getLLMConfigValidationError({
             ...llmConfig,
             DISABLE_IMAGE_GENERATION: true,
@@ -811,16 +435,11 @@ const PresentonMode = ({
 
     const handleContinue = async () => {
         if (providerStep === 1) {
-            if (llmConfig.LLM === "presenton") {
-                await handlePresentonContinue();
-                return;
-            }
             if (await validateTextProvider()) {
                 trackEvent(MixpanelEvent.Onboarding_Step_Continued, {
                     from_step: "text_provider",
                     to_step: "image_provider",
                     provider: llmConfig.LLM || "",
-                    text_provider_tab: getTextProviderTab(llmConfig.LLM),
                 });
                 setProviderStep(2);
             }
@@ -860,48 +479,6 @@ const PresentonMode = ({
         });
         if (providerStep > 1) {
             setProviderStep(providerStep - 1);
-        }
-    };
-
-    const handlePresentonContinue = async () => {
-        try {
-            setSavingConfig(true);
-            const statusResponse = await fetch(
-                getApiUrl("/api/v1/auth/presenton/status"),
-                {
-                    credentials: "include",
-                    cache: "no-store",
-                }
-            );
-            const statusPayload = statusResponse.ok
-                ? await statusResponse.json() as { linked?: boolean }
-                : null;
-            if (!statusPayload?.linked) {
-                notify.warning(
-                    "Connect Presenton first",
-                    "Sign in to Presenton Cloud before continuing."
-                );
-                return;
-            }
-            const presentonConfig = { ...llmConfig, LLM: "presenton" };
-            await handleSaveLLMConfig(presentonConfig);
-            setLlmConfig(presentonConfig);
-            trackEvent(MixpanelEvent.Onboarding_Step_Continued, {
-                from_step: "text_provider",
-                to_step: "generation",
-                provider: "presenton",
-            });
-            trackEvent(MixpanelEvent.Onboarding_Completed, {
-                provider: "presenton",
-            });
-            router.push('/upload');
-        } catch (error) {
-            notify.error(
-                "Could not select Presenton",
-                error instanceof Error ? error.message : "Please try again."
-            );
-        } finally {
-            setSavingConfig(false);
         }
     };
 
@@ -1002,7 +579,6 @@ const PresentonMode = ({
         const stepProps =
             providerStep === 1
                 ? {
-                    text_provider_tab: getTextProviderTab(config.LLM),
                     provider: config.LLM || "",
                 }
                 : providerStep === 2
@@ -1023,29 +599,6 @@ const PresentonMode = ({
             ...stepProps,
         });
     }, [providerStep]);
-
-    useEffect(() => {
-        const nextProvider =
-            textProviderTab === "chatgpt"
-                ? "codex"
-                : textProviderTab === "local"
-                    ? "ollama"
-                    : OTHER_PROVIDERS[0].value;
-
-        const providerMatchesTab =
-            (textProviderTab === "chatgpt" && llmConfig.LLM === "codex") ||
-            (textProviderTab === "local" && LOCAL_PROVIDERS.includes(llmConfig.LLM || "")) ||
-            (textProviderTab === "other" && OTHER_PROVIDER_VALUES.has(llmConfig.LLM || ""));
-
-        if (!providerMatchesTab) {
-            setLlmConfig(prev => ({
-                ...prev,
-                LLM: nextProvider,
-            }));
-            setAvailableModels([]);
-            setModelsChecked(false);
-        }
-    }, [textProviderTab, llmConfig.LLM]);
 
     const imageProviderRows = Object.values(IMAGE_PROVIDERS).reduce(
         (rows, provider, index) => {
@@ -1082,19 +635,6 @@ const PresentonMode = ({
                 </p>
             </div>
 
-            {providerStep === 1 ? (
-                <div className="mt-10">
-                    <OnboardingPresentonAccount onContinue={handlePresentonContinue} />
-                    <div className="my-8 flex items-center gap-4" aria-hidden="true">
-                        <div className="h-px flex-1 bg-[#E8E6EC]" />
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#938D9B]">
-                            Or configure your own providers
-                        </span>
-                        <div className="h-px flex-1 bg-[#E8E6EC]" />
-                    </div>
-                </div>
-            ) : null}
-
             <div className={cn(
                 'flex items-center gap-2 bg-[#F0F3F9B2] rounded-[8px] px-6 py-2.5',
                 providerStep === 1 ? 'mb-6' : 'my-[54px]'
@@ -1124,97 +664,6 @@ const PresentonMode = ({
                         </p>
                     </div>
                 </div>
-                <Tabs
-                    value={textProviderTab}
-                    onValueChange={handleTextProviderTabChange}
-                    className="w-full"
-                >
-                    <TabsList className="grid h-14 w-full grid-cols-3 rounded-[10px] border border-[#EDEEEF] bg-[#F6F6F9] p-1 shadow-inner shadow-black/[0.02]">
-                        <TabsTrigger value="chatgpt" className="h-12 gap-2 rounded-[8px] border border-transparent px-4 text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#D9D6FE] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
-                            <Image src="/providers/openai.png" alt="" width={16} height={16} className="object-contain" />
-                            ChatGPT
-                        </TabsTrigger>
-                        <TabsTrigger value="local" className="h-12 gap-2 rounded-[8px] border border-transparent px-4 text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#D9D6FE] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
-                            <Laptop className="h-4 w-4" />
-                            Local
-                        </TabsTrigger>
-                        <TabsTrigger value="other" className="h-12 gap-2 rounded-[8px] border border-transparent px-4 text-sm font-semibold text-[#5F6062] transition-all hover:text-[#191919] data-[state=active]:border-[#D9D6FE] data-[state=active]:bg-white data-[state=active]:text-[#191919] data-[state=active]:shadow-[0_8px_24px_rgba(16,19,35,0.08)]">
-                            <Blocks className="h-4 w-4" />
-                            AI Providers
-                        </TabsTrigger>
-                    </TabsList>
-                    <p className="mt-3 text-xs leading-relaxed text-gray-500">
-                        {textProviderTab === "chatgpt"
-                            ? "Connect your ChatGPT account and choose a supported model."
-                            : textProviderTab === "local"
-                                ? "Run models on your machine with Ollama or LM Studio."
-                                : "Connect hosted AI providers using an API key or custom endpoint."}
-                    </p>
-                    <TabsContent value="chatgpt" className="mt-6">
-                        <CodexConfig
-                            codexModel={llmConfig.CODEX_MODEL || ''}
-                            onInputChange={(value, field) => {
-                                const normalizedField = field === 'codex_model' ? 'CODEX_MODEL' : field;
-                                setLlmConfig(prev => ({
-                                    ...prev,
-                                    [normalizedField]: value
-                                }));
-                            }}
-                            onAuthStatusChange={setChatGptAuthenticated}
-                        />
-                        {chatGptAuthenticated && (llmConfig.LLM === "codex" || llmConfig.LLM === "chatgpt") && (
-                            <div className="mt-5">
-                                <label className="mb-2 block text-sm font-medium text-gray-700">ChatGPT model</label>
-                                <Select
-                                    value={llmConfig.CODEX_MODEL || ""}
-                                    onValueChange={(value) => {
-                                        trackEvent(MixpanelEvent.Onboarding_Text_Model_Selected, {
-                                            provider: "codex",
-                                            model: value,
-                                            text_provider_tab: textProviderTab,
-                                        });
-                                        setLlmConfig(prev => ({ ...prev, CODEX_MODEL: value }));
-                                    }}
-                                >
-                                    <SelectTrigger className="h-12 w-full rounded-lg border-gray-300">
-                                        <SelectValue placeholder="Select a model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {CODEX_MODELS.map((model) => (
-                                            <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="local" className="mt-6">
-                        <div className="grid grid-cols-2 gap-3">
-                            {LOCAL_PROVIDERS.map((value) => {
-                                const provider = LLM_PROVIDERS[value];
-                                return (
-                                    <button
-                                        type="button"
-                                        key={value}
-                                        onClick={() => handleProviderChange(value)}
-                                        className={cn(
-                                            "flex items-center gap-3 rounded-xl border p-4 text-left transition-colors hover:bg-[#F7F6F9]",
-                                            llmConfig.LLM === value ? "border-[#7A5AF8] bg-[#F4F3FF]" : "border-[#EDEEEF]"
-                                        )}
-                                    >
-                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white border border-[#EDEEEF]">
-                                            {provider.icon ? <img src={provider.icon} alt="" className="h-7 w-7 object-contain" /> : <span className="font-semibold">LM</span>}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-[#191919]">{provider.label}</p>
-                                            <p className="mt-1 text-xs text-[#777]">{provider.description}</p>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="other" className="mt-6">
                 <div className="flex w-full max-w-[300px] flex-col items-start gap-4">
                     <div className="flex w-full flex-col justify-start">
 
@@ -1234,7 +683,7 @@ const PresentonMode = ({
                                 >
                                     <div className="flex gap-3 items-center">
                                         <span className="text-sm font-medium text-gray-900">
-                                            {llmConfig.LLM && OTHER_PROVIDER_VALUES.has(llmConfig.LLM)
+                                            {llmConfig.LLM && TEXT_PROVIDER_VALUES.has(llmConfig.LLM)
                                                 ? LLM_PROVIDERS[llmConfig.LLM]
                                                     ?.label || llmConfig.LLM
                                                 : "Select text provider"}
@@ -1253,7 +702,7 @@ const PresentonMode = ({
                                     <CommandList className='hide-scrollbar'>
                                         <CommandEmpty>No provider found.</CommandEmpty>
                                         <CommandGroup >
-                                            {OTHER_PROVIDERS.map(
+                                            {TEXT_PROVIDERS.map(
                                                 (provider, index) => (
                                                     <CommandItem
                                                         key={index}
@@ -1290,68 +739,39 @@ const PresentonMode = ({
                         </Popover>
                     </div>
                 </div>
-                    </TabsContent>
-                </Tabs>
-                {isActiveNonChatProvider && (
+                {isActiveTextProvider && (
                 <div className="mt-6 flex w-full max-w-[300px] flex-col items-start gap-4">
                     <div className="relative flex w-full flex-col justify-end items-start">
                         <div className="flex flex-col justify-start w-full ">
-                            {llmConfig.LLM === 'ollama' ? (
-                                <OllamaConfig
-                                    ollamaModel={llmConfig.OLLAMA_MODEL || ""}
-                                    ollamaUrl={currentOllamaUrl}
-                                    onInputChange={(value, field) => {
-                                        const normalizedField =
-                                            field === "ollama_url"
-                                                ? "OLLAMA_URL"
-                                                : field === "ollama_model"
-                                                    ? "OLLAMA_MODEL"
-                                                    : field;
-                                        if (typeof value !== "string") return;
-                                        setLlmConfig((prev) => ({
+                            <>
+                                <div className='flex items-center justify-between mb-2'>
+
+                                    <label className="block text-sm font-medium capitalize text-gray-700 ">
+                                        {providerApiKeyLabel}
+                                    </label>
+                                    {llmConfig.LLM && LLM_PROVIDERS[llmConfig.LLM!]?.getApiKeyUrl && <a href={LLM_PROVIDERS[llmConfig.LLM!]?.getApiKeyUrl || ""} target='_blank' className='text-[#666666] text-xs font-normal flex items-center gap-1'>Get API Key <ArrowUpRight className='w-3.5 h-3.5' /></a>}
+                                </div>
+
+                                <div className="relative">
+                                    <input
+                                        type={showApiKey ? 'text' : 'password'}
+                                        value={currentApiKey}
+                                        onChange={(e) => setLlmConfig(prev => ({
                                             ...prev,
-                                            [normalizedField]: value,
-                                        }));
-                                    }}
-                                />
-                            ) : llmConfig.LLM === 'bedrock' ? (
-                                <BedrockManualFields
-                                    llmConfig={llmConfig}
-                                    onPatch={(patch) => {
-                                        setLlmConfig((prev) => ({ ...prev, ...patch }));
-                                    }}
-                                />
-                            ) : (
-                                <>
-                                    <div className='flex items-center justify-between mb-2'>
-
-                                        <label className="block text-sm font-medium capitalize text-gray-700 ">
-                                            {providerApiKeyLabel}
-                                        </label>
-                                        {llmConfig.LLM && LLM_PROVIDERS[llmConfig.LLM!]?.getApiKeyUrl && <a href={LLM_PROVIDERS[llmConfig.LLM!]?.getApiKeyUrl || ""} target='_blank' className='text-[#666666] text-xs font-normal flex items-center gap-1'>Get API Key <ArrowUpRight className='w-3.5 h-3.5' /></a>}
-                                    </div>
-
-                                    <div className="relative">
-                                        <input
-                                            type={showApiKey ? 'text' : 'password'}
-                                            value={currentApiKey}
-                                            onChange={(e) => setLlmConfig(prev => ({
-                                                ...prev,
-                                                [currentApiKeyField]: e.target.value
-                                            }))}
-                                            className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                            placeholder={`Enter your ${providerApiKeyLabel}`}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowApiKey((prev) => !prev)}
-                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
-                                        >
-                                            {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                                            [currentApiKeyField]: e.target.value
+                                        }))}
+                                        className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                        placeholder={`Enter your ${providerApiKeyLabel}`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowApiKey((prev) => !prev)}
+                                        className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
+                                    >
+                                        {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
+                                    </button>
+                                </div>
+                            </>
                             {llmConfig.LLM === 'custom' && (
                                 <input
                                     type="text"
@@ -1364,149 +784,18 @@ const PresentonMode = ({
                                     placeholder="OpenAI-compatible URL"
                                 />
                             )}
-                            {llmConfig.LLM === 'deepseek' && (
-                                <Collapsible
-                                    open={deepseekAdvancedOpen}
-                                    onOpenChange={setDeepseekAdvancedOpen}
-                                    className="mt-3"
-                                >
-                                    <CollapsibleTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-gray-200 bg-[#F9F9FA] px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-100"
-                                        >
-                                            <span>Advanced settings</span>
-                                            <ChevronDown
-                                                className={cn(
-                                                    "h-4 w-4 shrink-0 text-gray-600 transition-transform duration-200",
-                                                    deepseekAdvancedOpen && "rotate-180"
-                                                )}
-                                                aria-hidden
-                                            />
-                                        </button>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent className="space-y-3 overflow-hidden">
-                                        <div className="space-y-1.5 border-t border-gray-100 pt-3">
-                                            <label className="block text-sm font-medium text-gray-700">
-                                                DeepSeek base URL (optional)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={llmConfig.DEEPSEEK_BASE_URL || ''}
-                                                onChange={(e) => setLlmConfig(prev => ({
-                                                    ...prev,
-                                                    DEEPSEEK_BASE_URL: e.target.value
-                                                }))}
-                                                className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                placeholder="https://api.deepseek.com/v1"
-                                            />
-                                        </div>
-                                    </CollapsibleContent>
-                                </Collapsible>
-                            )}
-                            {llmConfig.LLM === 'litellm' && (
-                                <>
-                                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                                        LiteLLM base URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={llmConfig.LITELLM_BASE_URL || ''}
-                                        onChange={(e) => setLlmConfig(prev => ({
-                                            ...prev,
-                                            LITELLM_BASE_URL: e.target.value
-                                        }))}
-                                        className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                        placeholder="e.g. http://host.docker.internal:4000/v1"
-                                    />
-                                    <p className="mt-1.5 text-xs text-gray-500">
-                                        OpenAI-compatible root (usually ends with /v1); /v1 is added if omitted. API key above is optional for local proxies with no auth.
-                                    </p>
-                                </>
-                            )}
-                            {llmConfig.LLM === 'lmstudio' && (
-                                <>
-                                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                                        LM Studio base URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={llmConfig.LMSTUDIO_BASE_URL || ''}
-                                        onChange={(e) => setLlmConfig(prev => ({
-                                            ...prev,
-                                            LMSTUDIO_BASE_URL: e.target.value
-                                        }))}
-                                        className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                        placeholder="http://localhost:1234/v1"
-                                    />
-                                    <p className="mt-1.5 text-xs text-gray-500">
-                                        Defaults to localhost:1234/v1, and /v1 is added automatically when omitted.
-                                    </p>
-                                </>
-                            )}
-                            {llmConfig.LLM === 'fireworks' && (
-                                <>
-                                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                                        Fireworks base URL (optional)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={llmConfig.FIREWORKS_BASE_URL || ''}
-                                        onChange={(e) => setLlmConfig(prev => ({
-                                            ...prev,
-                                            FIREWORKS_BASE_URL: e.target.value
-                                        }))}
-                                        className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                        placeholder="https://api.fireworks.ai/inference/v1"
-                                    />
-                                </>
-                            )}
-                            {llmConfig.LLM === 'together' && (
-                                <>
-                                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                                        Together base URL (optional)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={llmConfig.TOGETHER_BASE_URL || ''}
-                                        onChange={(e) => setLlmConfig(prev => ({
-                                            ...prev,
-                                            TOGETHER_BASE_URL: e.target.value
-                                        }))}
-                                        className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                        placeholder="https://api.together.ai/v1"
-                                    />
-                                </>
-                            )}
-                            {(llmConfig.LLM === 'vertex' || llmConfig.LLM === 'azure') && (
-                                <VertexAzureManualFields
-                                    key={llmConfig.LLM}
-                                    provider={llmConfig.LLM === 'vertex' ? 'vertex' : 'azure'}
-                                    llmConfig={llmConfig}
-                                    onPatch={(patch) => {
-                                        setLlmConfig((prev) => ({ ...prev, ...patch }));
-                                    }}
-                                />
-                            )}
                         </div>
 
 
-                        {!isManualModelProvider && llmConfig.LLM !== 'chatgpt' && llmConfig.LLM !== 'codex' && llmConfig.LLM !== 'ollama' && (!modelsChecked || availableModels.length === 0) && (
+                        {(!modelsChecked || availableModels.length === 0) && (
 
                             <button
                                 onClick={fetchAvailableModels}
                                 disabled={
                                     modelsLoading ||
                                     (llmConfig.LLM === 'openai' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'deepseek' && !currentApiKey) ||
                                     (llmConfig.LLM === 'google' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'anthropic' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'openrouter' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'fireworks' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'together' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'cerebras' && !currentApiKey) ||
-                                    (llmConfig.LLM === 'custom' && !llmConfig.CUSTOM_LLM_URL) ||
-                                    (llmConfig.LLM === 'litellm' && !currentLitellmUrl)
+                                    (llmConfig.LLM === 'custom' && !llmConfig.CUSTOM_LLM_URL)
                                 }
                                 className={`mt-4 py-2.5 bg-[#EDEEEF] disabled:opacity-50 disabled:cursor-not-allowed px-3.5 w-full  rounded-[48px] text-xs font-semibold text-[#101323] transition-all duration-200 border ${modelsLoading
                                     ? " border-gray-300 cursor-not-allowed text-gray-500"
@@ -1531,7 +820,7 @@ const PresentonMode = ({
 
 
                     {/* Model Selection - only show if models are available */}
-                    {isActiveNonChatProvider && !isManualModelProvider && llmConfig.LLM !== 'ollama' && modelsChecked && availableModels.length > 0 && (
+                    {isActiveTextProvider && modelsChecked && availableModels.length > 0 && (
                         <div className="w-full">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1540,12 +829,7 @@ const PresentonMode = ({
                                 <div className="w-full">
                                     <Popover
                                         open={openModelSelect}
-                                        onOpenChange={(open) => {
-                                            setOpenModelSelect(open);
-                                            if (open && llmConfig.LLM === "ollama") {
-                                                void fetchAvailableModels();
-                                            }
-                                        }}
+                                        onOpenChange={setOpenModelSelect}
                                     >
                                         <PopoverTrigger asChild>
                                             <Button
@@ -1585,7 +869,6 @@ const PresentonMode = ({
                                                                         trackEvent(MixpanelEvent.Onboarding_Text_Model_Selected, {
                                                                             provider: llmConfig.LLM || "",
                                                                             model: value,
-                                                                            text_provider_tab: textProviderTab,
                                                                         });
                                                                         setLlmConfig(prev => ({
                                                                             ...prev,
@@ -1809,9 +1092,7 @@ const PresentonMode = ({
                     onClick={handleContinue}
                     className='border font-syne border-[#EDEEEF] bg-[#7C51F8]  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
                     {providerStep === 1
-                        ? llmConfig.LLM === "presenton"
-                            ? "Continue with Presenton"
-                            : "Continue to image provider"
+                        ? "Continue to image provider"
                         : providerStep === 2
                             ? llmConfig.DISABLE_IMAGE_GENERATION ? "Disable image generation & Continue" : "Continue to web search"
                             : llmConfig.WEB_GROUNDING ? "Save & Finish" : "Disable web search & Finish"}

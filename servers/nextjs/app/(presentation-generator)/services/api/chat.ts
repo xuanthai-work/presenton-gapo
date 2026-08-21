@@ -1,11 +1,6 @@
 import { buildAbsoluteApiRequestUrl, getApiUrl } from "@/utils/api";
 import { ApiResponseHandler } from "./api-error-handler";
 import { getHeader } from "./header";
-import {
-  isChatGptAuthRequiredMessage,
-  normalizeChatGptAuthMessage,
-  requestChatGptReauth,
-} from "@/utils/chatgptAuth";
 
 export interface ChatAttachment {
   type: "document";
@@ -205,14 +200,6 @@ async function streamChatMessage(
         typeof detail === "string" && detail.trim().length > 0
           ? detail
           : "Chat stream failed";
-      if (isChatGptAuthRequiredMessage(message)) {
-        const authMessage = normalizeChatGptAuthMessage(message);
-        requestChatGptReauth({
-          message: authMessage,
-          source: "chat-stream",
-        });
-        throw new Error(authMessage);
-      }
       throw new Error(message);
     }
 

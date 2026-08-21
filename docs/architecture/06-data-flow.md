@@ -187,7 +187,7 @@ sequenceDiagram
     actor User
     participant N as NextJS<br/>(/login)
     participant F as FastAPI<br/>/api/v1/auth
-    participant Oauth as OAuth provider<br/>(Google / OpenAI Codex / ...)
+    participant Oauth as OAuth provider<br/>(Google / ...)
     participant DB as SQLite
 
     User->>N: Click "Login with X"

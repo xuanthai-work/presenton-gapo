@@ -22,7 +22,7 @@ graph TB
     Components --> SlideEditor["slide-editor/"]
     Components --> Runtime["runtime/<br/>(TailwindBrowserRuntime)"]
     Components --> Ui["ui/<br/>(shadcn components)"]
-    Components --> Features["Header, Auth, OnBoarding,<br/>LLMSelection, OllamaConfig, ..."]
+    Components --> Features["Header, Auth, OnBoarding,<br/>LLMSelection, ..."]
 
     Lib --> ServerHelpers["compile-template-schema,<br/>fastapi-internal,<br/>server-template-layouts,<br/>server-auth-role,<br/>template-v2-json-to-html,<br/>user-config-store, ..."]
 ```
@@ -184,7 +184,7 @@ shadcn-style components:
 | `ToolTip.tsx` | Tooltip wrapper |
 | `BackBtn.tsx` | Back button |
 | `LLMSelection.tsx` | Chọn LLM provider |
-| `AnthropicConfig.tsx`, `OpenAIConfig.tsx`, `GoogleConfig.tsx`, `OllamaConfig.tsx`, `BedrockManualFields.tsx`, `VertexAzureManualFields.tsx`, `CodexConfig.tsx`, `CustomConfig.tsx`, `OpenAICompatibleImageFields.tsx` | Provider-specific config UI |
+| `OpenAIConfig.tsx`, `GoogleConfig.tsx`, `CustomConfig.tsx`, `OpenAICompatibleImageFields.tsx` | Provider-specific config UI |
 | `ImageSelectionConfig.tsx` | Image gen provider |
 | `ChatGptAuthRedirectHandler.tsx` | OAuth callback |
 | `ConfigurationInitializer.tsx` | Init config khi load page |
@@ -245,7 +245,6 @@ Server-side helpers chỉ chạy trên server (NextJS server components):
 | `auth.ts`, `serverAuth.ts`, `authErrors.ts` | Auth helpers |
 | `analytics.ts`, `mixpanel.ts` | Analytics |
 | `chatgptAuth.ts` | ChatGPT OAuth client |
-| `codexModels.ts` | Codex models |
 | `constant.ts` | Constants |
 | `error_helpers.ts` | Error helpers |
 | `image-url-converter.ts` | Image URL convert |

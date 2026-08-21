@@ -4,7 +4,6 @@ import re
 import time
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse, urlunparse
 
 import aiohttp
 from fastapi import HTTPException
@@ -14,8 +13,6 @@ from enums.web_search_provider import WebSearchProvider
 from utils.get_env import (
     get_brave_search_api_key_env,
     get_exa_api_key_env,
-    get_searxng_base_url_env,
-    get_serper_api_key_env,
     get_tavily_api_key_env,
     get_web_search_max_results_env,
     get_web_search_provider_env,
@@ -25,7 +22,7 @@ from utils.llm_provider import get_llm_provider
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_RESULTS = 5
 NATIVE_WEB_SEARCH_PROVIDERS = frozenset(
-    {LLMProvider.OPENAI, LLMProvider.GOOGLE, LLMProvider.ANTHROPIC}
+    {LLMProvider.OPENAI, LLMProvider.GOOGLE}
 )
 
 
@@ -120,16 +117,12 @@ async def search_web(query: str, max_results: int | None = None) -> list[WebSear
             timeout=aiohttp.ClientTimeout(total=15),
             headers={"User-Agent": "Presenton/1.0"},
         ) as session:
-            if provider == WebSearchProvider.SEARXNG:
-                results = await _search_searxng(session, query, limit)
-            elif provider == WebSearchProvider.TAVILY:
+            if provider == WebSearchProvider.TAVILY:
                 results = await _search_tavily(session, query, limit)
             elif provider == WebSearchProvider.EXA:
                 results = await _search_exa(session, query, limit)
             elif provider == WebSearchProvider.BRAVE:
                 results = await _search_brave(session, query, limit)
-            elif provider == WebSearchProvider.SERPER:
-                results = await _search_serper(session, query, limit)
             else:
                 raise HTTPException(
                     status_code=400,
@@ -206,49 +199,12 @@ def _required(value: str | None, label: str) -> str:
     raise HTTPException(status_code=400, detail=f"{label} is not configured")
 
 
-def _get_searxng_search_url() -> str:
-    configured_url = _required(get_searxng_base_url_env(), "SEARXNG_BASE_URL")
-    parsed = urlparse(configured_url)
-    path = parsed.path.rstrip("/")
-    if not path.endswith("/search"):
-        path = f"{path}/search"
-    return urlunparse(parsed._replace(path=path, params="", query="", fragment=""))
-
-
-def _redact_url_credentials(value: str) -> str:
-    parsed = urlparse(value)
-    if not parsed.username and not parsed.password:
-        return value
-    hostname = parsed.hostname or ""
-    if parsed.port:
-        hostname = f"{hostname}:{parsed.port}"
-    return urlunparse(parsed._replace(netloc=f"***:***@{hostname}"))
-
-
 async def _json_response(response: aiohttp.ClientResponse) -> dict[str, Any]:
     if response.status >= 400:
         detail = (await response.text())[:500]
         raise HTTPException(response.status, detail=f"Web search request failed: {detail}")
     payload = await response.json(content_type=None)
     return payload if isinstance(payload, dict) else {}
-
-
-async def _search_searxng(session: aiohttp.ClientSession, query: str, limit: int) -> list[WebSearchResult]:
-    search_url = _get_searxng_search_url()
-    LOGGER.info(
-        "Using SearXNG instance: search_url=%s",
-        _redact_url_credentials(search_url),
-    )
-    async with session.get(
-        search_url,
-        params={"q": query, "format": "json"},
-    ) as response:
-        payload = await _json_response(response)
-    return [
-        WebSearchResult(_clean_text(item.get("title")), str(item.get("url") or ""), _clean_text(item.get("content")))
-        for item in payload.get("results", [])[:limit]
-        if item.get("title") and item.get("url")
-    ]
 
 
 async def _search_tavily(session: aiohttp.ClientSession, query: str, limit: int) -> list[WebSearchResult]:
@@ -311,19 +267,4 @@ async def _search_brave(session: aiohttp.ClientSession, query: str, limit: int) 
         WebSearchResult(_clean_text(item.get("title")), str(item.get("url") or ""), _clean_text(item.get("description")))
         for item in payload.get("web", {}).get("results", [])[:limit]
         if item.get("title") and item.get("url")
-    ]
-
-
-async def _search_serper(session: aiohttp.ClientSession, query: str, limit: int) -> list[WebSearchResult]:
-    api_key = _required(get_serper_api_key_env(), "SERPER_API_KEY")
-    async with session.post(
-        "https://google.serper.dev/search",
-        json={"q": query, "num": limit},
-        headers={"X-API-KEY": api_key},
-    ) as response:
-        payload = await _json_response(response)
-    return [
-        WebSearchResult(_clean_text(item.get("title")), str(item.get("link") or ""), _clean_text(item.get("snippet")))
-        for item in payload.get("organic", [])[:limit]
-        if item.get("title") and item.get("link")
     ]

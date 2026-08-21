@@ -46,11 +46,9 @@ class OutlineGenerationStatus:
 
 def _web_search_provider_display_name(provider_name: str) -> str:
     return {
-        "searxng": "SearXNG",
         "tavily": "Tavily",
         "exa": "Exa",
         "brave": "Brave",
-        "serper": "Serper",
         "model-native": "model-native web search",
     }.get(provider_name, provider_name)
 

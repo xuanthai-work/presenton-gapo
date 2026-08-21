@@ -20,7 +20,6 @@ from models.sql.chat_history_message import ChatHistoryMessageModel  # noqa: F40
 from models.sql.font_upload import FontUpload  # noqa: F401, E402
 from models.sql.image_asset import ImageAsset  # noqa: F401, E402
 from models.sql.key_value import KeyValueSqlModel  # noqa: F401, E402
-from models.sql.ollama_pull_status import OllamaPullStatus  # noqa: F401, E402
 from models.sql.presentation import PresentationModel  # noqa: F401, E402
 from models.sql.presentation_layout_code import (  # noqa: F401, E402
     PresentationLayoutCodeModel,

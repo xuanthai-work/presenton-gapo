@@ -26,10 +26,8 @@ def _sample_function_tools() -> list[Tool]:
     [
         (LLMProvider.OPENAI, "auto"),
         (LLMProvider.OPENAI, "native"),
-        (LLMProvider.ANTHROPIC, "auto"),
         (LLMProvider.GOOGLE, "auto"),
-        (LLMProvider.VERTEX, "auto"),
-        (LLMProvider.CUSTOM, "searxng"),
+        (LLMProvider.CUSTOM, "tavily"),
     ],
 )
 def test_build_chat_llm_tools_returns_only_function_tools(
@@ -52,7 +50,7 @@ def test_build_chat_llm_tools_returns_only_function_tools(
     [
         (LLMProvider.OPENAI, "auto"),
         (LLMProvider.OPENAI, "native"),
-        (LLMProvider.CUSTOM, "searxng"),
+        (LLMProvider.CUSTOM, "tavily"),
         (LLMProvider.GOOGLE, "auto"),
     ],
 )
@@ -63,7 +61,7 @@ def test_chat_tool_definitions_do_not_expose_web_search(
 ):
     monkeypatch.setenv("LLM", provider.value)
     monkeypatch.setenv("WEB_SEARCH_PROVIDER", web_search_provider)
-    monkeypatch.setenv("SEARXNG_BASE_URL", "http://127.0.0.1:8080")
+    monkeypatch.setenv("TAVILY_API_KEY", "test-key")
 
     tools = ChatTools(Mock()).get_tool_definitions()
 

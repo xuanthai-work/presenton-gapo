@@ -8,7 +8,6 @@ import {
   getLLMConfigValidationError,
   handleSaveLLMConfig,
 } from "@/utils/storeHelpers";
-import { isOllamaModelAvailable } from "@/utils/providerUtils";
 import { useRouter, usePathname } from "next/navigation";
 import { LLMConfig } from "@/types/llm_config";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
@@ -22,16 +21,9 @@ import {
   LLM_PROVIDERS,
   WEB_SEARCH_PROVIDERS,
 } from "@/utils/providerConstants";
-import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import { getApiUrl } from "@/utils/api";
 import LogoutButton from "@/components/Auth/LogoutButton";
 import AdminPanel from "../admin/AdminPanel";
-import {
-  CHATGPT_AUTH_REQUIRED_EVENT,
-  requestChatGptReauth,
-} from "@/utils/chatgptAuth";
-
-const STOCK_IMAGE_PROVIDERS = new Set(["pexels", "pixabay"]);
 
 // Button state interface
 interface ButtonState {
@@ -73,17 +65,6 @@ const SettingsPage = () => {
     setLlmConfig(userConfigState.llm_config);
   }, [userConfigState.llm_config]);
 
-  useEffect(() => {
-    const handleChatGptReauth = () => {
-      setSelectedProvider("text-provider");
-    };
-
-    window.addEventListener(CHATGPT_AUTH_REQUIRED_EVENT, handleChatGptReauth);
-    return () => {
-      window.removeEventListener(CHATGPT_AUTH_REQUIRED_EVENT, handleChatGptReauth);
-    };
-  }, []);
-
   const selectSettingsSection = (section: SettingsSection) => {
     trackEvent(MixpanelEvent.Settings_Tab_Switched, {
       from_section: selectedProvider,
@@ -100,53 +81,6 @@ const SettingsPage = () => {
     });
   }, [selectedProvider, llmConfig.DISABLE_IMAGE_GENERATION, llmConfig.WEB_GROUNDING]);
 
-  const ensureSelectedStockProviderReady = async (): Promise<boolean> => {
-    if (llmConfig.LLM === "presenton" || llmConfig.DISABLE_IMAGE_GENERATION) {
-      return true;
-    }
-
-    const provider = (llmConfig.IMAGE_PROVIDER || "").toLowerCase();
-    if (!STOCK_IMAGE_PROVIDERS.has(provider)) {
-      return true;
-    }
-
-    const providerApiKey =
-      provider === "pexels" ? llmConfig.PEXELS_API_KEY : llmConfig.PIXABAY_API_KEY;
-
-    try {
-      await ImagesApi.searchStockImages("business", 1, {
-        provider,
-        apiKey: providerApiKey,
-        strictApiKey: true,
-      });
-      return true;
-    } catch (error: any) {
-      notify.error(
-        "Cannot save settings",
-        error?.message ||
-        `Unable to reach ${provider} with the provided API key. Please verify your settings and try again.`
-      );
-      return false;
-    }
-  };
-
-
-  const checkCurrentAuthStatus = async () => {
-    try {
-      const res = await fetch(getApiUrl("/api/v1/ppt/codex/auth/status"));
-      if (!res.ok) {
-        return false;
-      }
-      const data = await res.json();
-      if (data.status === "authenticated") {
-        return true;
-      } else {
-        return false;
-      }
-    } catch {
-      return false;
-    }
-  };
   const checkPresentonAuthStatus = async () => {
     try {
       const response = await fetch(
@@ -165,16 +99,6 @@ const SettingsPage = () => {
   };
   const handleSaveConfig = async () => {
 
-    if (llmConfig.LLM === 'codex') {
-      const isAuthenticated = await checkCurrentAuthStatus();
-      if (!isAuthenticated) {
-        requestChatGptReauth({
-          message: "Please sign in to ChatGPT again from Settings.",
-          source: "settings-save",
-        });
-        return;
-      }
-    }
     if (llmConfig.LLM === "presenton") {
       const isConnected = await checkPresentonAuthStatus();
       if (!isConnected) {
@@ -194,16 +118,10 @@ const SettingsPage = () => {
       notify.warning("Cannot save settings", validationError);
       if (
         selectedProvider === "image-provider" &&
-        ((llmConfig.LLM === "openai" && !String(llmConfig.OPENAI_MODEL || "").trim()) ||
-          (llmConfig.LLM === "deepseek" && !String(llmConfig.DEEPSEEK_MODEL || "").trim()))
+        ((llmConfig.LLM === "openai" && !String(llmConfig.OPENAI_MODEL || "").trim()))
       ) {
         setSelectedProvider("text-provider");
       }
-      return;
-    }
-
-    const providerReady = await ensureSelectedStockProviderReady();
-    if (!providerReady) {
       return;
     }
 
@@ -215,18 +133,6 @@ const SettingsPage = () => {
         text: "Saving Configuration...",
       }));
       trackEvent(MixpanelEvent.Settings_SaveConfiguration_API_Call);
-      if (
-        llmConfig.LLM === "ollama" &&
-        llmConfig.OLLAMA_MODEL &&
-        !(await isOllamaModelAvailable(
-          llmConfig.OLLAMA_MODEL,
-          llmConfig.OLLAMA_URL
-        ))
-      ) {
-        throw new Error(
-          `The selected model "${llmConfig.OLLAMA_MODEL}" is not available at ${llmConfig.OLLAMA_URL}. Check models and select an available model.`
-        );
-      }
       await handleSaveLLMConfig(llmConfig);
       notify.success(
         "Settings saved",
@@ -270,38 +176,12 @@ const SettingsPage = () => {
     textProviderKey === "presenton"
       ? ""
       : textProviderKey === "openai"
-      ? llmConfig.OPENAI_MODEL
-      : textProviderKey === "deepseek"
-        ? llmConfig.DEEPSEEK_MODEL
-      : textProviderKey === "google"
-        ? llmConfig.GOOGLE_MODEL
-        : textProviderKey === "vertex"
-          ? llmConfig.VERTEX_MODEL
-          : textProviderKey === "azure"
-            ? llmConfig.AZURE_OPENAI_MODEL
-          : textProviderKey === "bedrock"
-            ? llmConfig.BEDROCK_MODEL
-            : textProviderKey === "openrouter"
-              ? llmConfig.OPENROUTER_MODEL
-              : textProviderKey === "fireworks"
-                ? llmConfig.FIREWORKS_MODEL
-                : textProviderKey === "together"
-                  ? llmConfig.TOGETHER_MODEL
-              : textProviderKey === "cerebras"
-                ? llmConfig.CEREBRAS_MODEL
-                : textProviderKey === "litellm"
-                    ? llmConfig.LITELLM_MODEL
-                    : textProviderKey === "lmstudio"
-                      ? llmConfig.LMSTUDIO_MODEL
-                    : textProviderKey === "anthropic"
-                      ? llmConfig.ANTHROPIC_MODEL
-                      : textProviderKey === "ollama"
-                        ? llmConfig.OLLAMA_MODEL
-                        : textProviderKey === "custom"
-                          ? llmConfig.CUSTOM_MODEL
-                          : textProviderKey === "codex"
-                            ? llmConfig.CODEX_MODEL
-                            : "";
+        ? llmConfig.OPENAI_MODEL
+        : textProviderKey === "google"
+          ? llmConfig.GOOGLE_MODEL
+          : textProviderKey === "custom"
+            ? llmConfig.CUSTOM_MODEL
+            : "";
   const textSummary = selectedTextModel
     ? `${textProviderLabel} (${selectedTextModel})`
     : textProviderLabel;
@@ -334,22 +214,8 @@ const SettingsPage = () => {
   useEffect(() => {
 
     if (
-      (llmConfig.LLM === "codex" && !llmConfig.CODEX_MODEL) ||
       (llmConfig.LLM === "openai" && !llmConfig.OPENAI_MODEL) ||
-      (llmConfig.LLM === "deepseek" && !llmConfig.DEEPSEEK_MODEL) ||
       (llmConfig.LLM === "google" && !llmConfig.GOOGLE_MODEL) ||
-      (llmConfig.LLM === "vertex" && !llmConfig.VERTEX_MODEL) ||
-      (llmConfig.LLM === "azure" && !llmConfig.AZURE_OPENAI_MODEL) ||
-      (llmConfig.LLM === "bedrock" && !llmConfig.BEDROCK_MODEL) ||
-      (llmConfig.LLM === "openrouter" && !llmConfig.OPENROUTER_MODEL) ||
-      (llmConfig.LLM === "fireworks" && !llmConfig.FIREWORKS_MODEL) ||
-      (llmConfig.LLM === "together" && !llmConfig.TOGETHER_MODEL) ||
-      (llmConfig.LLM === "cerebras" && !llmConfig.CEREBRAS_MODEL) ||
-      (llmConfig.LLM === "litellm" && !llmConfig.LITELLM_MODEL) ||
-      (llmConfig.LLM === "lmstudio" && !llmConfig.LMSTUDIO_MODEL) ||
-      (llmConfig.LLM === "anthropic" && !llmConfig.ANTHROPIC_MODEL) ||
-      (llmConfig.LLM === "ollama" &&
-        (!llmConfig.OLLAMA_URL?.trim() || !llmConfig.OLLAMA_MODEL)) ||
       (llmConfig.LLM === "custom" && !llmConfig.CUSTOM_MODEL)
     ) {
       const currentUrl = window.location.href;

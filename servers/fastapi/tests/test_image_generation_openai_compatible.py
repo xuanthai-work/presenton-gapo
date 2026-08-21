@@ -23,28 +23,13 @@ class TestImageGenerationOpenAICompatible:
             "services.image_generation_service.is_openai_compatible_selected",
             return_value=True,
         ), patch(
-            "services.image_generation_service.is_pixabay_selected",
-            return_value=False,
-        ), patch(
-            "services.image_generation_service.is_pixels_selected",
-            return_value=False,
-        ), patch(
             "services.image_generation_service.is_gemini_flash_selected",
             return_value=False,
         ), patch(
             "services.image_generation_service.is_nanobanana_pro_selected",
             return_value=False,
         ), patch(
-            "services.image_generation_service.is_dalle3_selected",
-            return_value=False,
-        ), patch(
             "services.image_generation_service.is_gpt_image_1_5_selected",
-            return_value=False,
-        ), patch(
-            "services.image_generation_service.is_comfyui_selected",
-            return_value=False,
-        ), patch(
-            "services.image_generation_service.is_open_webui_selected",
             return_value=False,
         ):
             service = ImageGenerationService(mock_images_directory)

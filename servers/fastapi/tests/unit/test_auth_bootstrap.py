@@ -57,7 +57,7 @@ def test_reset_auth_recovers_admin_without_replacing_account(
                 session.add(admin)
                 await session.flush()
                 original_id = admin.id
-                session.add(AccessToken(token="sk-presenton-old", user_id=admin.id))
+                session.add(AccessToken(token="sk-test-old", user_id=admin.id))
                 await session.commit()
 
             async def skip_ownership_backfill(_session, _admin):

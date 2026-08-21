@@ -21,23 +21,17 @@ function selectedTextModel(config: LLMConfig): string {
     switch (config.LLM) {
         case "openai":
             return config.OPENAI_MODEL || "";
-        case "azure":
-            return config.AZURE_OPENAI_MODEL || "";
-        case "openrouter":
-            return config.OPENROUTER_MODEL || "";
-        case "anthropic":
-            return config.ANTHROPIC_MODEL || "";
-        case "bedrock":
-            return config.BEDROCK_MODEL || "";
-        case "codex":
-            return config.CODEX_MODEL || "";
+        case "google":
+            return config.GOOGLE_MODEL || "";
+        case "custom":
+            return config.CUSTOM_MODEL || "";
         default:
             return "";
     }
 }
 
 function normalizeModelName(model: string): string {
-    return model.trim().toLowerCase().split("/").pop()?.replace(/^.*anthropic\./, "") || "";
+    return model.trim().toLowerCase().split("/").pop() || "";
 }
 
 function matchesOpenAIModel(model: string, family: string): boolean {
@@ -45,13 +39,11 @@ function matchesOpenAIModel(model: string, family: string): boolean {
 }
 
 function isSotaTemplateModel(config: LLMConfig): boolean {
-    if (config.LLM === "presenton") return true;
-
     const model = normalizeModelName(selectedTextModel(config));
 
     if (!model) return false;
     if (OPENAI_SOTA_VISION_MODELS.some((family) => matchesOpenAIModel(model, family))) return true;
-    return model.includes("claude-") && (model.includes("opus") || model.includes("sonnet"));
+    return model.includes("gemini") && (model.includes("pro") || model.includes("flash"));
 }
 
 function hasDismissedNonSotaToast(): boolean {
@@ -75,7 +67,7 @@ export function showTemplateV2ModelWarningIfNeeded(config: LLMConfig) {
 
     notify.warning(
         "Template model warning",
-        "Template V2 works best with vision-capable models. Use a recent OpenAI vision model or Claude Opus/Sonnet for reliable template generation.",
+        "Template V2 works best with vision-capable models. Use a recent OpenAI vision model or a Gemini vision model for reliable template generation.",
         {
             id: NON_SOTA_TEMPLATE_TOAST_ID,
             duration: Infinity,

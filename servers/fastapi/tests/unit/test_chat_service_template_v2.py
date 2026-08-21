@@ -44,7 +44,7 @@ def test_chat_request_accepts_document_attachments():
         attachments=[
             ChatAttachment(
                 name="brief.pdf",
-                file_path="/tmp/presenton/upload/brief.pdf",
+                file_path="/tmp/upload/brief.pdf",
                 mime_type="application/pdf",
             )
         ],
@@ -56,7 +56,7 @@ def test_chat_request_accepts_document_attachments():
 
 
 def test_chat_attachment_intent_parses_document_content_requests():
-    attachment = ChatAttachment(name="brief.pdf", file_path="/tmp/presenton/brief.pdf")
+    attachment = ChatAttachment(name="brief.pdf", file_path="/tmp/brief.pdf")
 
     assert PresentationChatService._should_parse_attachments(
         "Read this PDF and add new slides from it.",
@@ -70,7 +70,7 @@ def test_chat_attachment_intent_parses_document_content_requests():
 
 
 def test_chat_attachment_intent_skips_direct_file_placement_requests():
-    attachment = ChatAttachment(name="brief.pdf", file_path="/tmp/presenton/brief.pdf")
+    attachment = ChatAttachment(name="brief.pdf", file_path="/tmp/brief.pdf")
 
     assert not PresentationChatService._should_parse_attachments(
         "Place it somewhere on slide 2.",

@@ -52,7 +52,7 @@ flowchart TB
     subgraph Data["Data + Assets"]
         AppData["📁 app_data<br/>(uploads / exports / templates / fonts)"]
         SQLite["🗄️ SQLite / Alembic migrations"]
-        ExternalLLM["☁️ External LLM<br/>(OpenAI / Anthropic / Gemini /<br/>Vertex / Bedrock / Ollama / ...)"]
+        ExternalLLM["☁️ External LLM<br/>(OpenAI / Gemini /<br/>OpenAI-compatible / ...)"]
     end
 
     Browser -->|HTTPS| Nginx

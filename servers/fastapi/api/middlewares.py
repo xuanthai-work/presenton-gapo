@@ -97,14 +97,9 @@ class SessionAuthMiddleware(BaseHTTPMiddleware):
             admin_only = (
                 path.startswith("/api/v1/admin/")
                 or path.startswith("/api/v1/auth/token/")
-                or path.startswith("/api/v1/ppt/codex/auth/")
                 or (
                     path.startswith("/api/v1/ppt/fonts/")
                     and request.method in {"POST", "DELETE"}
-                )
-                or (
-                    path == "/api/v1/ppt/ollama/models/pull"
-                    and request.method == "POST"
                 )
             )
             if admin_only and (principal.method != "jwt" or not principal.is_admin):

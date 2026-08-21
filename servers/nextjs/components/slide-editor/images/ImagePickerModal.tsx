@@ -10,14 +10,12 @@ import {
   Loader2,
   Minus,
   Plus,
-  Search,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -42,7 +40,6 @@ type PickerImage = {
   url: string;
 };
 
-const STOCK_IMAGE_PROVIDERS = new Set(["pexels", "pixabay"]);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 function assetToPickerImage(
@@ -69,14 +66,6 @@ function dedupePickerImages(images: PickerImage[]) {
   });
 }
 
-function normalizedProvider(value: string | null | undefined) {
-  const provider = (value || "").trim().toLowerCase();
-  if (provider === "pixels" || provider === "pixel" || provider === "pexel") {
-    return "pexels";
-  }
-  return provider;
-}
-
 export function ImagePickerModal({
   currentImage,
   initialPrompt,
@@ -91,8 +80,7 @@ export function ImagePickerModal({
   onSelect: (url: string, prompt?: string) => void;
 }) {
   const llmConfig = useSelector((state: RootState) => state.userConfig.llm_config);
-  const provider = normalizedProvider(llmConfig?.IMAGE_PROVIDER);
-  const stockProvider = STOCK_IMAGE_PROVIDERS.has(provider) ? provider : null;
+  const provider = (llmConfig?.IMAGE_PROVIDER || "").trim().toLowerCase();
   const providerLabel = IMAGE_PROVIDERS[provider]?.label ?? "AI image provider";
   const generationDisabled = Boolean(llmConfig?.DISABLE_IMAGE_GENERATION);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -108,11 +96,6 @@ export function ImagePickerModal({
   const [error, setError] = useState<string | null>(null);
 
   const currentSource = resolveBackendAssetSource(currentImage || "");
-  const apiKey = useMemo(() => {
-    if (stockProvider === "pexels") return llmConfig?.PEXELS_API_KEY;
-    if (stockProvider === "pixabay") return llmConfig?.PIXABAY_API_KEY;
-    return undefined;
-  }, [llmConfig?.PEXELS_API_KEY, llmConfig?.PIXABAY_API_KEY, stockProvider]);
 
   useEffect(() => {
     if (!open) return;
@@ -126,7 +109,7 @@ export function ImagePickerModal({
   }, [initialPrompt, open, provider]);
 
   useEffect(() => {
-    if (!open || view !== "discover" || stockProvider) return;
+    if (!open || view !== "discover") return;
 
     let cancelled = false;
     setIsLoadingLibrary(true);
@@ -158,45 +141,7 @@ export function ImagePickerModal({
     return () => {
       cancelled = true;
     };
-  }, [open, stockProvider, view]);
-
-  useEffect(() => {
-    if (!open || view !== "discover" || !stockProvider) return;
-
-    let cancelled = false;
-    const starterQuery = (initialPrompt || "").trim() || "inspiration";
-    setIsLoadingLibrary(true);
-    setError(null);
-    ImagesApi.searchStockImages(starterQuery, 24, {
-      provider: stockProvider,
-      apiKey,
-    })
-      .then((urls) => {
-        if (cancelled) return;
-        setDiscoverImages(
-          urls.map((url) => ({ prompt: starterQuery, url })),
-        );
-        if (!urls.length) {
-          setError("No starter images found. Try searching for something else.");
-        }
-      })
-      .catch((loadError: unknown) => {
-        if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load starter stock images.",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingLibrary(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [apiKey, initialPrompt, open, stockProvider, view]);
+  }, [open, view]);
 
   useEffect(() => {
     if (!open || view !== "uploads" || isUploading) return;
@@ -237,31 +182,6 @@ export function ImagePickerModal({
     const prompt = image.prompt || (view === "discover" ? query.trim() : undefined);
     onSelect(image.url, prompt || undefined);
     onClose();
-  };
-
-  const searchStockImages = async () => {
-    if (!stockProvider || !query.trim()) return;
-    setIsWorking(true);
-    setError(null);
-    try {
-      const urls = await ImagesApi.searchStockImages(query.trim(), 24, {
-        provider: stockProvider,
-        apiKey,
-      });
-      setDiscoverImages(
-        urls.map((url) => ({ prompt: query.trim(), url })),
-      );
-      if (!urls.length) setError("No images found. Try different keywords.");
-    } catch (searchError: unknown) {
-      setDiscoverImages([]);
-      setError(
-        searchError instanceof Error
-          ? searchError.message
-          : "Stock image search failed.",
-      );
-    } finally {
-      setIsWorking(false);
-    }
   };
 
   const generateImages = async () => {
@@ -310,9 +230,8 @@ export function ImagePickerModal({
   };
 
   const runDiscover = () => {
-    if (!query.trim() || (generationDisabled && !stockProvider)) return;
-    if (stockProvider) void searchStockImages();
-    else void generateImages();
+    if (!query.trim() || generationDisabled) return;
+    void generateImages();
   };
 
   const uploadFile = async (file: File | undefined) => {
@@ -464,8 +383,7 @@ export function ImagePickerModal({
               >
                 {view === "discover" ? (
                   <DiscoverControls
-                    disabled={generationDisabled && !stockProvider}
-                    isStock={Boolean(stockProvider)}
+                    disabled={generationDisabled}
                     isWorking={isWorking || isLoadingLibrary}
                     providerLabel={providerLabel}
                     query={query}
@@ -488,18 +406,15 @@ export function ImagePickerModal({
 
                 <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
                   {isLoadingLibrary || isWorking ? (
-                    <ImageSkeletons compact={Boolean(stockProvider)} />
+                    <ImageSkeletons />
                   ) : view === "discover" ? (
                     <ImageResults
-                      compact={Boolean(stockProvider)}
                       currentSource={currentSource}
                       images={discoverImages}
                       emptyMessage={
-                        generationDisabled && !stockProvider
+                        generationDisabled
                           ? "Image generation is disabled in Settings."
-                          : stockProvider
-                            ? `Search ${providerLabel} for an image.`
-                            : "Generate images to see them here. Start by describing what you want to create above."
+                          : "Generate images to see them here. Start by describing what you want to create above."
                       }
                       onSelect={chooseImage}
                     />
@@ -570,7 +485,6 @@ function PickerNavButton({
 
 function DiscoverControls({
   disabled,
-  isStock,
   isWorking,
   providerLabel,
   query,
@@ -580,7 +494,6 @@ function DiscoverControls({
   onVariationChange,
 }: {
   disabled: boolean;
-  isStock: boolean;
   isWorking: boolean;
   providerLabel: string;
   query: string;
@@ -590,35 +503,6 @@ function DiscoverControls({
   onVariationChange: (delta: number) => void;
 }) {
   const canRun = query.trim().length > 0 && !isWorking && !disabled;
-
-  if (isStock) {
-    return (
-      <div className="flex h-[41px] flex-none gap-2.5" aria-label={`Search ${providerLabel}`}>
-        <label className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[8px] border border-[rgba(219,219,219,0.6)] bg-white px-2.5">
-          <Search className="size-3.5 flex-none" strokeWidth={1.8} aria-hidden="true" />
-          <textarea
-            autoFocus
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && canRun) onRun();
-            }}
-            placeholder="Search Image"
-            className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-normal outline-none placeholder:text-[#999]"
-          />
-        </label>
-        <button
-          type="button"
-          aria-label={`Search ${providerLabel}`}
-          onClick={onRun}
-          disabled={!canRun}
-          className="flex w-[132px] items-center justify-center rounded-[38.4px] bg-[#EDEEEF] px-[12.8px] py-2 text-[#191919] transition hover:bg-[#E1E1E5] disabled:cursor-not-allowed disabled:text-[#999]"
-        >
-          {isWorking ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-[76px] flex-none gap-2.5" aria-label={`Generate with ${providerLabel}`}>
@@ -672,10 +556,10 @@ function DiscoverControls({
   );
 }
 
-function ImageSkeletons({ compact = false }: { compact?: boolean }) {
+function ImageSkeletons() {
   return (
-    <div className={cn("grid grid-cols-2 gap-2.5", compact && "sm:grid-cols-3 lg:grid-cols-4")}>
-      {Array.from({ length: compact ? 12 : 6 }, (_, index) => (
+    <div className="grid grid-cols-2 gap-2.5">
+      {Array.from({ length: 6 }, (_, index) => (
         <div
           key={index}
           className="aspect-square animate-pulse rounded-[10px] bg-[#F6F6F9]"

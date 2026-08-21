@@ -6,7 +6,7 @@ import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { LLMConfig } from '@/types/llm_config'
 import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageFields'
-import { DALLE_3_QUALITY_OPTIONS, GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS } from '@/utils/providerConstants'
+import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS } from '@/utils/providerConstants'
 import { Check, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { MixpanelEvent, trackEvent } from '@/utils/mixpanel'
@@ -57,29 +57,6 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
     };
 
     const renderQualitySelector = (llmConfig: LLMConfig, input_field_changed: (value: string, field: string) => void) => {
-        if (llmConfig.IMAGE_PROVIDER === "dall-e-3") {
-            return (
-                <div className="w-[205px] mr-0 ml-auto">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        DALL·E 3 Image Quality
-                    </label>
-                    <div className="">
-                        <Select value={llmConfig.DALL_E_3_QUALITY || 'standard'} onValueChange={(value) => input_field_changed(value, "DALL_E_3_QUALITY")}>
-                            <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
-                                <SelectValue placeholder="Select a quality" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {DALLE_3_QUALITY_OPTIONS.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                    </div>
-                </div>
-            );
-        }
-
         if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
             return (
                 <div className="w-[205px]">
@@ -254,62 +231,6 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                 );
                                             }
 
-                                            // Show ComfyUI configuration
-                                            if (provider.value === "comfyui") {
-                                                return (
-                                                    <div className=" space-y-4">
-                                                        <div className='w-[205px]'>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                                ComfyUI Server URL
-                                                            </label>
-                                                            <div className="relative">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="http://192.168.1.7:8188"
-                                                                    className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                                    value={llmConfig.COMFYUI_URL || ""}
-                                                                    onChange={(e) => {
-                                                                        input_field_changed(
-                                                                            e.target.value,
-                                                                            "COMFYUI_URL"
-                                                                        );
-                                                                    }}
-                                                                />
-                                                            </div>
-
-                                                        </div>
-
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Show Open WebUI configuration
-                                            if (provider.value === "open_webui") {
-                                                return (
-                                                    <div className="space-y-4">
-                                                        <div className='w-[205px]'>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                                Open WebUI URL
-                                                            </label>
-                                                            <div className="relative">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="http://localhost:3000/api/v1"
-                                                                    className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                                    value={llmConfig.OPEN_WEBUI_IMAGE_URL || ""}
-                                                                    onChange={(e) => {
-                                                                        input_field_changed(
-                                                                            e.target.value,
-                                                                            "OPEN_WEBUI_IMAGE_URL"
-                                                                        );
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
                                             // Show API key input for other providers
                                             return (
                                                 <div className=" w-[205px]">
@@ -348,51 +269,6 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                         {!isImageGenerationDisabled && <div className='flex justify-end items-center mt-[18px]'>
 
                             {renderQualitySelector(llmConfig, input_field_changed)}
-                            {llmConfig.IMAGE_PROVIDER === "open_webui" && (
-                                <div className='w-[205px]'>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        API Key (optional)
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showApiKey ? 'text' : 'password'}
-                                            placeholder="API key"
-                                            className="w-full px-4 py-2.5 h-12 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                            value={llmConfig.OPEN_WEBUI_IMAGE_API_KEY || ""}
-                                            onChange={(e) => {
-                                                input_field_changed(e.target.value, "OPEN_WEBUI_IMAGE_API_KEY");
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowApiKey((prev) => !prev)}
-                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
-                                        >
-                                            {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                            {llmConfig.IMAGE_PROVIDER === "comfyui" && <div className='w-full'>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Workflow JSON
-                                </label>
-                                <div className="relative">
-                                    <textarea
-                                        placeholder='Paste your ComfyUI workflow JSON here (export via "Export (API)" in ComfyUI)'
-                                        className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono text-xs"
-                                        rows={3}
-                                        value={llmConfig.COMFYUI_WORKFLOW || ""}
-                                        onChange={(e) => {
-                                            input_field_changed(
-                                                e.target.value,
-                                                "COMFYUI_WORKFLOW"
-                                            );
-                                        }}
-                                    />
-                                </div>
-
-                            </div>}
                         </div>}
                     </div>
                 </div>
@@ -413,7 +289,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                 <label className="mb-2 block text-sm font-medium text-gray-700">Image model id</label>
                                 <input
                                     type="text"
-                                    placeholder="e.g. dall-e-3, gpt-image-1"
+                                    placeholder="e.g. gpt-image-1.5"
                                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                                     value={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
                                     onChange={(e) => {

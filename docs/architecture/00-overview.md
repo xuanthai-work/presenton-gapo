@@ -5,7 +5,7 @@
 Presenton là một **open-source AI Presentation Generator** (thay thế Gamma, Canva, Beautiful AI, Decktopus...). Cho phép:
 
 - Tạo presentation từ **prompt**, từ **document upload**, hoặc từ **PowerPoint template có sẵn**
-- Tùy chọn **AI provider**: OpenAI, Anthropic, Google Gemini, Vertex AI, Azure OpenAI, Amazon Bedrock, Fireworks, Together AI, **Ollama**, hoặc bất kỳ provider nào OpenAI-compatible
+- Tùy chọn **AI provider**: OpenAI, Google Gemini, hoặc bất kỳ provider nào OpenAI-compatible (self-host)
 - **Self-hosted** hoàn toàn (Docker / Desktop App)
 - **Editable PPTX export** — file xuất ra chỉnh sửa được trong PowerPoint
 - **REST API** đầy đủ
@@ -19,7 +19,7 @@ Presenton là một **open-source AI Presentation Generator** (thay thế Gamma,
 | Backend | **FastAPI** (Python) + SQLAlchemy + Alembic + Uvicorn |
 | Database | **SQLite** (mặc định) với Alembic migrations |
 | Auth | OAuth2 PKCE + session cookie + custom middleware |
-| AI Providers | OpenAI / Anthropic / Google / Vertex / Bedrock / Ollama / OpenAI-compatible |
+| AI Providers | OpenAI / Google / OpenAI-compatible (custom) |
 | Document Extraction | `@llamaindex/liteparse` |
 | Export runtime | Chromium-based (Playwright/Puppeteer) + Python (python-pptx) |
 | Reverse Proxy | Nginx |

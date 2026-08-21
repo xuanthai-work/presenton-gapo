@@ -273,7 +273,7 @@ def test_generate_ppt_outline_emits_provider_aware_external_search_statuses():
     ), patch.object(
         outline_module,
         "get_web_search_route",
-        return_value=("external", WebSearchProvider.SEARXNG),
+        return_value=("external", WebSearchProvider.TAVILY),
     ), patch.object(
         outline_module, "generate_web_search_query", return_value="current Nepal PM"
     ), patch.object(
@@ -300,7 +300,7 @@ def test_generate_ppt_outline_emits_provider_aware_external_search_statuses():
     ]
     assert statuses == [
         "Analyzing your topic for web research",
-        "Searching with SearXNG: current Nepal PM",
+        "Searching with Tavily: current Nepal PM",
         "Web research complete",
         "Drafting your presentation outline",
     ]

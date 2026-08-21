@@ -6,10 +6,6 @@ import { jsonrepair } from "jsonrepair";
 import { RootState } from "@/store/store";
 import { getApiUrl } from "@/utils/api";
 import { limitOutlines } from "@/utils/presentationLimits";
-import {
-  isChatGptAuthRequiredMessage,
-  requestChatGptReauth,
-} from "@/utils/chatgptAuth";
 
 const MAX_STREAM_RETRIES = 3;
 const STREAM_RETRY_DELAY_MS = 1_000;
@@ -208,15 +204,6 @@ export const useOutlineStreaming = (
             break;
 
           case "error":
-            if (isChatGptAuthRequiredMessage(data.detail)) {
-              resetStreamingState();
-              closeEventSource();
-              requestChatGptReauth({
-                message: data.detail,
-                source: "outline-stream",
-              });
-              break;
-            }
             if (!scheduleRetry(data.detail || "server returned stream error")) {
               resetStreamingState();
               closeEventSource();

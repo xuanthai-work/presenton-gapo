@@ -22,10 +22,8 @@ graph TB
     end
 
     subgraph PptEndpoints["api/v1/ppt/endpoints/"]
-        Anthropic["anthropic.py"]
         Chat["chat.py"]
         Community["community.py"]
-        Codex["codex_auth.py"]
         Google["google.py"]
         OpenAI["openai.py"]
         Files["files.py"]
@@ -33,7 +31,6 @@ graph TB
         Icons["icons.py"]
         Images["images.py"]
         Layouts["layouts.py"]
-        Ollama["ollama.py"]
         Outlines["outlines.py"]
         Presentation["presentation.py"]
         Prompts["prompts.py"]
@@ -64,7 +61,7 @@ graph TB
     subgraph Utils["utils/"]
         LlmCalls["llm_calls/<br/>(generate outlines, slide,<br/>smart presentation, ...)"]
         LlmUtils["llm_*.py<br/>(provider registry, clients)"]
-        Oauth["oauth/<br/>(PKCE, codex)"]
+        Oauth["oauth/<br/>(PKCE helpers)"]
         ProcessSlides["process_slides.py"]
         ExportUtils["export_utils.py"]
         PptUtils["ppt_utils.py"]
@@ -81,7 +78,6 @@ graph TB
         Documents["documents.py"]
         Llm["llm.py"]
         Presentation["presentation.py"]
-        Ollama["supported_ollama_models.py"]
     end
 
     Entry --> App
@@ -134,11 +130,8 @@ graph LR
     Ppt --> Slide["/slide<br/>(SSE generate slide)"]
     Ppt --> Images["/images<br/>(generate images)"]
     Ppt --> Icons["/icons<br/>(icon library)"]
-    Ppt --> Ollama["/ollama<br/>(list models)"]
     Ppt --> OpenAI["/openai<br/>(auth + models)"]
-    Ppt --> Anthropic["/anthropic<br/>(auth + models)"]
     Ppt --> Google["/google<br/>(auth + models)"]
-    Ppt --> Codex["/codex-auth<br/>(OAuth)"]
     Ppt --> Presentation["/presentation<br/>(CRUD presentation)"]
     Ppt --> Themes["/themes<br/>(CRUD theme)"]
     Ppt --> ThemeGen["/theme-generate<br/>(AI theme gen)"]
@@ -235,7 +228,6 @@ graph LR
     ProviderErr["provider_error_messages.py"]
     ModelAvail["model_availability.py"]
     GetDynModels["get_dynamic_models.py"]
-    SupportedOllama["supported_ollama_models.py (in constants)"]
 
     LlmConfig --> LlmProvider
     LlmProvider --> LlmUtils
@@ -247,8 +239,7 @@ graph LR
 
 ### OAuth (`utils/oauth/`)
 
-OAuth2 PKCE cho các provider:
-- `openai_codex.py` — OpenAI Codex (ChatGPT subscription auth)
+OAuth2 PKCE helpers:
 - `pkce.py` — PKCE helpers
 
 ### Other utils
@@ -305,8 +296,6 @@ graph LR
     Pydantic --> GenReq["generate_presentation_request"]
     Pydantic --> ImgPrompt["image_prompt"]
     Pydantic --> JsonPath["json_path_guide"]
-    Pydantic --> OllamaMeta["ollama_model_metadata"]
-    Pydantic --> OllamaStatus["ollama_model_status"]
     Pydantic --> PresPath["presentation_and_path"]
     Pydantic --> PresFromTpl["presentation_from_template"]
     Pydantic --> PresLayout["presentation_layout"]
@@ -326,7 +315,6 @@ graph LR
 | `documents.py` | Doc config |
 | `llm.py` | LLM defaults |
 | `presentation.py` | Presentation defaults |
-| `supported_ollama_models.py` | Ollama model whitelist |
 
 ## 🗃️ Database (`alembic/` + `migrations.py`)
 

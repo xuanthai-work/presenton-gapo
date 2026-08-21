@@ -79,34 +79,7 @@ GOOGLE_API_KEY=...
 GOOGLE_MODEL=models/gemini-2.0-flash
 ```
 
-### Anthropic
-
-```dotenv
-LLM=anthropic
-ANTHROPIC_API_KEY=...
-ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
-```
-
-### Ollama trên máy host (local)
-
-1. Cài Ollama, rồi:
-
-```powershell
-ollama pull llama3.2:3b
-```
-
-2. Trong `.env`:
-
-```dotenv
-LLM=ollama
-OLLAMA_URL=http://host.docker.internal:11434
-OLLAMA_MODEL=llama3.2:3b
-START_OLLAMA=false
-```
-
-`START_OLLAMA=false` là mặc định: container **không** tự chạy Ollama. Container gọi Ollama trên host qua `host.docker.internal`. Trên Docker Desktop Windows/Mac cái này thường hoạt động sẵn.
-
-### OpenAI-compatible (vLLM, LiteLLM, OpenRouter-style, v.v.)
+### OpenAI-compatible (vLLM hoặc bất kỳ self-host OpenAI-compatible nào)
 
 ```dotenv
 LLM=custom
@@ -115,7 +88,7 @@ CUSTOM_LLM_API_KEY=...
 CUSTOM_MODEL=your-model-id
 ```
 
-Các giá trị `LLM` khác: `azure`, `vertex`, `bedrock`, `openrouter`, `fireworks`, `together`, `cerebras`, `deepseek`, `litellm`, `lmstudio`, `codex`.
+Các giá trị `LLM` hợp lệ: `openai`, `google`, `custom`.
 
 `CAN_CHANGE_KEYS=false` khóa key trên UI (hữu ích khi deploy nội bộ). Để `true` hoặc để trống nếu muốn đổi provider trong Settings.
 
@@ -125,20 +98,19 @@ Các giá trị `LLM` khác: `azure`, `vertex`, `bedrock`, `openrouter`, `firewo
 
 Mem0 **bật mặc định** (`MEM0_ENABLED=true`). Dùng Qdrant + SQLite local, lưu dưới `/app_data/mem0`. Image Docker đã cài sẵn spaCy `en_core_web_sm` và cache FastEmbed.
 
-**Điểm dễ vướng:** Mem0 **không** dùng LLM chính. Compose mặc định trỏ Mem0 sang Ollama:
+**Điểm dễ vư�ng:** Mem0 **không** dùng LLM chính. Compose mặc định trỏ Mem0 sang một endpoint OpenAI-compatible local:
 
 | Biến | Default |
 |---|---|
 | `MEM0_ENABLED` | `true` |
-| `MEM0_LLM_MODEL` | `OLLAMA_MODEL` hoặc `llama3.1:latest` |
-| `MEM0_LLM_API_KEY` | `ollama` |
-| `MEM0_LLM_BASE_URL` | `OLLAMA_URL` hoặc `http://host.docker.internal:11434` |
+| `MEM0_LLM_MODEL` | (xem compose) |
+| `MEM0_LLM_BASE_URL` | (xem compose) |
 | `MEM0_DIR` | `/app_data/mem0` |
 | `MEM0_EMBEDDER_PROVIDER` | `fastembed` |
 | `MEM0_EMBEDDER_MODEL` | `BAAI/bge-small-en-v1.5` |
 | `MEM0_EMBEDDING_DIMS` | `384` |
 
-### Nếu LLM chính là OpenAI nhưng không có Ollama
+### Nếu LLM chính là OpenAI nhưng không muốn dùng Mem0 với endpoint mặc định
 
 Cách A — tắt Mem0:
 
@@ -153,22 +125,6 @@ MEM0_ENABLED=true
 MEM0_LLM_BASE_URL=https://api.openai.com/v1
 MEM0_LLM_API_KEY=sk-...
 MEM0_LLM_MODEL=gpt-4.1-mini
-```
-
-### Nếu dùng Ollama cho cả generate lẫn Mem0
-
-Pull thêm model memory (default là `llama3.1:latest`, nặng hơn `llama3.2:3b`):
-
-```powershell
-ollama pull llama3.1:latest
-```
-
-Hoặc cho Mem0 dùng cùng model nhỏ:
-
-```dotenv
-MEM0_LLM_MODEL=llama3.2:3b
-MEM0_LLM_BASE_URL=http://host.docker.internal:11434
-MEM0_LLM_API_KEY=ollama
 ```
 
 Embedder chạy local trong container (FastEmbed), không cần API riêng.
@@ -187,24 +143,21 @@ Hoặc chọn provider:
 
 | `IMAGE_PROVIDER` | Cần thêm |
 |---|---|
-| `pexels` | `PEXELS_API_KEY` |
-| `pixabay` | `PIXABAY_API_KEY` |
-| `dall-e-3` | `OPENAI_API_KEY` |
 | `gpt-image-1.5` | `OPENAI_API_KEY` |
 | `gemini_flash` | `GOOGLE_API_KEY` |
-| `comfyui` | `COMFYUI_URL`, `COMFYUI_WORKFLOW` |
+| `nanobanana_pro` | (provider-specific key) |
 | `openai_compatible` | `OPENAI_COMPAT_IMAGE_BASE_URL`, `OPENAI_COMPAT_IMAGE_API_KEY`, `OPENAI_COMPAT_IMAGE_MODEL` |
 
-Ví dụ OpenAI text + DALL·E:
+Ví dụ OpenAI text + GPT Image:
 
 ```dotenv
 LLM=openai
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4.1
-IMAGE_PROVIDER=dall-e-3
+IMAGE_PROVIDER=gpt-image-1.5
 ```
 
-LLM và image provider **không** cần cùng hãng (Ollama + Pexels là combo phổ biến).
+LLM và image provider **không** cần cùng hãng (Google LLM + OpenAI image là combo phổ biến).
 
 ---
 
@@ -241,13 +194,13 @@ WEB_GROUNDING=true
 WEB_SEARCH_PROVIDER=auto
 ```
 
-`auto` dùng search native của OpenAI/Google/Anthropic. Provider khác: `searxng` + `SEARXNG_BASE_URL`, hoặc `tavily` / `exa` + API key.
+`auto` dùng search native của OpenAI/Google. Provider khác: `tavily` / `exa` / `brave` + API key tương ứng.
 
 Tắt telemetry: `DISABLE_ANONYMOUS_TRACKING=true`.
 
 ---
 
-## 8. `.env` mẫu để chạy ngay (OpenAI, không Ollama)
+## 8. `.env` mẫu để chạy ngay (OpenAI)
 
 ```dotenv
 PRESENTON_HTTP_HOST_PORT=5001
@@ -256,7 +209,7 @@ LLM=openai
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4.1
 
-IMAGE_PROVIDER=dall-e-3
+IMAGE_PROVIDER=gpt-image-1.5
 # hoặc: DISABLE_IMAGE_GENERATION=true
 
 MEM0_ENABLED=true
@@ -288,12 +241,11 @@ docker compose logs --tail 100 production
 
 ## 9. Lỗi thường gặp
 
-1. **Mem0 fail dù generate được** — LLM chính OK nhưng Mem0 vẫn gọi `host.docker.internal:11434`. Tắt Mem0 hoặc trỏ `MEM0_LLM_*` đúng endpoint.
-2. **Ollama “connection refused”** — trong container, `localhost` là chính container, không phải máy host. Dùng `http://host.docker.internal:11434`.
-3. **Build rất lâu / hết disk** — image gồm Chromium, fonts, spaCy, FastEmbed. Cần vài GB trống.
-4. **Platform** — Compose default `linux/amd64`. Máy ARM (nếu có) có thể set `PRESENTON_DOCKER_PLATFORM=linux/arm64`.
-5. **Không persist data** — luôn giữ volume `./app_data:/app_data`. Xóa folder này là mất deck, user, memory.
-6. **Không pull `ghcr.io/presenton/presenton` cho fork này** — compose đang `build:` từ Dockerfile trong repo.
+1. **Mem0 fail dù generate được** — LLM chính OK nhưng Mem0 vẫn gọi endpoint mặc định không sẵn. Tắt Mem0 hoặc trỏ `MEM0_LLM_*` đúng endpoint.
+2. **Build rất lâu / hết disk** — image gồm Chromium, fonts, spaCy, FastEmbed. Cần vài GB trống.
+3. **Platform** — Compose default `linux/amd64`. Máy ARM (nếu có) có thể set `PRESENTON_DOCKER_PLATFORM=linux/arm64`.
+4. **Không persist data** — luôn giữ volume `./app_data:/app_data`. Xóa folder này là mất deck, user, memory.
+5. **Không pull `ghcr.io/presenton/presenton` cho fork này** — compose đang `build:` từ Dockerfile trong repo.
 
 ---
 

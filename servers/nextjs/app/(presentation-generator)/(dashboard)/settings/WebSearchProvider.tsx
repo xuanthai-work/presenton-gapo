@@ -23,7 +23,6 @@ const EXTERNAL_WEB_SEARCH_OPTIONS = [
   "tavily",
   "brave",
   // "serper",
-  "searxng",
 ] as const;
 const WEB_SEARCH_PROVIDER_OPTIONS = [
   WEB_SEARCH_PROVIDERS.auto,

@@ -45,15 +45,10 @@ from utils.get_dynamic_models import (
 )
 from utils.image_provider import (
     get_selected_image_provider,
-    is_comfyui_selected,
-    is_dalle3_selected,
     is_gemini_flash_selected,
     is_gpt_image_1_5_selected,
     is_image_generation_disabled,
     is_nanobanana_pro_selected,
-    is_open_webui_selected,
-    is_pixabay_selected,
-    is_pixels_selected,
 )
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.parsers import parse_bool_or_none
@@ -61,14 +56,9 @@ from utils.path_helpers import get_resource_path, get_writable_path
 from utils.sse import safe_sse_stream
 
 _ALL_IMAGE_PROVIDER_PREDICATES = (
-    is_pixels_selected,
-    is_pixabay_selected,
     is_gemini_flash_selected,
     is_nanobanana_pro_selected,
-    is_dalle3_selected,
     is_gpt_image_1_5_selected,
-    is_comfyui_selected,
-    is_open_webui_selected,
 )
 
 
@@ -324,14 +314,9 @@ def test_get_writable_path_app_data_fallback(monkeypatch, tmp_path):
 @pytest.mark.parametrize(
     ("env_provider", "predicate"),
     [
-        ("pexels", is_pixels_selected),
-        ("pixabay", is_pixabay_selected),
         ("gemini_flash", is_gemini_flash_selected),
         ("nanobanana_pro", is_nanobanana_pro_selected),
-        ("dall-e-3", is_dalle3_selected),
         ("gpt-image-1.5", is_gpt_image_1_5_selected),
-        ("comfyui", is_comfyui_selected),
-        ("open_webui", is_open_webui_selected),
     ],
 )
 def test_image_provider_env_flags_exclusive(monkeypatch, env_provider: str, predicate):
@@ -430,20 +415,6 @@ def test_handle_llm_client_exceptions(monkeypatch):
         GoogleAPIError(503, {})
     ).detail
 
-    from enums.llm_provider import LLMProvider
-
-    monkeypatch.setitem(
-        handle_llm_client_exceptions.__globals__,
-        "get_llm_provider",
-        lambda: LLMProvider.CODEX,
-    )
-    codex_auth = handle_llm_client_exceptions(
-        HTTPException(status_code=401, detail="expired")
-    )
-    assert codex_auth.status_code == 401
-    assert "CHATGPT_AUTH_REQUIRED:" in codex_auth.detail
-    assert codex_auth.headers == {"X-Presenton-Auth-Action": "codex-reauth"}
-
     generic = handle_llm_client_exceptions(ValueError("oops"))
     assert generic.detail.startswith("LLM API error")
 
@@ -485,17 +456,17 @@ def test_export_includes_optional_fastapi_param():
                 dummy,
                 title="safe",
                 export_as="pdf",
-                cookie_header="presenton_session=abc; theme=dark",
+                cookie_header="session_cookie=abc; theme=dark",
             )
 
         pdf_call = mock_pdf.await_args.kwargs
         assert "pdf-maker" in pdf_call["url"]
         assert (
-            "#exportCookie=presenton_session%3Dabc%3B+theme%3Ddark"
+            "#exportCookie=session_cookie%3Dabc%3B+theme%3Ddark"
             in pdf_call["url"]
         )
         assert pdf_call["fastapi_url"] == "https://fast.example"
-        assert pdf_call["cookie_header"] == "presenton_session=abc; theme=dark"
+        assert pdf_call["cookie_header"] == "session_cookie=abc; theme=dark"
 
         mock_pptx = AsyncMock(return_value=fake_result)
         with patch.dict(

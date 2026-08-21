@@ -9,19 +9,6 @@ import { IMAGE_PROVIDERS } from '@/utils/providerConstants';
 import { cn } from '@/lib/utils';
 import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from './ui/select';
 
-const DALLE_3_QUALITY_OPTIONS = [
-    {
-        label: "Standard",
-        value: "standard",
-        description: "Faster generation with lower cost",
-    },
-    {
-        label: "HD",
-        value: "hd",
-        description: "Higher quality images with increased cost",
-    },
-];
-
 const GPT_IMAGE_1_5_QUALITY_OPTIONS = [
     {
         label: "Low",
@@ -39,96 +26,32 @@ const GPT_IMAGE_1_5_QUALITY_OPTIONS = [
         description: "Best quality with longer generation time",
     },
 ];
-const renderQualitySelector = (llmConfig: LLMConfig, input_field_changed: (value: string, field: string) => void) => {
-    if (llmConfig.IMAGE_PROVIDER === "dall-e-3") {
-        return (
-            <div className="w-[295px]">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    DALL·E 3 Image Quality
-                </label>
-                <div className="">
-                    <Select value={llmConfig.DALL_E_3_QUALITY} onValueChange={(value) => input_field_changed(value, "dall_e_3_quality")}>
-                        <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
-                            <SelectValue placeholder="Select a quality" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {DALLE_3_QUALITY_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {/* {DALLE_3_QUALITY_OPTIONS.map((option) => (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={cn(
-                                "border rounded-lg p-3 text-left transition-colors",
-                                llmConfig.DALL_E_3_QUALITY === option.value
-                                    ? "border-blue-500 bg-blue-50"
-                                    : "border-gray-200 hover:border-gray-300"
-                            )}
-                            onClick={() =>
-                                input_field_changed(option.value, "dall_e_3_quality")
-                            }
-                        >
-                            <div className="text-sm font-medium text-gray-900">
-                                {option.label}
-                            </div>
-                            <div className="text-xs text-gray-600 mt-1">
-                                {option.description}
-                            </div>
-                        </button>
-                    ))} */}
-                </div>
-            </div>
-        );
-    }
 
+const renderQualitySelector = (
+    llmConfig: LLMConfig,
+    input_field_changed: (value: string, field: string) => void
+) => {
     if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
         return (
             <div className="w-[295px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     GPT Image 1.5 Quality
                 </label>
-                <div className="">
-                    <Select
-                        value={llmConfig.GPT_IMAGE_1_5_QUALITY}
-                        onValueChange={(value) => input_field_changed(value, "gpt_image_1_5_quality")}
-                    >
-                        <SelectTrigger
-
-                            className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
-                            <SelectValue placeholder="Select a quality" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {GPT_IMAGE_1_5_QUALITY_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {/* {GPT_IMAGE_1_5_QUALITY_OPTIONS.map((option) => (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={cn(
-                                "border rounded-lg p-3 text-left transition-colors",
-                                llmConfig.GPT_IMAGE_1_5_QUALITY === option.value
-                                    ? "border-blue-500 bg-blue-50"
-                                    : "border-gray-200 hover:border-gray-300"
-                            )}
-                            onClick={() =>
-                                input_field_changed(option.value, "gpt_image_1_5_quality")
-                            }
-                        >
-                            <div className="text-sm font-medium text-gray-900">
+                <Select
+                    value={llmConfig.GPT_IMAGE_1_5_QUALITY}
+                    onValueChange={(value) => input_field_changed(value, "gpt_image_1_5_quality")}
+                >
+                    <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
+                        <SelectValue placeholder="Select a quality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {GPT_IMAGE_1_5_QUALITY_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
                                 {option.label}
-                            </div>
-                            <div className="text-xs text-gray-600 mt-1">
-                                {option.description}
-                            </div>
-                        </button>
-                    ))} */}
-                </div>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
         );
     }
@@ -136,9 +59,21 @@ const renderQualitySelector = (llmConfig: LLMConfig, input_field_changed: (value
     return null;
 };
 
-const ImageSelectionConfig = ({ isImageGenerationDisabled, openImageProviderSelect, setOpenImageProviderSelect, llmConfig, input_field_changed, getApiKeyValue, handleApiKeyInputChange }: { isImageGenerationDisabled: boolean, openImageProviderSelect: boolean, setOpenImageProviderSelect: (open: boolean) => void, llmConfig: LLMConfig, input_field_changed: (value: string, field: string) => void, getApiKeyValue: (field: string) => string, handleApiKeyInputChange: (field: string, value: string) => void }) => {
+const ImageSelectionConfig = ({
+    isImageGenerationDisabled,
+    openImageProviderSelect,
+    setOpenImageProviderSelect,
+    llmConfig,
+    input_field_changed,
+}: {
+    isImageGenerationDisabled: boolean;
+    openImageProviderSelect: boolean;
+    setOpenImageProviderSelect: (open: boolean) => void;
+    llmConfig: LLMConfig;
+    input_field_changed: (value: string, field: string) => void;
+}) => {
     return (
-        <div className='mt-7'>
+        <div className="mt-7">
             <div className="p-10 flex justify-between items-center bg-white rounded-[12px]">
                 <div>
                     <h4 className="text-xl font-normal text-[#191919]">Image Generation Settings</h4>
@@ -146,9 +81,7 @@ const ImageSelectionConfig = ({ isImageGenerationDisabled, openImageProviderSele
                         Choosing where images come from.
                     </p>
                 </div>
-                <div className='flex items-center gap-4'>
-
-
+                <div className="flex items-center gap-4">
                     {!isImageGenerationDisabled && (
                         <>
                             {/* Image Provider Selection */}
@@ -232,197 +165,30 @@ const ImageSelectionConfig = ({ isImageGenerationDisabled, openImageProviderSele
 
                             {renderQualitySelector(llmConfig, input_field_changed)}
 
-                            {/* Dynamic API Key Input for Image Provider */}
-                            {llmConfig.IMAGE_PROVIDER &&
-                                IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER] &&
-                                (() => {
-                                    const provider = IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER];
-
-                                    // Show info message when using same API key as main provider
-                                    if (
-                                        provider.value === "dall-e-3" &&
-                                        llmConfig.LLM === "openai"
-                                    ) {
-                                        return <></>;
+                            {/* Dynamic image provider configuration */}
+                            {llmConfig.IMAGE_PROVIDER === "openai_compatible" && (
+                                <OpenAICompatibleImageFields
+                                    layout="stacked"
+                                    baseUrl={llmConfig.OPENAI_COMPAT_IMAGE_BASE_URL || ""}
+                                    apiKey={llmConfig.OPENAI_COMPAT_IMAGE_API_KEY || ""}
+                                    model={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
+                                    onBaseUrlChange={(v) =>
+                                        input_field_changed(v, "openai_compat_image_base_url")
                                     }
-
-                                    if (
-                                        provider.value === "gpt-image-1.5" &&
-                                        llmConfig.LLM === "openai"
-                                    ) {
-                                        return <></>;
+                                    onApiKeyChange={(v) =>
+                                        input_field_changed(v, "openai_compat_image_api_key")
                                     }
-
-                                    if (
-                                        provider.value === "gemini_flash" &&
-                                        llmConfig.LLM === "google"
-                                    ) {
-                                        return <></>;
+                                    onModelChange={(v) =>
+                                        input_field_changed(v, "openai_compat_image_model")
                                     }
-
-                                    if (
-                                        provider.value === "nanobanana_pro" &&
-                                        llmConfig.LLM === "google"
-                                    ) {
-                                        return <></>;
-                                    }
-
-                                    if (provider.value === "openai_compatible") {
-                                        return (
-                                            <OpenAICompatibleImageFields
-                                                layout="stacked"
-                                                baseUrl={llmConfig.OPENAI_COMPAT_IMAGE_BASE_URL || ""}
-                                                apiKey={llmConfig.OPENAI_COMPAT_IMAGE_API_KEY || ""}
-                                                model={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
-                                                onBaseUrlChange={(v) =>
-                                                    input_field_changed(v, "openai_compat_image_base_url")
-                                                }
-                                                onApiKeyChange={(v) =>
-                                                    input_field_changed(v, "openai_compat_image_api_key")
-                                                }
-                                                onModelChange={(v) =>
-                                                    input_field_changed(v, "openai_compat_image_model")
-                                                }
-                                            />
-                                        );
-                                    }
-
-                                    // Show Open WebUI configuration
-                                    if (provider.value === "open_webui") {
-                                        return (
-                                            <div className="space-y-4 w-[295px]">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Open WebUI URL
-                                                    </label>
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="http://localhost:3000/api/v1"
-                                                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                            value={llmConfig.OPEN_WEBUI_IMAGE_URL || ""}
-                                                            onChange={(e) => {
-                                                                input_field_changed(
-                                                                    e.target.value,
-                                                                    "open_webui_image_url"
-                                                                );
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <p className="mt-2 text-sm text-gray-500 flex items-center gap-2">
-                                                        <span className="block w-1 h-1 rounded-full bg-gray-400"></span>
-                                                        Image model is configured in Open WebUI admin settings
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        API Key (optional)
-                                                    </label>
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Open WebUI API key"
-                                                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                            value={llmConfig.OPEN_WEBUI_IMAGE_API_KEY || ""}
-                                                            onChange={(e) => {
-                                                                input_field_changed(
-                                                                    e.target.value,
-                                                                    "open_webui_image_api_key"
-                                                                );
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-
-                                    // Show ComfyUI configuration
-                                    if (provider.value === "comfyui") {
-                                        return (
-                                            <div className=" space-y-4 w-[295px]">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        ComfyUI Server URL
-                                                    </label>
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="http://192.168.1.7:8188"
-                                                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                            value={llmConfig.COMFYUI_URL || ""}
-                                                            onChange={(e) => {
-                                                                input_field_changed(
-                                                                    e.target.value,
-                                                                    "comfyui_url"
-                                                                );
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <p className="mt-2 text-sm text-gray-500 flex items-center gap-2">
-                                                        <span className="block w-1 h-1 rounded-full bg-gray-400"></span>
-                                                        Use your machine IP address (not localhost) when
-                                                        running in Docker
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Workflow JSON
-                                                    </label>
-                                                    <div className="relative">
-                                                        <textarea
-                                                            placeholder='Paste your ComfyUI workflow JSON here (export via "Export (API)" in ComfyUI)'
-                                                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono text-xs"
-                                                            rows={6}
-                                                            value={llmConfig.COMFYUI_WORKFLOW || ""}
-                                                            onChange={(e) => {
-                                                                input_field_changed(
-                                                                    e.target.value,
-                                                                    "comfyui_workflow"
-                                                                );
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <p className="mt-2 text-sm text-gray-500">
-                                                        Export your workflow from ComfyUI using &quot;Export
-                                                        (API)&quot; and paste the JSON here.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-
-                                    // Show API key input for other providers
-                                    return (
-                                        <div className=" w-[295px]">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                {provider.apiKeyFieldLabel}
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
-                                                    className="w-full px-4 py-2.5 h-12 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                    value={getApiKeyValue(provider.apiKeyField || "")}
-                                                    onChange={(e) =>
-                                                        handleApiKeyInputChange(
-                                                            provider.apiKeyField || "",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-
-                                        </div>
-                                    );
-                                })()}
+                                />
+                            )}
                         </>
                     )}
                 </div>
             </div>
-
         </div>
-    )
-}
+    );
+};
 
-export default ImageSelectionConfig
+export default ImageSelectionConfig;

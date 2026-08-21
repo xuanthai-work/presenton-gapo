@@ -105,7 +105,7 @@ def test_load_image_converts_to_png_before_ocr(mock_convert, mock_parse):
 def test_load_documents_parses_office_files_without_liteparse(
     mock_extract, tmp_path, monkeypatch
 ):
-    managed_dir = tmp_path / "presenton-temp"
+    managed_dir = tmp_path / "managed-temp"
     managed_dir.mkdir()
     monkeypatch.setattr(TEMP_FILE_SERVICE, "base_dir", str(managed_dir))
     upload_dir = TEMP_FILE_SERVICE.create_temp_dir("upload-case")

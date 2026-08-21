@@ -56,7 +56,7 @@ class TestMem0PresentationMemoryService:
         FakeMemoryClient.instances = []
         _mem0_oss_fresh()
 
-    def test_shared_client_defaults_to_local_llm_without_openai_key(self):
+    def test_shared_client_uses_openai_when_key_is_configured(self):
         captured = {}
 
         def _fake_memory_from_config(config, telemetry_base):
@@ -69,9 +69,9 @@ class TestMem0PresentationMemoryService:
             {
                 "MEM0_ENABLED": "true",
                 "MEM0_REQUIRE_SPACY_MODEL": "false",
-                "APP_DATA_DIRECTORY": "/tmp/presenton-test",
-                "OLLAMA_URL": "http://ollama:11434",
-                "OLLAMA_MODEL": "llama3.1:8b",
+                "APP_DATA_DIRECTORY": "/tmp/mem0-test",
+                "OPENAI_API_KEY": "test-openai-key",
+                "OPENAI_MODEL": "gpt-4o-mini",
             },
             clear=False,
         ), patch(
@@ -83,12 +83,8 @@ class TestMem0PresentationMemoryService:
         assert client is not None
         assert captured["telemetry_base"].endswith("/mem0/telemetry/oss")
         assert captured["config"]["llm"]["provider"] == "openai"
-        assert captured["config"]["llm"]["config"]["model"] == "llama3.1:8b"
-        assert captured["config"]["llm"]["config"]["api_key"] == "ollama"
-        assert (
-            captured["config"]["llm"]["config"]["openai_base_url"]
-            == "http://ollama:11434/v1"
-        )
+        assert captured["config"]["llm"]["config"]["model"] == "gpt-4o-mini"
+        assert captured["config"]["llm"]["config"]["api_key"] == "test-openai-key"
         assert captured["config"]["vector_store"]["provider"] == "qdrant"
         assert captured["config"]["embedder"]["provider"] == "fastembed"
 
@@ -97,7 +93,7 @@ class TestMem0PresentationMemoryService:
             "os.environ",
             {
                 "MEM0_ENABLED": "true",
-                "APP_DATA_DIRECTORY": "/tmp/presenton-test",
+                "APP_DATA_DIRECTORY": "/tmp/mem0-test",
             },
             clear=False,
         ), patch(
@@ -167,7 +163,7 @@ class TestMem0PresentationMemoryService:
             {
                 "MEM0_ENABLED": "true",
                 "MEM0_TOP_K": "5",
-                "APP_DATA_DIRECTORY": "/tmp/presenton-test",
+                "APP_DATA_DIRECTORY": "/tmp/mem0-test",
             },
             clear=False,
         ), patch(

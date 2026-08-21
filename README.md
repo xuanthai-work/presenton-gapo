@@ -33,7 +33,7 @@ No SaaS lock-in · No forced subscriptions · Full control over models and data
 What makes Presenton different?
 
 - Use Fully **self-hosted** in Web through [Docker Package](https://docs.presenton.ai/v3/get-started/quickstart)
-- Works with Ollama, LM Studio, OpenAI, Gemini, Vertex AI, Azure OpenAI, Amazon Bedrock, Fireworks, Together AI, Anthropic, or any other OpenAI compatible providers
+- Works with OpenAI, Google Gemini, or any other OpenAI compatible providers
 - Comes with AI Presentation Generation API
 - Fully open-source (Apache 2.0)
 - Works with your own design/templates
@@ -60,9 +60,6 @@ Create presentations from a prompt, an uploaded document, or your own PowerPoint
   <img src="./readme_assets/images/features.png" alt="Presenton features: custom designs, AI generation, bring your own API key, and built-in templates" />
 </p>
 
-<p align="center">
-  <img src="./readme_assets/images/chatgpt-2-1.png" alt="Create presentations with your existing ChatGPT subscription: secure and private, with instant access and no API keys" />
-</p>
 
 #
 
@@ -179,18 +176,16 @@ Presenton gives you complete control over your AI presentation workflow. Choose 
 - AI Template Generation — Create presentation templates from existing Powerpoint documents.
 - Flexible Generation — Build presentations from prompts or uploaded documents
 - Export Ready — Save as PowerPoint (PPTX) and PDF with professional formatting
-- Bring Your Own Key — Use your own API keys for OpenAI, Google Gemini, Vertex AI, Azure OpenAI, Anthropic Claude, or any compatible provider. Only pay for what you use, no hidden fees or subscriptions.
-- Ollama Integration — Run open-source models locally with full privacy
+- Bring Your Own Key — Use your own API keys for OpenAI, Google Gemini, or any compatible provider. Only pay for what you use, no hidden fees or subscriptions.
 - OpenAI API Compatible — Connect to any OpenAI-compatible endpoint with your own models
 - Multi-Provider Support — Mix and match text and image generation providers
-- Versatile Image Generation — Choose from DALL-E 3, Gemini Flash, Pexels, or Pixabay
+- Versatile Image Generation — Choose from Gemini Flash, NanoBanana Pro, or GPT Image
 - Rich Media Support — Icons, charts, and custom graphics for professional presentations
 - Runs Locally — All processing happens on your device, no cloud dependencies
 - API Deployment — Host as your own API service for your team
 - Multi-User Workspaces — Give each user a private workspace and manage accounts from a built-in admin panel
 - Fully Open-Source — Apache 2.0 licensed, inspect, modify, and contribute
-- Docker Ready — One-command deployment with GPU support for local models
-- Sign in with ChatGPT — Use your free or paid ChatGPT account to sign in and start creating presentations instantly — no separate API key required
+- Docker Ready — One-command deployment
 
 #
 
@@ -261,85 +256,34 @@ Other optional variables exist in code (for example advanced Mem0 paths, LitePar
 #### LLM and API keys
 
 - **CAN_CHANGE_KEYS**=[true/false]: Set to **false** if you want to keep API keys hidden and make them unmodifiable.
-- **LLM**=[openai/deepseek/google/vertex/azure/bedrock/openrouter/fireworks/together/cerebras/anthropic/litellm/lmstudio/ollama/custom/codex]: Select the text **LLM**.
+- **LLM**=[openai/google/custom]: Select the text **LLM**.
 - **OPENAI_API_KEY**: Required if **LLM** is **openai**.
 - **OPENAI_MODEL**: Required if **LLM** is **openai** (default: `gpt-4.1`).
-- **DEEPSEEK_API_KEY**: Required if **LLM** is **deepseek**.
-- **DEEPSEEK_MODEL**: Required if **LLM** is **deepseek** (default: `deepseek-chat`).
-- **DEEPSEEK_BASE_URL**: Optional if **LLM** is **deepseek** (default: `https://api.deepseek.com`).
 - **GOOGLE_API_KEY**: Required if **LLM** is **google**.
 - **GOOGLE_MODEL**: Required if **LLM** is **google** (default: `models/gemini-2.0-flash`).
-- **VERTEX_MODEL**: Required if **LLM** is **vertex** (default: `gemini-2.5-flash`).
-- **VERTEX_API_KEY**: Optional auth path for **LLM=vertex** (Vertex Express).
-- **VERTEX_PROJECT** / **VERTEX_LOCATION**: Optional auth path for **LLM=vertex** when using GCP project credentials (do not combine with `VERTEX_API_KEY`).
-- **VERTEX_BASE_URL**: Optional Vertex gateway/base URL override.
-- **AZURE_OPENAI_MODEL**: Required if **LLM** is **azure** (deployment/model name).
-- **AZURE_OPENAI_API_KEY**: Required if **LLM** is **azure**.
-- **AZURE_OPENAI_API_VERSION**: Required if **LLM** is **azure** (for example `2024-10-21`).
-- **AZURE_OPENAI_ENDPOINT** / **AZURE_OPENAI_BASE_URL**: At least one is required if **LLM** is **azure**.
-- **AZURE_OPENAI_DEPLOYMENT**: Optional deployment override for **LLM** is **azure**.
-- **BEDROCK_REGION**: Optional if **LLM** is **bedrock** (default: `us-east-1`).
-- **BEDROCK_MODEL**: Required if **LLM** is **bedrock**. Use a standard model ID (example: `us.anthropic.claude-3-5-haiku-20241022-v1:0`) or a full **inference profile ARN** for newer models (example: Claude Sonnet 4.6). Passed through to Bedrock Converse as `modelId`. See **[Amazon Bedrock guide](docs/amazon-bedrock.md)**.
-- **BEDROCK_API_KEY**: Optional if **LLM** is **bedrock** (API key auth; alternative to AWS keys).
-- **BEDROCK_AWS_ACCESS_KEY_ID** / **BEDROCK_AWS_SECRET_ACCESS_KEY**: Required together if **LLM** is **bedrock** and `BEDROCK_API_KEY` is not set.
-- **BEDROCK_AWS_SESSION_TOKEN**: Optional session token for **LLM** is **bedrock**.
-- **BEDROCK_PROFILE_NAME**: Optional AWS profile name for **LLM** is **bedrock**.
-- **OPENROUTER_API_KEY**: Required if **LLM** is **openrouter**.
-- **OPENROUTER_MODEL**: Required if **LLM** is **openrouter** (default: `openai/gpt-4o`).
-- **OPENROUTER_BASE_URL**: Optional if **LLM** is **openrouter** (default: `https://openrouter.ai/api/v1`).
-- **FIREWORKS_API_KEY**: Required if **LLM** is **fireworks**.
-- **FIREWORKS_MODEL**: Required if **LLM** is **fireworks** (example: `accounts/fireworks/models/llama-v3p1-8b-instruct`).
-- **FIREWORKS_BASE_URL**: Optional if **LLM** is **fireworks** (default: `https://api.fireworks.ai/inference/v1`).
-- **TOGETHER_API_KEY**: Required if **LLM** is **together**.
-- **TOGETHER_MODEL**: Required if **LLM** is **together** (example: `openai/gpt-oss-20b`).
-- **TOGETHER_BASE_URL**: Optional if **LLM** is **together** (default: `https://api.together.ai/v1`).
-- **CEREBRAS_API_KEY**: Required if **LLM** is **cerebras**.
-- **CEREBRAS_MODEL**: Required if **LLM** is **cerebras** (default: `llama-3.3-70b`).
-- **CEREBRAS_BASE_URL**: Optional if **LLM** is **cerebras** (default: `https://api.cerebras.ai/v1`).
-- **ANTHROPIC_API_KEY**: Required if **LLM** is **anthropic**.
-- **ANTHROPIC_MODEL**: Required if **LLM** is **anthropic** (default: `claude-3-5-sonnet-20241022`).
-- **CODEX_MODEL**: Required if **LLM** is **codex** (Codex OAuth flow; compose maps host port **1455** for the callback).
 - **CUSTOM_LLM_URL**: OpenAI-compatible base URL if **LLM** is **custom**.
 - **CUSTOM_LLM_API_KEY**: API key if **LLM** is **custom**.
 - **CUSTOM_MODEL**: Model id if **LLM** is **custom**.
-- **LITELLM_BASE_URL**: LiteLLM proxy or gateway base URL if **LLM** is **litellm**.
-- **LITELLM_API_KEY**: Optional API key if **LLM** is **litellm**.
-- **LITELLM_MODEL**: Required if **LLM** is **litellm** (default: `gpt-4.1`).
-- **LMSTUDIO_BASE_URL**: Optional LM Studio base URL if **LLM** is **lmstudio** (default: `http://localhost:1234/v1`; `/v1` is auto-appended when omitted).
-- **LMSTUDIO_API_KEY**: Optional API key if **LLM** is **lmstudio**.
-- **LMSTUDIO_MODEL**: Required if **LLM** is **lmstudio** (example: `openai/gpt-oss-20b`).
-- **DISABLE_THINKING**=[true/false]: If **true**, disables “thinking” for providers that support it (including DeepSeek).
+- **DISABLE_THINKING**=[true/false]: If **true**, disables “thinking” for providers that support it.
 - **WEB_GROUNDING**=[true/false]: If **true**, enables web search by default.
-- **WEB_SEARCH_PROVIDER**=[auto/native/searxng/tavily/exa]: Selects the web search mode. `auto` uses native search for OpenAI, Google, and Anthropic, and otherwise leaves web search off unless you choose an external provider.
-<!-- Brave and Serper search providers are hidden until they are tested. -->
-<!-- - **WEB_SEARCH_PROVIDER** also supports `brave` and `serper`. -->
+- **WEB_SEARCH_PROVIDER**=[auto/tavily/exa/brave]: Selects the web search mode. `auto` uses native search for OpenAI and Google, and otherwise leaves web search off unless you choose an external provider.
 - **WEB_SEARCH_MAX_RESULTS**: Maximum external search results to add to model context (default `5`, maximum `10`).
-- **SEARXNG_BASE_URL**: Base URL for a self-hosted SearXNG instance.
-- **TAVILY_API_KEY**, **EXA_API_KEY**: Credentials for optional hosted search APIs.
-<!-- - **BRAVE_SEARCH_API_KEY**, **SERPER_API_KEY**: Credentials for hidden, untested hosted search APIs. -->
+- **TAVILY_API_KEY**, **EXA_API_KEY**, **BRAVE_SEARCH_API_KEY**: Credentials for optional hosted search APIs.
 - **EXTENDED_REASONING**=[true/false]: Enables extended reasoning where supported by the configured stack.
-
-#### Ollama
-
-Use when **LLM** is **ollama**:
-
-- **OLLAMA_URL**: Base URL of the Ollama HTTP API (e.g. `http://host.docker.internal:11434` from Docker).
-- **OLLAMA_MODEL**: Model name in Ollama (e.g. `llama3.2:3b`).
-- **START_OLLAMA**=[true/false]: Container entrypoint (`start.js`): optional install + `ollama serve`. Default **false** (`development` / `production` compose).
 
 #### Presentation memory (Mem0 OSS)
 
 Mem0 uses local Qdrant + SQLite (OSS); memory is scoped per presentation.
 
-By default the Docker runtime now points Mem0 at a local Ollama-compatible LLM endpoint, so it no longer needs an OpenAI key just to initialize. If you want to use OpenAI instead, set `MEM0_LLM_BASE_URL`/`MEM0_LLM_API_KEY` to your OpenAI-compatible endpoint and key.
+By default the Docker runtime points Mem0 at the configured OpenAI-compatible LLM endpoint. Set `MEM0_LLM_BASE_URL`/`MEM0_LLM_API_KEY` to your OpenAI-compatible endpoint and key.
 Docker images install the default spaCy model (`en_core_web_sm`) during build so Mem0 can start without extra setup on each run.
 
 | Variable                     | Purpose                                                                                                          |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | **MEM0_ENABLED**             | **true**/false (compose default **true**).                                                                       |
-| **MEM0_LLM_MODEL**           | Mem0 LLM model name (compose default **`llama3.1:latest`** or `OLLAMA_MODEL`).                                   |
-| **MEM0_LLM_API_KEY**         | Mem0 LLM API key placeholder for OpenAI-compatible clients (compose default **`ollama`**).                       |
-| **MEM0_LLM_BASE_URL**        | Mem0 LLM base URL (compose default **`OLLAMA_URL`** or `http://host.docker.internal:11434`).                     |
+| **MEM0_LLM_MODEL**           | Mem0 LLM model name (compose default **`OPENAI_MODEL`**).                                                        |
+| **MEM0_LLM_API_KEY**         | Mem0 LLM API key placeholder for OpenAI-compatible clients (compose default **`OPENAI_API_KEY`**).              |
+| **MEM0_LLM_BASE_URL**        | Mem0 LLM base URL (compose default OpenAI-compatible endpoint).                                                  |
 | **MEM0_DIR**                 | Root directory (compose default **`/app_data/mem0`**).                                                           |
 | **MEM0_EMBEDDER_PROVIDER**   | Embedder backend (compose default **`fastembed`**).                                                              |
 | **MEM0_EMBEDDER_MODEL**      | Model id (compose default **`BAAI/bge-small-en-v1.5`**).                                                         |
@@ -361,18 +305,13 @@ Docker images install the default spaCy model (`en_core_web_sm`) during build so
 
 #### Image generation
 
-These variables match `docker-compose.yml`. **`IMAGE_PROVIDER`** selects the backend (`pexels`, `pixabay`, `gemini_flash`, `nanobanana_pro`, `dall-e-3`, `gpt-image-1.5`, `comfyui`, `open_webui`). Use **OPENAI_API_KEY** for OpenAI image modes and **GOOGLE_API_KEY** for Gemini image modes (same keys as the LLM section).
+These variables match `docker-compose.yml`. **`IMAGE_PROVIDER`** selects the backend (`gpt-image-1.5`, `gemini_flash`, `nanobanana_pro`, `openai_compatible`). Use **OPENAI_API_KEY** for OpenAI image modes and **GOOGLE_API_KEY** for Gemini image modes (same keys as the LLM section).
 
 - **DISABLE_IMAGE_GENERATION**=[true/false]: Disable slide image generation.
 - **ENABLE_PARALLEL_IMAGE_GENERATION**=[true/false]: Allow concurrent image provider requests (default `true`). Set to `false` to generate images one at a time when the provider has strict rate limits.
 - **IMAGE_PROVIDER**: Provider id (see enum above).
-- **PEXELS_API_KEY**: Pexels stock images.
-- **PIXABAY_API_KEY**: Pixabay stock images.
-- **DALL_E_3_QUALITY**=[standard/hd]: Optional for **dall-e-3** (default `standard`).
 - **GPT_IMAGE_1_5_QUALITY**=[low/medium/high]: Optional for **gpt-image-1.5** (default `medium`).
-- **COMFYUI_URL** / **COMFYUI_WORKFLOW**: Self-hosted ComfyUI workflow JSON.
-- **OPEN_WEBUI_IMAGE_URL** / **OPEN_WEBUI_IMAGE_API_KEY**: Open WebUI–compatible image endpoint.
-- **OPENAI_COMPAT_IMAGE_BASE_URL** / **OPENAI_COMPAT_IMAGE_API_KEY** / **OPENAI_COMPAT_IMAGE_MODEL**: Required if using **openai_compatible** to send image requests to any OpenAI-compatible `/v1/images/*` endpoint (LiteLLM, Azure, vLLM Gateways, etc.).
+- **OPENAI_COMPAT_IMAGE_BASE_URL** / **OPENAI_COMPAT_IMAGE_API_KEY** / **OPENAI_COMPAT_IMAGE_MODEL**: Required if using **openai_compatible** to send image requests to any OpenAI-compatible `/v1/images/*` endpoint.
 
 The parallel image generation option applies everywhere images are generated: initial presentation generation, slide editing and regeneration, direct image requests, and assistant image tools.
 
@@ -417,26 +356,7 @@ Usernames must contain at least 3 characters, and new passwords must contain at 
 | **AUTH_OVERRIDE_FROM_ENV**=[true/false] | Replace the primary administrator's credentials from the environment on the next startup. Use this for a deployment-managed credential rotation. |
 | **RESET_AUTH**=[true/false] | Recover access to the existing primary administrator without replacing the account or its data. |
 
-##### Presenton Cloud provider
-
-Presenton Cloud is an optional, installation-wide generation provider. It is not an
-authentication method for the self-hosted instance. Create or sign in to the local
-administrator account first, then connect Presenton from provider onboarding.
-
-Only the local administrator can connect, replace, or disconnect the provider. The
-browser displays a short device code and opens the hosted Presenton approval page.
-After approval, the delegated access and rotating refresh tokens are encrypted at rest
-and stored as one global provider credential; they are never returned to the browser or
-stored per local user.
-
-Selecting Presenton as the text provider saves `LLM=presenton`. Presentation generation
-and document uploads then use the Presenton Cloud API and its token. Connecting the
-provider alone does not change generation: when another provider is selected, the
-existing local generation pipeline remains unchanged. Disconnecting revokes and removes
-the global credentials and deselects Presenton.
-
-No OAuth client registration, client secret, or environment configuration is required.
-Official builds contain the cloud URL and first-party public device-flow client ID.
+##### Rotating the primary administrator credentials
 
 To rotate credentials from the environment:
 
@@ -475,49 +395,17 @@ To sign out, open **Settings → Other → Sign out**.
 Same variables as compose; use `-e` instead of `.env` when running `docker run` directly.
 
 - Using OpenAI
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="openai" -e OPENAI_API_KEY="******" -e IMAGE_PROVIDER="dall-e-3" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
+    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="openai" -e OPENAI_API_KEY="******" -e IMAGE_PROVIDER="gpt-image-1.5" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
 - Using Google
     <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="google" -e GOOGLE_API_KEY="******" -e IMAGE_PROVIDER="gemini_flash" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
-- Using Vertex AI (API key mode)
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="vertex" -e VERTEX_API_KEY="******" -e VERTEX_MODEL="gemini-2.5-flash" -e IMAGE_PROVIDER="gemini_flash" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Azure OpenAI
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="azure" -e AZURE_OPENAI_API_KEY="******" -e AZURE_OPENAI_MODEL="gpt-4.1" -e AZURE_OPENAI_API_VERSION="2024-10-21" -e AZURE_OPENAI_ENDPOINT="https://YOUR-RESOURCE.openai.azure.com" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Amazon Bedrock (on-demand model ID) — see **[docs/amazon-bedrock.md](docs/amazon-bedrock.md)** for inference profiles, IAM, and troubleshooting.
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="bedrock" -e BEDROCK_REGION="us-east-1" -e BEDROCK_AWS_ACCESS_KEY_ID="******" -e BEDROCK_AWS_SECRET_ACCESS_KEY="******" -e BEDROCK_MODEL="us.anthropic.claude-3-5-haiku-20241022-v1:0" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Amazon Bedrock (inference profile ARN, e.g. Claude Sonnet 4.6)
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="bedrock" -e BEDROCK_REGION="us-east-1" -e BEDROCK_AWS_ACCESS_KEY_ID="******" -e BEDROCK_AWS_SECRET_ACCESS_KEY="******" -e BEDROCK_MODEL="arn:aws:bedrock:us-east-1:YOUR_ACCOUNT_ID:inference-profile/us.anthropic.claude-sonnet-4-6" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Fireworks
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="fireworks" -e FIREWORKS_API_KEY="******" -e FIREWORKS_MODEL="accounts/fireworks/models/llama-v3p1-8b-instruct" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Together AI
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="together" -e TOGETHER_API_KEY="******" -e TOGETHER_MODEL="openai/gpt-oss-20b" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Ollama
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="ollama" -e OLLAMA_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="*******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Anthropic
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="anthropic" -e ANTHROPIC_API_KEY="******" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using LM Studio (local)
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="lmstudio" -e LMSTUDIO_BASE_URL="http://host.docker.internal:1234" -e LMSTUDIO_MODEL="openai/gpt-oss-20b" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
 - Using OpenAI Compatible LLM API
-    <pre><code class="language-bash">docker run -it -p 5001:80 -e CAN_CHANGE_KEYS="false"  -e LLM="custom" -e CUSTOM_LLM_URL="http://*****" -e CUSTOM_LLM_API_KEY="*****" -e CUSTOM_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="pexels" -e  PEXELS_API_KEY="********" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Running Presenton with GPU Support
-  To use GPU acceleration with Ollama models, you need to install and configure the NVIDIA Container Toolkit. This allows Docker containers to access your NVIDIA GPU.
-  Once the NVIDIA Container Toolkit is installed and configured, you can run Presenton with GPU support by adding the `--gpus=all` flag:
-    <pre><code class="language-bash">docker run -it --name presenton --gpus=all -p 5001:80 -e LLM="ollama" -e OLLAMA_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="*******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
+    <pre><code class="language-bash">docker run -it -p 5001:80 -e CAN_CHANGE_KEYS="false"  -e LLM="custom" -e CUSTOM_LLM_URL="http://*****" -e CUSTOM_LLM_API_KEY="*****" -e CUSTOM_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="openai_compatible" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
 - Using an OpenAI-Compatible Image Provider
 
-  This routes all slide image requests through your OpenAI-compatible gateway (LiteLLM, Azure, vLLM, etc.) while keeping the text LLM configuration independent:
+  This routes all slide image requests through your OpenAI-compatible gateway while keeping the text LLM configuration independent:
     <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e IMAGE_PROVIDER="openai_compatible" -e OPENAI_COMPAT_IMAGE_BASE_URL="https://proxy.example.com/v1" -e OPENAI_COMPAT_IMAGE_API_KEY="******" -e OPENAI_COMPAT_IMAGE_MODEL="gpt-image-1" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
 #

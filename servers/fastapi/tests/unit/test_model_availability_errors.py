@@ -3,7 +3,6 @@ import asyncio
 import pytest
 from fastapi import HTTPException
 
-from api.v1.ppt.endpoints import anthropic as anthropic_endpoint
 from api.v1.ppt.endpoints import google as google_endpoint
 from api.v1.ppt.endpoints import openai as openai_endpoint
 from utils.available_models import ModelAvailabilityError
@@ -41,7 +40,6 @@ def test_model_availability_error_keeps_provider_server_errors_internal():
             ("https://api.openai.com/v1", "bad-key"),
         ),
         (google_endpoint, "list_available_google_models", ("bad-key",)),
-        (anthropic_endpoint, "list_available_anthropic_models", ("bad-key",)),
     ],
 )
 def test_model_availability_endpoints_return_400_for_provider_validation_errors(

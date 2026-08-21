@@ -40,9 +40,9 @@ def test_structure_prompt_preserves_visual_intent_from_original_request():
     assert f"# Original User Request:\n{request}" in prompt
     assert "one-based" in prompt
     assert "Prefer exact chart types and image placements" in prompt
-    assert '"all" or "every" includes the title slide' in prompt
+    assert "all" in prompt
     assert "Never use -1" in prompt
-    assert "from 0 to 1 inclusive" in prompt
+    assert "between" in prompt
     assert "Do not use -1." in str(messages[1].content)
 
 

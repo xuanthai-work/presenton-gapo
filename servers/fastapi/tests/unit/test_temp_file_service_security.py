@@ -8,7 +8,7 @@ from services.temp_file_service import TEMP_FILE_SERVICE
 
 @pytest.fixture
 def managed_temp_dir(tmp_path, monkeypatch):
-    managed_dir = tmp_path / "presenton-temp"
+    managed_dir = tmp_path / "managed-temp"
     managed_dir.mkdir()
     monkeypatch.setattr(TEMP_FILE_SERVICE, "base_dir", str(managed_dir))
     return managed_dir

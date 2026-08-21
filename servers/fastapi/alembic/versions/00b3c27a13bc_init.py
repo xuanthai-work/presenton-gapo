@@ -46,12 +46,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_keyvaluesqlmodel_key'), 'keyvaluesqlmodel', ['key'], unique=False)
-    op.create_table('ollamapullstatus',
-    sa.Column('id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('last_updated', sa.DateTime(), nullable=True),
-    sa.Column('status', sa.JSON(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
     op.create_table('presentation_layout_codes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('presentation', sa.Uuid(), nullable=False),
@@ -127,7 +121,6 @@ def downgrade() -> None:
     op.drop_table('presentations')
     op.drop_index(op.f('ix_presentation_layout_codes_presentation'), table_name='presentation_layout_codes')
     op.drop_table('presentation_layout_codes')
-    op.drop_table('ollamapullstatus')
     op.drop_index(op.f('ix_keyvaluesqlmodel_key'), table_name='keyvaluesqlmodel')
     op.drop_table('keyvaluesqlmodel')
     op.drop_table('imageasset')

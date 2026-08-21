@@ -14,25 +14,13 @@ from utils.user_config_store import read_user_config_file, update_user_config_fi
 logger = logging.getLogger(__name__)
 
 PROVIDER_SETTINGS_ID = 1
-CODEX_MANAGED_FIELDS = {
-    "CODEX_ACCESS_TOKEN",
-    "CODEX_REFRESH_TOKEN",
-    "CODEX_TOKEN_EXPIRES",
-    "CODEX_ACCOUNT_ID",
-    "CODEX_USERNAME",
-    "CODEX_EMAIL",
-    "CODEX_IS_PRO",
-}
+CODEX_MANAGED_FIELDS: set[str] = set()
 PRESENTON_STATUS_FIELDS = {
     "PRESENTON_CONNECTED",
     "PRESENTON_EMAIL",
 }
 OAUTH_MANAGED_FIELDS = CODEX_MANAGED_FIELDS | PRESENTON_STATUS_FIELDS
-EMPTY_VALUE_PRESERVED_FIELDS = {
-    "OPEN_WEBUI_IMAGE_URL",
-    "OPEN_WEBUI_IMAGE_API_KEY",
-    "CODEX_MODEL",
-}
+EMPTY_VALUE_PRESERVED_FIELDS: set[str] = set()
 
 
 def sanitize_provider_settings(config: dict[str, Any]) -> dict[str, Any]:
@@ -138,11 +126,7 @@ async def save_provider_settings(
 
 
 def sync_legacy_file_to_provider_settings() -> None:
-    """Persist changes made by remaining synchronous userConfig writers.
-
-    Codex token refresh currently occurs in synchronous provider code, so this
-    narrow compatibility bridge keeps those rare writes in the DB as well.
-    """
+    """Persist changes made by remaining synchronous userConfig writers."""
     path = get_user_config_path_env()
     if not path:
         return

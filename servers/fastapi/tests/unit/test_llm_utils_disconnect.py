@@ -42,7 +42,7 @@ class StreamingClient:
 
 
 def test_regular_generation_keeps_existing_retry_behavior(monkeypatch):
-    monkeypatch.setenv("LLM", "ollama")
+    monkeypatch.setenv("LLM", "openai")
     client = RetryClient()
 
     with patch("utils.llm_utils.asyncio.sleep", new=AsyncMock()):
@@ -62,7 +62,7 @@ def test_regular_generation_keeps_existing_retry_behavior(monkeypatch):
 
 
 def test_explicit_stream_false_skips_sse_even_with_disconnect_checker(monkeypatch):
-    monkeypatch.setenv("LLM", "ollama")
+    monkeypatch.setenv("LLM", "openai")
     client = RetryClient()
     client.responses = [{"result": "ok"}]
 
@@ -87,7 +87,7 @@ def test_explicit_stream_false_skips_sse_even_with_disconnect_checker(monkeypatc
 
 
 def test_disconnect_cancels_generation_without_retrying(monkeypatch):
-    monkeypatch.setenv("LLM", "ollama")
+    monkeypatch.setenv("LLM", "openai")
     client = StreamingClient()
 
     async def run():
@@ -114,7 +114,7 @@ def test_disconnect_cancels_generation_without_retrying(monkeypatch):
 
 
 def test_connected_request_uses_stream_completion_content(monkeypatch):
-    monkeypatch.setenv("LLM", "ollama")
+    monkeypatch.setenv("LLM", "openai")
 
     class CompletedClient:
         def __init__(self):
@@ -150,7 +150,7 @@ def test_connected_request_uses_stream_completion_content(monkeypatch):
 
 
 def test_connected_request_keeps_schema_validation_retries(monkeypatch):
-    monkeypatch.setenv("LLM", "ollama")
+    monkeypatch.setenv("LLM", "openai")
 
     class ValidationRetryClient:
         def __init__(self):
