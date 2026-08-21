@@ -1560,3 +1560,33 @@ def test_chat_template_content_hydrates_direct_repeated_images():
     image = ui["components"][0]["elements"][0]["children"][0]
     assert image["data"] == "/app_data/images/landscape.png"
     assert image["prompt"] == "Generated landscape"
+
+
+def test_apply_template_content_to_ui_accepts_dirtyjson_nested_dicts():
+    import dirtyjson
+
+    ui = {
+        "id": "chart-layout",
+        "components": [
+            {
+                "id": "metrics",
+                "elements": [
+                    {
+                        "type": "chart",
+                        "decorative": False,
+                        "name": "trend",
+                        "chart_type": "bar",
+                    }
+                ],
+            }
+        ],
+    }
+    content = dirtyjson.loads(
+        '{"metrics":{"trend":{"chartType":"bar","categories":["A"],"series":[{"name":"s","data":[1]}]}}}'
+    )
+
+    hydrated = presentation_endpoint._apply_template_content_to_ui(ui, content)
+
+    assert copy.deepcopy(hydrated)["components"][0]["elements"][0]["categories"] == [
+        "A"
+    ]

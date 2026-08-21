@@ -1,6 +1,17 @@
-from typing import List
+from typing import Any, List
 
 from models.json_path_guide import JsonPathGuide, DictGuide, ListGuide
+
+
+def to_plain_data(value: Any) -> Any:
+    """Return a deepcopy-safe dict/list tree (plain types, no dirtyjson containers)."""
+    if isinstance(value, dict):
+        return {key: to_plain_data(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [to_plain_data(item) for item in value]
+    if isinstance(value, tuple):
+        return [to_plain_data(item) for item in value]
+    return value
 
 
 def get_dict_paths_with_key(data: dict, key: str) -> List[JsonPathGuide]:

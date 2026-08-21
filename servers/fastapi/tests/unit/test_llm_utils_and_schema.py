@@ -1,3 +1,5 @@
+import copy
+
 from utils.llm_utils import extract_structured_content, serialize_structured_content
 from utils.schema_utils import (
     ensure_array_schemas_have_items,
@@ -8,6 +10,21 @@ from utils.schema_utils import (
 def test_extract_structured_content_from_json_text():
     payload = extract_structured_content('{"slides": [{"content": "A"}]}')
     assert payload == {"slides": [{"content": "A"}]}
+    assert type(payload) is dict
+    assert type(payload["slides"]) is list
+    assert type(payload["slides"][0]) is dict
+
+
+def test_extract_structured_content_nested_values_are_deepcopyable():
+    payload = extract_structured_content(
+        '{"component": {"title": "Hello", "items": [{"x": 1}]}}'
+    )
+
+    assert type(payload) is dict
+    assert type(payload["component"]) is dict
+    assert type(payload["component"]["items"]) is list
+    assert type(payload["component"]["items"][0]) is dict
+    assert copy.deepcopy(payload) == payload
 
 
 def test_serialize_structured_content_prefers_json_serialization():

@@ -33,11 +33,31 @@ from utils.llm_messages import (
     tool_calls_from_openai_response,
 )
 from utils.llm_provider import get_llm_provider, use_responses_api
-from utils.schema_utils import get_schema_validation_errors
+from utils.dict_utils import to_plain_data
 
 LOGGER = logging.getLogger(__name__)
 CLIENT_DISCONNECT_POLL_SECONDS = 0.1
 DisconnectChecker = Callable[[], Awaitable[bool]]
+_STREAM_END = object()
+
+
+async def _yield_stream_items(stream: Any) -> AsyncGenerator[Any, None]:
+    """Yield items from either an async stream or a sync OpenAI ``Stream``."""
+    if hasattr(stream, "__aiter__"):
+        async for item in stream:
+            yield item
+        return
+
+    iterator = iter(stream)
+
+    def _next_item() -> Any:
+        return next(iterator, _STREAM_END)
+
+    while True:
+        item = await asyncio.to_thread(_next_item)
+        if item is _STREAM_END:
+            break
+        yield item
 TextChunkCallback = Callable[[str], Awaitable[None]]
 
 
@@ -356,7 +376,7 @@ async def _iterate_openai_responses_stream(stream: Any):
     accumulated_text: list[str] = []
     accumulated_reasoning: list[str] = []
     final_response: Any = None
-    async for event in stream:
+    async for event in _yield_stream_items(stream):
         event_type = getattr(event, "type", None)
         if event_type in {"response.output_text.delta", "response.refusal.delta"}:
             delta = getattr(event, "delta", None)
@@ -394,7 +414,7 @@ async def _iterate_openai_chat_stream(stream: Any):
     accumulated_text: list[str] = []
     accumulated_tool_calls: dict[int, dict[str, str]] = {}
     final_chunk: Any = None
-    async for chunk in stream:
+    async for chunk in _yield_stream_items(stream):
         final_chunk = chunk
         choices = getattr(chunk, "choices", None) or []
         if not choices:
@@ -445,7 +465,7 @@ async def _iterate_google_stream(stream: Any):
     accumulated_text: list[str] = []
     accumulated_reasoning: list[str] = []
     final_response: Any = None
-    async for chunk in stream:
+    async for chunk in _yield_stream_items(stream):
         final_response = chunk
         candidates = getattr(chunk, "candidates", None) or []
         if not candidates:
@@ -631,11 +651,12 @@ def extract_structured_content(content: Any) -> Optional[dict]:
     if content is None:
         return None
     if isinstance(content, dict):
-        return content
+        plain = to_plain_data(content)
+        return plain if isinstance(plain, dict) else None
     if hasattr(content, "model_dump"):
         dumped = content.model_dump(mode="json")
         if isinstance(dumped, dict):
-            return dumped
+            return to_plain_data(dumped)
 
     raw_text = extract_text(content)
     if not raw_text:
@@ -647,7 +668,8 @@ def extract_structured_content(content: Any) -> Optional[dict]:
         return None
 
     if isinstance(parsed, dict):
-        return dict(parsed)
+        plain = to_plain_data(parsed)
+        return plain if isinstance(plain, dict) else None
     return None
 
 

@@ -98,6 +98,7 @@ def _oss_config_from_env() -> tuple[str, str, str, str, int, dict[str, Any]]:
     llm_api_key = (
         os.getenv("MEM0_LLM_API_KEY")
         or os.getenv("OPENAI_API_KEY")
+        or os.getenv("CUSTOM_LLM_API_KEY")
         or ""
     ).strip() or ""
     llm_base_url = _normalize_openai_base_url(
@@ -105,6 +106,15 @@ def _oss_config_from_env() -> tuple[str, str, str, str, int, dict[str, Any]]:
         or os.getenv("CUSTOM_LLM_URL")
         or "https://api.openai.com/v1"
     )
+    embedder_config: dict[str, Any] = {
+        "model": model,
+        "embedding_dims": dims,
+    }
+    if embedder == "openai":
+        # mem0's OpenAI embedder defaults to api.openai.com and OPENAI_API_KEY.
+        # Point it at the same OpenAI-compatible proxy used for the LLM.
+        embedder_config["api_key"] = llm_api_key
+        embedder_config["openai_base_url"] = llm_base_url
     config: dict[str, Any] = {
         "llm": {
             "provider": "openai",
@@ -127,10 +137,7 @@ def _oss_config_from_env() -> tuple[str, str, str, str, int, dict[str, Any]]:
         },
         "embedder": {
             "provider": embedder,
-            "config": {
-                "model": model,
-                "embedding_dims": dims,
-            },
+            "config": embedder_config,
         },
         "history_db_path": history_db_path,
     }

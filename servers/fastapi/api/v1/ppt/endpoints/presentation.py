@@ -48,7 +48,7 @@ from services.image_generation_service import ImageGenerationService
 from services.mem0_presentation_memory_service import (
     MEM0_PRESENTATION_MEMORY_SERVICE,
 )
-from utils.dict_utils import deep_update
+from utils.dict_utils import deep_update, to_plain_data
 from utils.export_utils import export_presentation
 from utils.llm_calls.generate_presentation_outlines import (
     generate_ppt_outline,
@@ -512,7 +512,9 @@ def _apply_template_content_to_ui(
         return ui
 
     component_keys = _template_component_content_keys(components)
-    hydrated_ui = copy.deepcopy(ui)
+    hydrated_ui = to_plain_data(ui)
+    if isinstance(content, dict):
+        content = to_plain_data(content)
     hydrated_components = hydrated_ui.get("components")
     if not isinstance(hydrated_components, list):
         return hydrated_ui

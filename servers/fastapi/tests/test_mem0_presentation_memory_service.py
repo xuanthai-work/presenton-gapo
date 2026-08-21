@@ -88,6 +88,43 @@ class TestMem0PresentationMemoryService:
         assert captured["config"]["vector_store"]["provider"] == "qdrant"
         assert captured["config"]["embedder"]["provider"] == "fastembed"
 
+    def test_openai_embedder_uses_custom_base_url_and_api_key(self):
+        captured = {}
+
+        def _fake_memory_from_config(config, telemetry_base):
+            captured["config"] = config
+            return FakeMemoryClient.from_config(config)
+
+        with patch.dict(
+            "os.environ",
+            {
+                "MEM0_ENABLED": "true",
+                "MEM0_REQUIRE_SPACY_MODEL": "false",
+                "APP_DATA_DIRECTORY": "/tmp/mem0-test",
+                "MEM0_LLM_BASE_URL": "http://host.docker.internal:5000/v1",
+                "MEM0_LLM_API_KEY": "sk-custom-proxy",
+                "MEM0_LLM_MODEL": "cb/hnw-llm",
+                "MEM0_EMBEDDER_PROVIDER": "openai",
+                "MEM0_EMBEDDER_MODEL": "text-embedding-3-small",
+                "MEM0_EMBEDDING_DIMS": "1536",
+            },
+            clear=False,
+        ), patch(
+            "services.mem0_oss_memory.memory_from_config",
+            side_effect=_fake_memory_from_config,
+        ):
+            client = mem0_oss.get_shared_mem0_client()
+
+        assert client is not None
+        embedder = captured["config"]["embedder"]
+        assert embedder["provider"] == "openai"
+        assert embedder["config"]["api_key"] == "sk-custom-proxy"
+        assert embedder["config"]["openai_base_url"] == (
+            "http://host.docker.internal:5000/v1"
+        )
+        assert embedder["config"]["model"] == "text-embedding-3-small"
+        assert captured["config"]["llm"]["config"]["model"] == "cb/hnw-llm"
+
     def test_store_generation_context_uses_presentation_scope(self):
         with patch.dict(
             "os.environ",
