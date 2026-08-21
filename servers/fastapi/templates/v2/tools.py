@@ -6,12 +6,12 @@ import logging
 import mimetypes
 from pathlib import Path
 
-from llmai.shared import ImageContentPart, Tool
 from pydantic import PrivateAttr
 
 from services.export_task_service import EXPORT_TASK_SERVICE
 from templates.v2.models.layouts import SlideLayout
 from utils.get_env import get_app_data_directory_env
+from utils.llm_messages import ImageContentPart, Tool
 
 SLIDE_PREVIEW_WIDTH = 1280
 SLIDE_PREVIEW_HEIGHT = 720

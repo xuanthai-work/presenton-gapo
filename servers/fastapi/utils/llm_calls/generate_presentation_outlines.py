@@ -3,23 +3,19 @@ from datetime import datetime
 import logging
 from typing import Optional
 
-from llmai import get_client
-from llmai.shared import (
-    JSONSchemaResponse,
-    Message,
-    ResponseStreamCompletionChunk,
-    SystemMessage,
-    UserMessage,
-    WebSearchTool,
-)
-
 from models.presentation_outline_model import PresentationOutlineModel
 from constants.presentation import MAX_NUMBER_OF_SLIDES, MAX_OUTLINE_CONTENT_WORDS
 from utils.get_dynamic_models import get_presentation_outline_model_with_n_slides
 from utils.llm_calls.generate_web_search_query import generate_web_search_query
 from utils.llm_client_error_handler import handle_llm_client_exceptions
-from utils.llm_config import get_llm_config
-from utils.llm_provider import get_model
+from utils.llm_messages import (
+    JSONSchemaResponse,
+    Message,
+    SystemMessage,
+    UserMessage,
+    WebSearchTool,
+)
+from utils.llm_provider import get_llm_client, get_model
 from utils.llm_utils import (
     DisconnectChecker,
     get_generate_kwargs,
@@ -42,6 +38,12 @@ LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class OutlineGenerationStatus:
     message: str
+
+
+# Legacy test compatibility: tests patch ``outline_module.get_client`` via
+# ``patch.object``. ``get_llm_client`` is the new native-SDK factory;
+# ``get_client`` is kept as an alias so existing tests keep working.
+get_client = get_llm_client
 
 
 def _web_search_provider_display_name(provider_name: str) -> str:
@@ -260,9 +262,7 @@ async def generate_ppt_outline(
 
     use_search_tool = web_search and should_use_native_web_search()
     use_external_search = web_search and should_expose_external_web_search_tool()
-    client = get_client(
-        config=get_llm_config(use_openai_responses_api=use_search_tool)
-    )
+    client = get_llm_client()
     route_mode, actual_provider = get_web_search_route()
     actual_provider_name = (
         actual_provider.value
@@ -383,10 +383,10 @@ async def generate_ppt_outline(
                 if chunk:
                     emitted_content = True
                     yield chunk
-            elif (
-                isinstance(event, ResponseStreamCompletionChunk) and not emitted_content
-            ):
-                final_content = serialize_structured_content(event.content)
+            elif getattr(event, "type", None) == "completion" and not emitted_content:
+                final_content = serialize_structured_content(
+                    getattr(event, "content", None)
+                )
                 if final_content:
                     yield final_content
     except Exception as e:

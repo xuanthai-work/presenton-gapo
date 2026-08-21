@@ -1,26 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import mimetypes
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextvars import copy_context
 from json import JSONDecodeError
 from time import perf_counter
 from typing import Any, Callable
 
-from llmai import get_client
-from llmai.shared import (
-    AssistantMessage,
-    ImageContentPart,
-    JSONSchemaResponse,
-    SystemMessage,
-    ToolChoice,
-    ToolChoiceMode,
-    ToolResponseMessage,
-    UserMessage,
-)
 from pydantic import BaseModel, ValidationError
 
 from templates.v2.models.layouts import (
@@ -37,8 +25,26 @@ from templates.v2.models.elements import Image as SlideImageElement
 from templates.v2.models.elements import ImageFit
 from templates.v2.tools import PREVIEW_SLIDE_TOOL_NAME, PreviewSlideTool
 from utils.asset_directory_utils import resolve_image_path_to_filesystem
-from utils.llm_config import get_llm_config
-from utils.llm_provider import get_model
+from utils.llm_messages import (
+    AssistantMessage,
+    ImageContentPart,
+    JSONSchemaResponse,
+    SystemMessage,
+    TextContentPart,
+    ToolResponseMessage,
+    UserMessage,
+)
+from utils.llm_provider import get_llm_client, get_model
+from utils.llm_utils import (
+    extract_structured_content,
+    get_generate_kwargs,
+    stream_generate_events,
+)
+
+# Legacy test compatibility: tests patch ``templates.v2.generation.get_client``
+# via monkeypatch.setattr. ``get_llm_client`` is the new native-SDK factory;
+# ``get_client`` is kept as an alias so existing tests keep working.
+get_client = get_llm_client
 
 DEFAULT_VALIDATION_RETRIES = 5
 MAX_PARALLEL_SLIDE_LAYOUTS = 10
@@ -305,7 +311,7 @@ def _ensure_unique_slide_layout_ids(layouts: list[SlideLayout]) -> list[SlideLay
     return unique_layouts
 
 
-def generate_template(
+async def generate_template(
     layouts: RawSlideLayouts,
     slide_image_urls: list[str],
     fonts: dict[str, str] | None = None,
@@ -327,31 +333,37 @@ def generate_template(
         DEFAULT_VALIDATION_RETRIES,
     )
 
-    layouts_by_index: dict[int, SlideLayout] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(
-                copy_context().run,
-                generate_slide_layout,
+    semaphore = asyncio.Semaphore(max_workers)
+
+    async def run_one(index: int, layout: RawSlideLayout) -> tuple[int, SlideLayout]:
+        async with semaphore:
+            result = await generate_slide_layout(
                 layout,
                 index,
                 slide_image_urls[index],
                 fonts,
-            ): index
-            for index, layout in enumerate(layouts.layouts)
-        }
-        for future in as_completed(futures):
-            index = futures[future]
-            layouts_by_index[index] = future.result()
-            LOGGER.info(
-                "[templates.v2.generate] slide layout complete slide=%d/%d "
-                "components=%d completed=%d/%d",
-                index + 1,
-                slide_count,
-                len(layouts_by_index[index].components),
-                len(layouts_by_index),
-                slide_count,
             )
+            return index, result
+
+    tasks = [
+        asyncio.create_task(run_one(index, layout))
+        for index, layout in enumerate(layouts.layouts)
+    ]
+    layouts_by_index: dict[int, SlideLayout] = {}
+    completed_count = 0
+    for completed in asyncio.as_completed(tasks):
+        index, layout = await completed
+        layouts_by_index[index] = layout
+        completed_count += 1
+        LOGGER.info(
+            "[templates.v2.generate] slide layout complete slide=%d/%d "
+            "components=%d completed=%d/%d",
+            index + 1,
+            slide_count,
+            len(layout.components),
+            completed_count,
+            slide_count,
+        )
 
     ordered_layouts = [layouts_by_index[index] for index in range(slide_count)]
     generated = SlideLayouts(layouts=_ensure_unique_slide_layout_ids(ordered_layouts))
@@ -365,7 +377,7 @@ def generate_template(
     return generated
 
 
-def merge_similar_components(layouts: SlideLayouts) -> MergedComponents:
+async def merge_similar_components(layouts: SlideLayouts) -> MergedComponents:
     indexed_components = [
         component for layout in layouts.layouts for component in layout.components
     ]
@@ -384,8 +396,8 @@ def merge_similar_components(layouts: SlideLayouts) -> MergedComponents:
         "[templates.v2.deduplicate] clustering start components=%d",
         len(indexed_components),
     )
-    response = _generate_with_validation_retries(
-        client=get_client(config=get_llm_config()),
+    response = await _generate_with_validation_retries(
+        client=get_llm_client(),
         model=get_model(),
         messages=[
             SystemMessage(content=CLUSTER_SIMILAR_COMPONENTS_SYSTEM_PROMPT),
@@ -815,7 +827,7 @@ def _unique_merged_component_id(component_id: str, used_ids: set[str]) -> str:
         suffix += 1
 
 
-def generate_slide_layout(
+async def generate_slide_layout(
     source_layout: RawSlideLayout,
     slide_index: int,
     slide_image_url: str,
@@ -828,8 +840,7 @@ def generate_slide_layout(
             source_layout.model_dump(mode="json", exclude_none=True)
         ),
     )
-    llm_config = get_llm_config()
-    client = get_client(config=llm_config)
+    client = get_llm_client()
     model = get_model()
     messages = [
         SystemMessage(content=GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT),
@@ -841,7 +852,7 @@ def generate_slide_layout(
         ),
     ]
     preview_tool = PreviewSlideTool(slide_index=slide_index, fonts=fonts)
-    layout = _generate_preview_candidate(
+    layout = await _generate_preview_candidate(
         client=client,
         model=model,
         messages=messages,
@@ -853,7 +864,7 @@ def generate_slide_layout(
     return _replace_content_image_urls(layout)
 
 
-def generate_prompted_slide_layout(
+async def generate_prompted_slide_layout(
     prompt: str,
     template_layouts: SlideLayouts,
     merged_components: MergedComponents | None = None,
@@ -893,9 +904,9 @@ def generate_prompted_slide_layout(
                 "layout must contain at least one semantic element with decorative=false"
             )
 
-    client = get_client(config=get_llm_config())
+    client = get_llm_client()
     model = get_model()
-    generated = _generate_with_validation_retries(
+    generated = await _generate_with_validation_retries(
         client=client,
         model=model,
         messages=[
@@ -1074,7 +1085,7 @@ def _strip_decorative_fields(value: Any) -> Any:
     return value
 
 
-def _generate_preview_candidate(
+async def _generate_preview_candidate(
     *,
     client: Any,
     model: str,
@@ -1114,28 +1125,26 @@ def _generate_preview_candidate(
             if max_tokens is not None:
                 generate_kwargs["max_tokens"] = max_tokens
             if preview_tool_available:
-                generate_kwargs.update(
-                    {
-                        "tools": [preview_tool],
-                        "tool_choice": ToolChoice(
-                            mode=ToolChoiceMode.AUTO,
-                            tools=[PREVIEW_SLIDE_TOOL_NAME],
-                        ),
-                    }
-                )
-            response = client.generate(**generate_kwargs)
+                generate_kwargs["tools"] = [preview_tool]
+            completion: Any | None = None
+            async for event in stream_generate_events(
+                client,
+                **get_generate_kwargs(**generate_kwargs, stream=True),
+            ):
+                if getattr(event, "type", None) == "completion":
+                    completion = event
             tool_call = None
             if preview_tool_available:
                 tool_call = next(
                     (
                         call
-                        for call in list(getattr(response, "tool_calls", []) or [])
+                        for call in list(getattr(completion, "tool_calls", []) or [])
                         if call.name == preview_tool.name
                     ),
                     None,
                 )
             if tool_call is None:
-                parsed = _parse_json_content(response.content)
+                parsed = _parse_json_content(getattr(completion, "content", None))
                 layout = SlideLayout.model_validate(parsed)
                 LOGGER.info(
                     "[templates.v2.llm] %s: slide layout JSON returned "
@@ -1190,11 +1199,11 @@ def _generate_preview_candidate(
                 )
                 return candidate_layout
 
-            response_messages = list(getattr(response, "messages", []) or [])
+            response_messages = list(getattr(completion, "messages", []) or [])
             if response_messages:
                 history_messages = response_messages
             else:
-                response_text = _text_from_content(getattr(response, "content", None))
+                response_text = _text_from_content(getattr(completion, "content", None))
                 assistant_message = AssistantMessage(
                     content=[response_text] if response_text else None,
                     tool_calls=[tool_call],
@@ -1205,7 +1214,9 @@ def _generate_preview_candidate(
                 *history_messages,
                 ToolResponseMessage(
                     id=tool_call.id,
-                    content=["The slide preview was rendered successfully."],
+                    content=[
+                        TextContentPart(text="The slide preview was rendered successfully.")
+                    ],
                 ),
                 UserMessage(
                     content=[
@@ -1314,7 +1325,7 @@ def _slide_image_content(slide_image_url: str) -> ImageContentPart:
     return ImageContentPart(url=slide_image_url)
 
 
-def _generate_with_validation_retries(
+async def _generate_with_validation_retries(
     *,
     client: Any,
     model: str,
@@ -1344,16 +1355,23 @@ def _generate_with_validation_retries(
             len(attempt_messages),
         )
         try:
-            response = client.generate(
-                model=model,
-                messages=attempt_messages,
-                response_format=JSONSchemaResponse(
-                    name=response_name,
-                    strict=False,
-                    json_schema=output_model,
+            response: Any | None = None
+            async for event in stream_generate_events(
+                client,
+                **get_generate_kwargs(
+                    model=model,
+                    messages=attempt_messages,
+                    response_format=JSONSchemaResponse(
+                        name=response_name,
+                        strict=False,
+                        json_schema=output_model,
+                    ),
+                    max_tokens=max_tokens,
+                    stream=True,
                 ),
-                max_tokens=max_tokens,
-            )
+            ):
+                if getattr(event, "type", None) == "completion":
+                    response = event
         except Exception as exc:
             last_error = exc
             LOGGER.warning(
@@ -1376,7 +1394,7 @@ def _generate_with_validation_retries(
             continue
 
         try:
-            parsed = _parse_json_content(response.content)
+            parsed = _parse_json_content(getattr(response, "content", None))
             validated = _validate_output_model(
                 parsed,
                 output_model,

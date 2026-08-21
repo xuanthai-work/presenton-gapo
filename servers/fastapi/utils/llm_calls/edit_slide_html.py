@@ -1,12 +1,13 @@
-import asyncio
-from typing import Optional
+from typing import Any, Optional
 from fastapi import HTTPException
-from llmai import get_client
-from llmai.shared import SystemMessage, UserMessage
-from utils.llm_config import get_llm_config
 from utils.llm_client_error_handler import handle_llm_client_exceptions
-from utils.llm_utils import extract_text, get_generate_kwargs
-from utils.llm_provider import get_model
+from utils.llm_messages import SystemMessage, UserMessage
+from utils.llm_provider import get_llm_client, get_model
+from utils.llm_utils import (
+    extract_text,
+    get_generate_kwargs,
+    stream_generate_events,
+)
 
 system_prompt = """
     You are an expert HTML slide editor. Your task is to modify slide HTML content based on user prompts while maintaining proper structure, styling, and functionality.
@@ -63,21 +64,24 @@ async def get_edited_slide_html(
 ):
     model = get_model()
 
-    client = get_client(config=get_llm_config())
+    client = get_llm_client()
     try:
-        response = await asyncio.to_thread(
-            client.generate,
-            **get_generate_kwargs(
-                model=model,
-                messages=[
-                    SystemMessage(content=system_prompt),
-                    UserMessage(
-                        content=get_user_prompt(prompt, html, memory_context)
-                    ),
-                ],
-            ),
+        kwargs = get_generate_kwargs(
+            model=model,
+            messages=[
+                SystemMessage(content=system_prompt),
+                UserMessage(
+                    content=get_user_prompt(prompt, html, memory_context)
+                ),
+            ],
         )
-        response_text = extract_text(response.content)
+        # Iterate the (single-event) completion stream to reuse the unified
+        # provider-dispatch path in stream_generate_events.
+        response_text: Optional[str] = None
+        async for event in stream_generate_events(client, **kwargs):
+            if getattr(event, "type", None) == "completion":
+                response_text = extract_text(getattr(event, "content", None))
+                break
         if response_text is None:
             raise HTTPException(status_code=400, detail="LLM did not return any content")
         return extract_html_from_response(response_text) or html

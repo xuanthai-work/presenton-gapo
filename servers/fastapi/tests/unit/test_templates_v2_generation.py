@@ -1,17 +1,16 @@
+"""Tests for ``templates.v2.generation`` after migrating off ``llmai``.
+
+The production module now drives everything through ``stream_generate_events``
+(yielding ``_StreamCompletionChunk``/``_StreamContentChunk``/``_StreamThinkingChunk``
+events). These tests monkeypatch ``stream_generate_events`` directly with async
+generators that emit the same event shape the production code consumes.
+"""
+import asyncio
 import json
 import logging
 from types import SimpleNamespace
 
 import pytest
-from llmai.shared import (
-    AssistantMessage,
-    AssistantToolCall,
-    GoogleClientConfig,
-    ImageContentPart,
-    SystemMessage,
-    ToolResponseMessage,
-    UserMessage,
-)
 from pydantic import BaseModel, Field, ValidationError
 
 from templates.v2.generation import (
@@ -38,26 +37,88 @@ from templates.v2.models.layouts import (
     SlideLayouts,
 )
 from templates.v2.tools import PreviewSlideTool
+from utils.llm_messages import (
+    AssistantMessage,
+    AssistantToolCall,
+    ImageContentPart,
+    SystemMessage,
+    ToolResponseMessage,
+    UserMessage,
+)
 
 
-class _FakeResponse:
-    def __init__(self, content, messages=None, tool_calls=None):
-        self.content = content
-        self.messages = messages or []
-        self.tool_calls = tool_calls or []
+def _completion_event(content=None, tool_calls=None, messages=None):
+    """Build a fake ``_StreamCompletionChunk``-shaped event."""
+    return SimpleNamespace(
+        type="completion",
+        content=content,
+        tool_calls=tool_calls or [],
+        messages=messages or [],
+        usage=None,
+        raw=None,
+    )
 
 
-class _FakeClient:
-    def __init__(self, content=None, responses=None):
-        self.content = content
-        self.responses = list(responses or [])
-        self.calls = []
+@pytest.fixture(autouse=True)
+def _stub_llm_provider(monkeypatch):
+    """Set the LLM env var so ``get_llm_provider()`` doesn't raise.
 
-    def generate(self, **kwargs):
-        self.calls.append(kwargs)
-        if self.responses:
-            return self.responses.pop(0)
-        return _FakeResponse(self.content)
+    Templates v2 dispatch goes through ``get_llm_provider`` even when
+    ``stream_generate_events`` is monkeypatched, so we need a valid provider
+    in the environment for every test in this module.
+    """
+    monkeypatch.setenv("LLM", "openai")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+
+def _content_event(chunk: str):
+    return SimpleNamespace(type="content", chunk=chunk)
+
+
+def _make_stream(responses):
+    """Return an async generator yielding completion events in order.
+
+    Each response is either a dict (yielded as content), a list of tool calls,
+    or a dict with ``content`` / ``tool_calls`` keys. Multiple responses
+    produce multiple completion events.
+    """
+    queue = list(responses)
+
+    async def _gen(_client, **_kwargs):
+        while queue:
+            entry = queue.pop(0)
+            if isinstance(entry, dict) and "tool_calls" in entry:
+                yield _completion_event(
+                    content=entry.get("content"),
+                    tool_calls=entry["tool_calls"],
+                    messages=entry.get("messages", []),
+                )
+            else:
+                yield _completion_event(content=entry)
+
+    return _gen
+
+
+def _capture_stream(captured):
+    """Build a stream factory that captures kwargs and yields a single completion."""
+    captured_kwargs: dict = {}
+
+    def _factory(responses):
+        async def _gen(_client, **kwargs):
+            captured_kwargs.update(kwargs)
+            for response in responses:
+                if isinstance(response, dict) and "tool_calls" in response:
+                    yield _completion_event(
+                        content=response.get("content"),
+                        tool_calls=response["tool_calls"],
+                        messages=response.get("messages", []),
+                    )
+                else:
+                    yield _completion_event(content=response)
+
+        return _gen
+
+    return captured_kwargs, _factory
 
 
 class _ProviderResponseItem:
@@ -209,15 +270,32 @@ def test_generate_slide_layout_requests_complete_layout(monkeypatch, caplog):
         name="previewSlide",
         arguments=json.dumps(_generated_layout()),
     )
-    client = _FakeClient(
-        responses=[
-            _FakeResponse(None, tool_calls=[preview_tool_call]),
-            _FakeResponse(_generated_layout()),
-        ]
+    captured = {}
+    stream_responses = [
+        {"tool_calls": [preview_tool_call]},
+        _generated_layout(),
+    ]
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        response = stream_responses[len(captured["calls"]) - 1]
+        if isinstance(response, dict) and "tool_calls" in response:
+            yield _completion_event(
+                content=response.get("content"),
+                tool_calls=response["tool_calls"],
+                messages=response.get("messages", []),
+            )
+        else:
+            yield _completion_event(content=response)
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
     )
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
     monkeypatch.setattr(
         PreviewSlideTool,
         "render",
@@ -228,46 +306,61 @@ def test_generate_slide_layout_requests_complete_layout(monkeypatch, caplog):
     )
     caplog.set_level(logging.INFO, logger="templates.v2.generation")
 
-    result = generate_slide_layout(
-        _raw_layout(),
-        2,
-        "https://example.com/slide-3.png",
+    result = asyncio.run(
+        generate_slide_layout(
+            _raw_layout(),
+            2,
+            "https://example.com/slide-3.png",
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout())
     result_element = result.model_dump(mode="json")["components"][0]["elements"][0]
     assert result_element["decorative"] is False
     assert "fixed" not in result_element
-    assert len(client.calls) == 2
-    preview_call = client.calls[0]
-    assert isinstance(preview_call["tools"][0], PreviewSlideTool)
-    assert preview_call["tools"][0].input_schema is SlideLayout
-    assert preview_call["tool_choice"] == {
-        "mode": "auto",
-        "tools": ["previewSlide"],
-    }
-    assert preview_call["response_format"].json_schema is SlideLayout
-    assert preview_call["response_format"].name == "SlideLayoutResponse"
+    assert len(captured["calls"]) == 2
+    preview_call = captured["calls"][0]
+    assert preview_call["tools"][0]["function"]["name"] == "previewSlide"
+    assert preview_call["tools"][0]["function"]["strict"] is False
+    assert preview_call["response_format"]["type"] == "json_schema"
+    assert preview_call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
     assert "max_tokens" not in preview_call
-    assert preview_call["messages"][0].content == GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT
-    user_content = preview_call["messages"][1].content
-    assert user_content[0].url == "https://example.com/slide-3.png"
-    payload = json.loads(user_content[1])
+    assert preview_call["messages"][0]["role"] == "system"
+    assert preview_call["messages"][0]["content"] == GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT
+    user_content = preview_call["messages"][1]["content"]
+    # user_content is a list of content parts after messages_to_openai
+    image_part = next(
+        part for part in user_content if part.get("type") == "image_url"
+    )
+    assert image_part["image_url"]["url"] == "https://example.com/slide-3.png"
+    text_parts = [
+        part for part in user_content if part.get("type") == "text"
+    ]
+    payload = json.loads(text_parts[0]["text"])
     assert payload[0]["id"] == "source_slide"
     assert payload[0]["elements"][0]["runs"][0]["text"] == (
         "Original title"
     )
     assert not _contains_key(payload, "decorative")
 
-    final_call = client.calls[1]
-    assert final_call["response_format"].json_schema is SlideLayout
-    assert final_call["response_format"].name == "SlideLayoutResponse"
+    final_call = captured["calls"][1]
+    assert final_call["response_format"]["type"] == "json_schema"
+    assert final_call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
     assert "max_tokens" not in final_call
-    assert isinstance(final_call["messages"][-2], ToolResponseMessage)
+    # tool message + user message — both are dicts after messages_to_openai
+    assert final_call["messages"][-2]["role"] == "tool"
     feedback = final_call["messages"][-1]
-    assert isinstance(feedback, UserMessage)
-    assert feedback.content[0].data == b"rendered-preview"
-    assert "Review this rendered candidate" in feedback.content[1]
+    assert feedback["role"] == "user"
+    # The user message contains an image_url part referencing the rendered preview
+    feedback_parts = feedback["content"]
+    image_part = next(
+        part for part in feedback_parts if part.get("type") == "image_url"
+    )
+    assert "base64" in image_part["image_url"]["url"]
+    text_parts = [
+        part for part in feedback_parts if part.get("type") == "text"
+    ]
+    assert any("Review this rendered candidate" in part["text"] for part in text_parts)
     messages = [record.getMessage() for record in caplog.records]
     assert any("slide 3: preview slide called" in message for message in messages)
     assert any("slide 3: preview slide rendered" in message for message in messages)
@@ -275,10 +368,20 @@ def test_generate_slide_layout_requests_complete_layout(monkeypatch, caplog):
 
 
 def test_generate_slide_layout_accepts_direct_schema_response(monkeypatch, caplog):
-    client = _FakeClient(responses=[_FakeResponse(_generated_layout())])
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(content=_generated_layout())
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
+    )
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
     monkeypatch.setattr(
         PreviewSlideTool,
         "render",
@@ -286,40 +389,50 @@ def test_generate_slide_layout_accepts_direct_schema_response(monkeypatch, caplo
     )
     caplog.set_level(logging.INFO, logger="templates.v2.generation")
 
-    result = generate_slide_layout(
-        _raw_layout(),
-        0,
-        "https://example.com/slide-1.png",
+    result = asyncio.run(
+        generate_slide_layout(
+            _raw_layout(),
+            0,
+            "https://example.com/slide-1.png",
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout())
-    assert len(client.calls) == 1
-    call = client.calls[0]
-    assert call["tool_choice"] == {
-        "mode": "auto",
-        "tools": ["previewSlide"],
-    }
-    assert call["response_format"].json_schema is SlideLayout
-    assert call["response_format"].name == "SlideLayoutResponse"
+    assert len(captured["calls"]) == 1
+    call = captured["calls"][0]
+    assert call["response_format"]["type"] == "json_schema"
+    assert call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
     messages = [record.getMessage() for record in caplog.records]
     assert any("slide 1: slide layout JSON returned" in message for message in messages)
 
 
 def test_generate_slide_layout_replaces_content_image_urls(monkeypatch):
-    client = _FakeClient(responses=[_FakeResponse(_generated_layout_with_images())])
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(content=_generated_layout_with_images())
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
+    )
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
     monkeypatch.setattr(
         PreviewSlideTool,
         "render",
         lambda _self, _layout: pytest.fail("preview should not be rendered"),
     )
 
-    result = generate_slide_layout(
-        _raw_layout(),
-        0,
-        "https://example.com/slide-1.png",
+    result = asyncio.run(
+        generate_slide_layout(
+            _raw_layout(),
+            0,
+            "https://example.com/slide-1.png",
+        )
     )
 
     elements = result.model_dump(mode="json")["components"][0]["elements"]
@@ -334,52 +447,73 @@ def test_generate_slide_layout_replaces_content_image_urls(monkeypatch):
 
 
 def test_generate_slide_layout_passes_max_tokens_when_provided(monkeypatch):
-    client = _FakeClient(responses=[_FakeResponse(_generated_layout())])
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(content=_generated_layout())
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
+    )
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
     monkeypatch.setattr(
         PreviewSlideTool,
         "render",
         lambda _self, _layout: pytest.fail("preview should not be rendered"),
     )
 
-    result = generate_slide_layout(
-        _raw_layout(),
-        0,
-        "https://example.com/slide-1.png",
-        max_tokens=16000,
+    result = asyncio.run(
+        generate_slide_layout(
+            _raw_layout(),
+            0,
+            "https://example.com/slide-1.png",
+            max_tokens=16000,
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout())
-    assert client.calls[0]["max_tokens"] == 16000
+    assert captured["calls"][0]["max_tokens"] == 16000
 
 
 def test_generate_slide_layout_uses_json_schema_response_for_google(monkeypatch):
-    client = _FakeClient(responses=[_FakeResponse(_generated_layout())])
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(content=_generated_layout())
+
     monkeypatch.setattr(
-        "templates.v2.generation.get_llm_config",
-        lambda: GoogleClientConfig(api_key="test-key"),
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
     )
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "gemini-test")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
     monkeypatch.setattr(
         PreviewSlideTool,
         "render",
         lambda _self, _layout: pytest.fail("preview should not be rendered"),
     )
 
-    result = generate_slide_layout(
-        _raw_layout(),
-        0,
-        "https://example.com/slide-1.png",
+    result = asyncio.run(
+        generate_slide_layout(
+            _raw_layout(),
+            0,
+            "https://example.com/slide-1.png",
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout())
-    call = client.calls[0]
-    assert call["response_format"].json_schema is SlideLayout
-    assert call["response_format"].name == "SlideLayoutResponse"
-    assert call["messages"][0].content == GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT
+    call = captured["calls"][0]
+    assert call["response_format"]["type"] == "json_schema"
+    assert call["response_format"]["json_schema"]["name"] == "SlideLayoutResponse"
+    assert call["messages"][0]["content"] == GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT
 
 
 def test_generate_preview_candidate_returns_last_preview_tool_json(monkeypatch, caplog):
@@ -388,8 +522,15 @@ def test_generate_preview_candidate_returns_last_preview_tool_json(monkeypatch, 
         name="previewSlide",
         arguments=json.dumps(_generated_layout()),
     )
-    client = _FakeClient(
-        responses=[_FakeResponse(None, tool_calls=[preview_tool_call])]
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(tool_calls=[preview_tool_call])
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
     )
     render_calls = []
 
@@ -403,23 +544,25 @@ def test_generate_preview_candidate_returns_last_preview_tool_json(monkeypatch, 
     monkeypatch.setattr(PreviewSlideTool, "render", fake_render)
     caplog.set_level(logging.INFO, logger="templates.v2.generation")
 
-    result = _generate_preview_candidate(
-        client=client,
-        model="test-model",
-        messages=[
-            SystemMessage(content=GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT),
-            UserMessage(content="{}"),
-        ],
-        label="slide layout",
-        preview_tool=PreviewSlideTool(),
-        validation_retries=0,
+    result = asyncio.run(
+        _generate_preview_candidate(
+            client=object(),
+            model="test-model",
+            messages=[
+                SystemMessage(content=GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT),
+                UserMessage(content="{}"),
+            ],
+            label="slide layout",
+            preview_tool=PreviewSlideTool(),
+            validation_retries=0,
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout())
     assert render_calls == ["title_slide"]
-    assert len(client.calls) == 1
-    call = client.calls[0]
-    assert call["response_format"].json_schema is SlideLayout
+    assert len(captured["calls"]) == 1
+    call = captured["calls"][0]
+    assert call["response_format"]["type"] == "json_schema"
     assert "max_tokens" not in call
     messages = [record.getMessage() for record in caplog.records]
     assert any(
@@ -446,17 +589,23 @@ def test_generate_preview_candidate_preserves_provider_response_messages(monkeyp
         SystemMessage(content=GENERATE_SLIDE_LAYOUT_SYSTEM_PROMPT),
         UserMessage(content="{}"),
     ]
-    client = _FakeClient(
-        responses=[
-            _FakeResponse(
-                None,
-                messages=[*initial_messages, preserved_assistant_message],
-                tool_calls=[preview_tool_call],
-            ),
-            _FakeResponse(_generated_layout("final_candidate")),
-        ]
-    )
+    captured = {}
 
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        call_index = len(captured["calls"]) - 1
+        if call_index == 0:
+            yield _completion_event(
+                tool_calls=[preview_tool_call],
+                messages=[*initial_messages, preserved_assistant_message],
+            )
+        else:
+            yield _completion_event(content=_generated_layout("final_candidate"))
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
+    )
     monkeypatch.setattr(
         PreviewSlideTool,
         "render",
@@ -466,21 +615,34 @@ def test_generate_preview_candidate_preserves_provider_response_messages(monkeyp
         ),
     )
 
-    result = _generate_preview_candidate(
-        client=client,
-        model="test-model",
-        messages=initial_messages,
-        label="slide layout",
-        preview_tool=PreviewSlideTool(),
-        validation_retries=1,
+    result = asyncio.run(
+        _generate_preview_candidate(
+            client=object(),
+            model="test-model",
+            messages=initial_messages,
+            label="slide layout",
+            preview_tool=PreviewSlideTool(),
+            validation_retries=1,
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout("final_candidate"))
-    follow_up_messages = client.calls[1]["messages"]
-    assert follow_up_messages[2] is preserved_assistant_message
-    assert follow_up_messages[3].id == "preview-call-1"
-    assert follow_up_messages[4].content[0].data == b"rendered-preview"
-    assert "Original slide image:" not in follow_up_messages[4].content
+    follow_up_messages = captured["calls"][1]["messages"]
+    preserved = follow_up_messages[2]
+    assert preserved["role"] == "assistant"
+    assert preserved["content"] == "provider-preserved-context"
+    assert preserved["tool_calls"][0]["id"] == "preview-call-1"
+    assert follow_up_messages[3]["role"] == "tool"
+    assert follow_up_messages[3]["tool_call_id"] == "preview-call-1"
+    feedback = follow_up_messages[4]
+    assert feedback["role"] == "user"
+    feedback_parts = feedback["content"]
+    image_part = next(
+        part for part in feedback_parts if part.get("type") == "image_url"
+    )
+    assert "base64" in image_part["image_url"]["url"]
+    text_parts = [part for part in feedback_parts if part.get("type") == "text"]
+    assert not any("Original slide image:" in part["text"] for part in text_parts)
 
 
 def test_generate_slide_layout_allows_second_preview_then_returns_final_json(
@@ -497,12 +659,29 @@ def test_generate_slide_layout_allows_second_preview_then_returns_final_json(
         name="previewSlide",
         arguments=json.dumps(_generated_layout("second_candidate")),
     )
-    client = _FakeClient(
-        responses=[
-            _FakeResponse(None, tool_calls=[first_preview_tool_call]),
-            _FakeResponse(None, tool_calls=[second_preview_tool_call]),
-            _FakeResponse(_generated_layout("final_candidate")),
-        ]
+    captured = {}
+    stream_responses = [
+        {"tool_calls": [first_preview_tool_call]},
+        {"tool_calls": [second_preview_tool_call]},
+        _generated_layout("final_candidate"),
+    ]
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        idx = len(captured["calls"]) - 1
+        response = stream_responses[idx]
+        if isinstance(response, dict) and "tool_calls" in response:
+            yield _completion_event(tool_calls=response["tool_calls"])
+        else:
+            yield _completion_event(content=response)
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
+    )
+    monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
     )
     render_calls = []
 
@@ -513,37 +692,36 @@ def test_generate_slide_layout_allows_second_preview_then_returns_final_json(
             mime_type="image/png",
         )
 
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
-    monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
     monkeypatch.setattr(PreviewSlideTool, "render", fake_render)
     caplog.set_level(logging.INFO, logger="templates.v2.generation")
 
-    result = generate_slide_layout(
-        _raw_layout(),
-        0,
-        "https://example.com/slide-1.png",
+    result = asyncio.run(
+        generate_slide_layout(
+            _raw_layout(),
+            0,
+            "https://example.com/slide-1.png",
+        )
     )
 
     assert result == SlideLayout.model_validate(_generated_layout("final_candidate"))
     assert render_calls == ["first_candidate", "second_candidate"]
-    assert len(client.calls) == 3
-    second_call = client.calls[1]
-    assert isinstance(second_call["messages"][-2], ToolResponseMessage)
-    assert second_call["messages"][-2].id == "preview-call-1"
+    assert len(captured["calls"]) == 3
+    second_call = captured["calls"][1]
+    assert second_call["messages"][-2]["role"] == "tool"
+    assert second_call["messages"][-2]["tool_call_id"] == "preview-call-1"
     second_feedback = second_call["messages"][-1]
-    assert isinstance(second_feedback, UserMessage)
-    assert second_feedback.content[0].data == b"rendered-preview"
-    assert "one more time" in second_feedback.content[1]
-    third_call = client.calls[2]
+    assert second_feedback["role"] == "user"
+    assert any("one more time" in part.get("text", "") for part in second_feedback["content"])
+    third_call = captured["calls"][2]
     assert "tools" not in third_call
-    assert "tool_choice" not in third_call
-    assert isinstance(third_call["messages"][-2], ToolResponseMessage)
-    assert third_call["messages"][-2].id == "preview-call-2"
+    assert third_call["messages"][-2]["role"] == "tool"
+    assert third_call["messages"][-2]["tool_call_id"] == "preview-call-2"
     final_feedback = third_call["messages"][-1]
-    assert isinstance(final_feedback, UserMessage)
-    assert final_feedback.content[0].data == b"rendered-preview"
-    assert "maximum number of previewSlide calls" in final_feedback.content[1]
+    assert final_feedback["role"] == "user"
+    assert any(
+        "maximum number of previewSlide calls" in part.get("text", "")
+        for part in final_feedback["content"]
+    )
     messages = [record.getMessage() for record in caplog.records]
     assert any("slide 1: preview slide called" in message for message in messages)
     assert any("preview_call=2" in message for message in messages)
@@ -559,7 +737,7 @@ def test_generate_template_generates_each_slide_and_preserves_order(monkeypatch)
     )
     calls = []
 
-    def fake_generate(source_layout, slide_index, slide_image_url, fonts=None):
+    async def fake_generate(source_layout, slide_index, slide_image_url, fonts=None):
         calls.append((source_layout.id, slide_index, slide_image_url, fonts))
         return SlideLayout.model_validate(
             _generated_layout(f"generated_{source_layout.id}")
@@ -569,10 +747,12 @@ def test_generate_template_generates_each_slide_and_preserves_order(monkeypatch)
         "templates.v2.generation.generate_slide_layout", fake_generate
     )
 
-    generated = generate_template(
-        raw_layouts,
-        ["https://example.com/first.png", "https://example.com/second.png"],
-        {"Inter": "https://example.com/inter.css"},
+    generated = asyncio.run(
+        generate_template(
+            raw_layouts,
+            ["https://example.com/first.png", "https://example.com/second.png"],
+            {"Inter": "https://example.com/inter.css"},
+        )
     )
 
     assert sorted(calls) == [
@@ -600,16 +780,18 @@ def test_generate_template_repairs_duplicate_generated_layout_ids(monkeypatch):
         layouts=[_raw_layout("first"), _raw_layout("second")]
     )
 
-    def fake_generate(source_layout, slide_index, slide_image_url, fonts=None):
+    async def fake_generate(source_layout, slide_index, slide_image_url, fonts=None):
         return SlideLayout.model_validate(_generated_layout("duplicate_layout"))
 
     monkeypatch.setattr(
         "templates.v2.generation.generate_slide_layout", fake_generate
     )
 
-    generated = generate_template(
-        raw_layouts,
-        ["https://example.com/first.png", "https://example.com/second.png"],
+    generated = asyncio.run(
+        generate_template(
+            raw_layouts,
+            ["https://example.com/first.png", "https://example.com/second.png"],
+        )
     )
 
     assert [layout.id for layout in generated.layouts] == [
@@ -620,14 +802,16 @@ def test_generate_template_repairs_duplicate_generated_layout_ids(monkeypatch):
 
 def test_generate_template_rejects_empty_source():
     with pytest.raises(ValueError, match="at least one"):
-        generate_template(RawSlideLayouts(layouts=[]), [])
+        asyncio.run(generate_template(RawSlideLayouts(layouts=[]), []))
 
 
 def test_generate_template_requires_one_image_per_layout():
     with pytest.raises(ValueError, match="one image for each layout"):
-        generate_template(
-            RawSlideLayouts(layouts=[_raw_layout("first"), _raw_layout("second")]),
-            ["https://example.com/first.png"],
+        asyncio.run(
+            generate_template(
+                RawSlideLayouts(layouts=[_raw_layout("first"), _raw_layout("second")]),
+                ["https://example.com/first.png"],
+            )
         )
 
 
@@ -683,19 +867,29 @@ def test_merge_similar_components_clusters_by_global_component_index(
         "Reusable prominent heading text block for section slides."
     )
     layouts = SlideLayouts.model_validate({"layouts": [first, second, third]})
-    client = _FakeClient(
-        {
-            "similar_components": [
-                {"indices": [0, 2]},
-            ]
-        }
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(
+            content={
+                "similar_components": [
+                    {"indices": [0, 2]},
+                ]
+            }
+        )
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
     )
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
     caplog.set_level(logging.INFO, logger="templates.v2.generation")
 
-    merged = merge_similar_components(layouts)
+    merged = asyncio.run(merge_similar_components(layouts))
 
     assert len(merged.components) == 2
     assert merged.components[0].id == "title_block"
@@ -707,11 +901,11 @@ def test_merge_similar_components_clusters_by_global_component_index(
         "metric_grid"
     ]
 
-    call = client.calls[0]
-    assert call["response_format"].json_schema.__name__ == "SimilarComponentsList"
-    assert call["response_format"].name == "SimilarComponentsResponse"
-    assert call["messages"][0].content == CLUSTER_SIMILAR_COMPONENTS_SYSTEM_PROMPT
-    payload = json.loads(call["messages"][1].content)
+    call = captured["calls"][0]
+    assert call["response_format"]["type"] == "json_schema"
+    assert call["response_format"]["json_schema"]["name"] == "SimilarComponentsResponse"
+    assert call["messages"][0]["content"] == CLUSTER_SIMILAR_COMPONENTS_SYSTEM_PROMPT
+    payload = json.loads(call["messages"][1]["content"])
     assert payload == {
         "components": [
             {
@@ -744,12 +938,12 @@ def test_merge_similar_components_clusters_by_global_component_index(
 
 def test_merge_similar_components_skips_llm_for_single_component(monkeypatch):
     monkeypatch.setattr(
-        "templates.v2.generation.get_client",
-        lambda **_kwargs: pytest.fail("LLM should not be called"),
+        "templates.v2.generation.stream_generate_events",
+        lambda *_args, **_kwargs: pytest.fail("LLM should not be called"),
     )
     layouts = SlideLayouts.model_validate({"layouts": [_generated_layout()]})
 
-    merged = merge_similar_components(layouts)
+    merged = asyncio.run(merge_similar_components(layouts))
 
     assert len(merged.components) == 1
     assert merged.components[0].id == "title_block"
@@ -845,14 +1039,24 @@ def test_merge_similar_components_removes_structural_duplicates_after_clustering
         },
     ]
     layouts = SlideLayouts.model_validate({"layouts": [first, second, third]})
-    client = _FakeClient({"similar_components": []})
-    monkeypatch.setattr("templates.v2.generation.get_client", lambda **_kwargs: client)
-    monkeypatch.setattr("templates.v2.generation.get_llm_config", lambda: {})
+    captured = {}
+
+    async def fake_stream_generate_events(_client, **kwargs):
+        captured.setdefault("calls", []).append(kwargs)
+        yield _completion_event(content={"similar_components": []})
+
+    monkeypatch.setattr(
+        "templates.v2.generation.stream_generate_events",
+        fake_stream_generate_events,
+    )
     monkeypatch.setattr("templates.v2.generation.get_model", lambda: "test-model")
+    monkeypatch.setattr(
+        "templates.v2.generation.get_llm_client", lambda: object()
+    )
 
-    merged = merge_similar_components(layouts)
+    merged = asyncio.run(merge_similar_components(layouts))
 
-    assert len(client.calls) == 1
+    assert len(captured["calls"]) == 1
     assert len(merged.components) == 2
     assert [variant.id for variant in merged.components[0].variants] == [
         "headline_a",
@@ -1008,7 +1212,7 @@ def test_json_repair_retry_rebuilds_messages_without_provider_response_items():
         UserMessage(content="{}"),
     ]
     provider_response_item = _ProviderResponseItem()
-    response = _FakeResponse(
+    response = _completion_event(
         content='{"bad": true',
         messages=[provider_response_item],
     )
@@ -1035,7 +1239,7 @@ def test_validation_retry_rebuilds_messages_without_provider_response_items():
     ]
     provider_response_item = _ProviderResponseItem()
     invalid_response = {"title": "bad"}
-    response = _FakeResponse(
+    response = _completion_event(
         content=invalid_response,
         messages=[provider_response_item],
     )

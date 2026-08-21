@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
-from llmai.shared import ReasoningConfig, ReasoningEffortValue, UserMessage
 
 from enums.llm_provider import LLMProvider
 from services.community_presentations import (
@@ -24,6 +23,13 @@ from utils.llm_calls.generate_smart_presentation import (
     parse_smart_presentation_html,
     resolve_smart_slide_count,
 )
+from utils.llm_messages import ReasoningConfig, ReasoningEffortValue, UserMessage
+
+
+@pytest.fixture(autouse=True)
+def _stub_llm_env(monkeypatch):
+    monkeypatch.setenv("LLM", "openai")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
 
 
 def _smart_slide_html(title="Slide", slide_type="content", body="Content"):
@@ -140,8 +146,8 @@ def test_smart_reasoning_uses_low_effort_for_openai(monkeypatch):
         lambda: LLMProvider.OPENAI,
     )
     monkeypatch.setattr(
-        "utils.llm_calls.generate_smart_presentation.llmai.supports_thinking",
-        lambda model, provider=None: True,
+        "utils.llm_calls.generate_smart_presentation._supports_thinking",
+        lambda model: True,
     )
 
     reasoning, supports_thinking = get_smart_reasoning_config("gpt-5")
@@ -165,7 +171,8 @@ def test_smart_reasoning_respects_disable_thinking(monkeypatch):
 
 
 def test_smart_stream_separates_thinking_and_reports_exact_usage(monkeypatch):
-    reasoning = ReasoningConfig(enabled=True)
+    # ``effort`` must be set so Responses API actually emits a ``reasoning`` kwarg.
+    reasoning = ReasoningConfig(enabled=True, effort=ReasoningEffortValue.LOW)
     captured_kwargs = {}
 
     async def fake_stream_generate_events(_client, **kwargs):
@@ -215,7 +222,12 @@ def test_smart_stream_separates_thinking_and_reports_exact_usage(monkeypatch):
     assert response == "visible deck"
     assert content_chunks == ["visible deck"]
     assert thinking_chunks == ["private planning"]
-    assert captured_kwargs["reasoning"] is reasoning
+    # The reasoning config was consumed by get_generate_kwargs into a
+    # provider-native payload (either Responses API "reasoning" or Google's
+    # "thinking_config"). The exact kwarg depends on the active provider.
+    assert any(
+        key in captured_kwargs for key in ("reasoning", "thinking_config")
+    ), captured_kwargs
     assert metrics.input_tokens == 12
     assert metrics.output_tokens == 8
     assert metrics.thinking_tokens == 5

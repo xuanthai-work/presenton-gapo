@@ -4,7 +4,7 @@ import json
 import uuid
 from unittest.mock import AsyncMock, patch
 
-from llmai.shared import AssistantToolCall  # type: ignore[import-not-found]
+from utils.llm_messages import AssistantToolCall
 
 from constants.presentation import MAX_NUMBER_OF_SLIDES, MAX_OUTLINE_CONTENT_WORDS
 from models.sql.presentation import PresentationModel, PresentationVersion

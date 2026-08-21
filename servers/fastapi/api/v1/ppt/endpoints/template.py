@@ -525,19 +525,13 @@ async def _generate_slide_layouts_with_task_progress(
     completed_layout_indices: set[int] = set()
     layouts_by_index: dict[int, SlideLayout] = {}
 
-    async def generate_one(index: int, executor: ThreadPoolExecutor):
-        context = copy_context()
-        generated_layout = await loop.run_in_executor(
-            executor,
-            context.run,
-            partial(
-                generate_slide_layout,
-                raw_layouts.layouts[index],
-                index,
-                slide_image_urls[index],
-                fonts,
-                max_tokens=SLIDE_LAYOUT_GENERATION_MAX_TOKENS,
-            ),
+    async def generate_one(index: int) -> tuple[int, SlideLayout]:
+        generated_layout = await generate_slide_layout(
+            raw_layouts.layouts[index],
+            index,
+            slide_image_urls[index],
+            fonts,
+            max_tokens=SLIDE_LAYOUT_GENERATION_MAX_TOKENS,
         )
         layout = (
             generated_layout
@@ -546,41 +540,43 @@ async def _generate_slide_layouts_with_task_progress(
         )
         return index, layout
 
-    with ThreadPoolExecutor(
-        max_workers=max_workers,
-        thread_name_prefix="template-slide-layout",
-    ) as executor:
-        pending_tasks = [
-            asyncio.create_task(generate_one(index, executor))
-            for index in range(slide_count)
-        ]
-        try:
-            for completed_task in asyncio.as_completed(pending_tasks):
-                index, layout = await completed_task
-                layouts_by_index[index] = layout
-                completed_layout_indices.add(index)
-                await _commit_template_task_progress(
-                    task,
-                    sql_session,
-                    completed_layout_indices=completed_layout_indices,
-                    total_layouts=slide_count,
-                    name=name,
-                    thumbnail=thumbnail,
-                )
-                LOGGER.info(
-                    "[template.create.async] slide layout complete "
-                    "task_id=%s slide=%d/%d components=%d completed=%d/%d",
-                    task.id,
-                    index + 1,
-                    slide_count,
-                    len(layout.components),
-                    len(completed_layout_indices),
-                    slide_count,
-                )
-        except Exception:
-            for pending_task in pending_tasks:
-                pending_task.cancel()
-            raise
+    semaphore = asyncio.Semaphore(max_workers)
+    pending_tasks: list[asyncio.Task[tuple[int, SlideLayout]]] = []
+
+    async def bounded(index: int) -> tuple[int, SlideLayout]:
+        async with semaphore:
+            return await generate_one(index)
+
+    pending_tasks = [
+        asyncio.create_task(bounded(index)) for index in range(slide_count)
+    ]
+    try:
+        for completed_task in asyncio.as_completed(pending_tasks):
+            index, layout = await completed_task
+            layouts_by_index[index] = layout
+            completed_layout_indices.add(index)
+            await _commit_template_task_progress(
+                task,
+                sql_session,
+                completed_layout_indices=completed_layout_indices,
+                total_layouts=slide_count,
+                name=name,
+                thumbnail=thumbnail,
+            )
+            LOGGER.info(
+                "[template.create.async] slide layout complete "
+                "task_id=%s slide=%d/%d components=%d completed=%d/%d",
+                task.id,
+                index + 1,
+                slide_count,
+                len(layout.components),
+                len(completed_layout_indices),
+                slide_count,
+            )
+    except Exception:
+        for pending_task in pending_tasks:
+            pending_task.cancel()
+        raise
 
     ordered_layouts = [layouts_by_index[index] for index in range(slide_count)]
     unique_layouts = _ensure_unique_async_slide_layout_ids(ordered_layouts)
@@ -602,7 +598,12 @@ async def _run_template_generation_thread(func: Any, *args: Any) -> Any:
         max_workers=1,
         thread_name_prefix="template-generation",
     ) as executor:
-        return await loop.run_in_executor(executor, context.run, partial(func, *args))
+        result = await loop.run_in_executor(executor, context.run, partial(func, *args))
+    if asyncio.iscoroutine(result):
+        # Caller passed an async function; await it on this loop instead of
+        # blocking on a separate thread.
+        return await result
+    return result
 
 
 def _coerce_generated_slide_layouts(generated_layouts: Any) -> SlideLayouts:
@@ -844,37 +845,31 @@ def _merge_template_layout_items(
         ) from exc
 
 
-def _generate_indexed_slide_layouts(
+async def _generate_indexed_slide_layouts(
     raw_layouts: RawSlideLayouts,
     indices: list[int],
     slide_image_urls: list[str | None],
     fonts: dict[str, str],
 ) -> list[CreatedTemplateSlideLayout]:
     max_workers = min(MAX_PARALLEL_SLIDE_LAYOUTS, len(indices))
-    layouts_by_index: dict[int, SlideLayout] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(
-                copy_context().run,
-                partial(
-                    generate_slide_layout,
-                    raw_layouts.layouts[index],
-                    index,
-                    slide_image_urls[index],
-                    fonts,
-                    max_tokens=SLIDE_LAYOUT_GENERATION_MAX_TOKENS,
-                ),
-            ): index
-            for index in indices
-        }
-        for future in as_completed(futures):
-            index = futures[future]
-            generated_layout = future.result()
-            layouts_by_index[index] = (
-                generated_layout
-                if isinstance(generated_layout, SlideLayout)
-                else SlideLayout.model_validate(generated_layout)
+    semaphore = asyncio.Semaphore(max_workers)
+
+    async def run_one(index: int) -> tuple[int, SlideLayout]:
+        async with semaphore:
+            generated = await generate_slide_layout(
+                raw_layouts.layouts[index],
+                index,
+                slide_image_urls[index],
+                fonts,
+                max_tokens=SLIDE_LAYOUT_GENERATION_MAX_TOKENS,
             )
+            return index, generated
+
+    layouts_by_index: dict[int, SlideLayout] = {}
+    tasks = [asyncio.create_task(run_one(index)) for index in indices]
+    for completed in asyncio.as_completed(tasks):
+        index, layout = await completed
+        layouts_by_index[index] = layout
 
     ordered_layouts = [layouts_by_index[index] for index in indices]
     randomized = _with_randomized_layout_ids(SlideLayouts(layouts=ordered_layouts))

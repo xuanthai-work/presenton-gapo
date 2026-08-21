@@ -3,7 +3,6 @@ from openai import APIError as OpenAIAPIError
 from google.genai.errors import APIError as GoogleAPIError
 import traceback
 
-from llmai.shared.errors import BaseError as LLMAIBaseError
 from utils.image_generation_error import openai_error_detail
 from utils.provider_error_messages import safe_llm_provider_error_detail
 
@@ -12,14 +11,6 @@ def handle_llm_client_exceptions(e: Exception) -> HTTPException:
     traceback.print_exc()
     if isinstance(e, HTTPException):
         return e
-    if isinstance(e, LLMAIBaseError):
-        return HTTPException(
-            status_code=e.status_code,
-            detail=safe_llm_provider_error_detail(
-                status_code=e.status_code,
-                message=e.message,
-            ),
-        )
     if isinstance(e, OpenAIAPIError):
         status_code = getattr(e, "status_code", None) or 500
         detail = openai_error_detail(e, operation="API request")
@@ -44,3 +35,6 @@ def handle_llm_client_exceptions(e: Exception) -> HTTPException:
         status_code=500,
         detail=safe_llm_provider_error_detail(message=f"LLM API error: {e}"),
     )
+
+
+__all__ = ["handle_llm_client_exceptions"]

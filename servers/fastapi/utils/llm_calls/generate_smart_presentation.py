@@ -8,22 +8,23 @@ import time
 from collections.abc import Awaitable, Callable, Sequence
 from typing import Any, Optional
 
-import llmai
 from fastapi import HTTPException
-from llmai import get_client
-from llmai.shared import (
+
+from utils.llm_client_error_handler import handle_llm_client_exceptions
+from utils.llm_config import disable_thinking
+from utils.llm_messages import (
     Message,
     ReasoningConfig,
     ReasoningEffortValue,
-    ResponseStreamCompletionChunk,
-    ResponseStreamThinkingChunk,
     SystemMessage,
     UserMessage,
 )
-
-from utils.llm_client_error_handler import handle_llm_client_exceptions
-from utils.llm_config import disable_thinking, get_llm_config
-from utils.llm_provider import get_llm_provider, get_model
+from utils.llm_provider import (
+    _supports_thinking,
+    get_llm_client,
+    get_llm_provider,
+    get_model,
+)
 from utils.llm_utils import (
     TextGenerationMetrics,
     build_text_generation_metrics,
@@ -644,15 +645,9 @@ async def _stream_deck_response(
             stream=True,
         ),
     ):
-        if (
-            isinstance(event, ResponseStreamCompletionChunk)
-            or getattr(event, "type", None) == "completion"
-        ):
+        if getattr(event, "type", None) == "completion":
             completion = event
-        elif (
-            isinstance(event, ResponseStreamThinkingChunk)
-            or getattr(event, "type", None) == "thinking"
-        ):
+        elif getattr(event, "type", None) == "thinking":
             chunk = getattr(event, "chunk", None)
             if isinstance(chunk, str) and chunk:
                 thinking_chunks.append(chunk)
@@ -681,13 +676,13 @@ async def _stream_deck_response(
 
 
 def get_smart_reasoning_config(model: str) -> tuple[ReasoningConfig | None, bool]:
-    """Enable reasoning only when llmai knows the selected model supports it."""
+    """Enable reasoning only when the selected model is in the allowlist."""
     if disable_thinking():
         return None, False
 
     provider = get_llm_provider().value
     try:
-        supports_thinking = llmai.supports_thinking(model, provider=provider) is True
+        supports_thinking = _supports_thinking(model)
     except Exception:
         supports_thinking = False
     if not supports_thinking:
@@ -698,7 +693,7 @@ def get_smart_reasoning_config(model: str) -> tuple[ReasoningConfig | None, bool
             enabled=True,
             effort=(
                 ReasoningEffortValue.LOW
-                if provider in {"openai", "azure"}
+                if provider == "openai"
                 else None
             ),
         ),
@@ -722,7 +717,7 @@ async def generate_smart_presentation(
     on_slide: SmartSlideCallback | None = None,
     on_metrics: SmartMetricsCallback | None = None,
 ) -> dict[str, Any]:
-    client = get_client(config=get_llm_config(use_openai_responses_api=True))
+    client = get_llm_client()
     model = get_model()
     reasoning, configured_thinking_support = get_smart_reasoning_config(model)
     accepted_slides: list[dict[str, str]] = []

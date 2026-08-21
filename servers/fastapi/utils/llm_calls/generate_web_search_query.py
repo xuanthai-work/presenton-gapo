@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from llmai.shared import JSONSchemaResponse, SystemMessage, UserMessage
-
+from utils.llm_messages import JSONSchemaResponse, SystemMessage, UserMessage
 from utils.llm_utils import DisconnectChecker, generate_structured_with_schema_retries
 
 SEARCH_QUERY_GENERATION_PROMPT = """

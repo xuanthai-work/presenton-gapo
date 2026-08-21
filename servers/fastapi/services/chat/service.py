@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -10,16 +9,6 @@ from typing import Any, Literal
 
 import dirtyjson  # type: ignore[import-untyped]
 from fastapi import HTTPException
-from llmai import get_client  # type: ignore[import-not-found]
-from llmai.shared import (  # type: ignore[import-not-found]
-    AssistantMessage,
-    AssistantToolCall,
-    Message,
-    SystemMessage,
-    TextContentPart,
-    ToolResponseMessage,
-    UserMessage,
-)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.chat import ChatAttachment
@@ -33,8 +22,16 @@ from services.documents_loader import DocumentsLoader
 from services.mem0_presentation_memory_service import MEM0_PRESENTATION_MEMORY_SERVICE
 from services.temp_file_service import TEMP_FILE_SERVICE
 from utils.llm_client_error_handler import handle_llm_client_exceptions
-from utils.llm_config import get_llm_config
-from utils.llm_provider import get_model
+from utils.llm_messages import (
+    AssistantMessage,
+    AssistantToolCall,
+    Message,
+    SystemMessage,
+    TextContentPart,
+    ToolResponseMessage,
+    UserMessage,
+)
+from utils.llm_provider import get_llm_client, get_model
 from utils.llm_utils import (
     extract_text,
     get_generate_kwargs,
@@ -123,7 +120,7 @@ class PresentationChatService:
             attachments or [],
         )
 
-        client = get_client(config=get_llm_config())
+        client = get_llm_client()
         model = get_model()
         tools = build_chat_llm_tools(self._tools.get_tool_definitions())
 
@@ -374,7 +371,7 @@ class PresentationChatService:
         )
 
     async def _run_llm_with_tools(self, messages: list[Message]) -> tuple[str, list[str]]:
-        client = get_client(config=get_llm_config())
+        client = get_llm_client()
         model = get_model()
         tools = build_chat_llm_tools(self._tools.get_tool_definitions())
 
@@ -382,33 +379,40 @@ class PresentationChatService:
         last_tool_results: list[dict[str, Any]] = []
 
         for _ in range(MAX_TOOL_ROUNDS):
+            completion: Any | None = None
             try:
-                response = await asyncio.to_thread(
-                    client.generate,
+                async for event in stream_generate_events(
+                    client,
                     **get_generate_kwargs(
                         model=model,
                         messages=messages,
                         tools=tools,
+                        stream=True,
                     ),
-                )
+                ):
+                    if getattr(event, "type", None) == "completion":
+                        completion = event
             except Exception as exc:
                 raise handle_llm_client_exceptions(exc)
 
-            if not response.tool_calls:
-                response_text = extract_text(response.content) or (
-                    "I could not generate a response for that request."
-                )
+            tool_calls: list[AssistantToolCall] = list(
+                getattr(completion, "tool_calls", []) or []
+            )
+            if not tool_calls:
+                response_text = extract_text(
+                    getattr(completion, "content", None)
+                ) or ("I could not generate a response for that request.")
                 return response_text, called_tools
 
-            called_tools.extend([tool_call.name for tool_call in response.tool_calls])
+            called_tools.extend([tool_call.name for tool_call in tool_calls])
             messages = self._append_sanitized_assistant_tool_turn(
                 messages,
-                content=getattr(response, "content", None),
-                tool_calls=list(response.tool_calls),
+                content=getattr(completion, "content", None),
+                tool_calls=tool_calls,
             )
 
             last_tool_results = []
-            for tool_call in response.tool_calls:
+            for tool_call in tool_calls:
                 tool_result = await self._tools.execute_tool_call(tool_call)
                 last_tool_results.append(tool_result)
                 tool_response_content = json.dumps(tool_result, ensure_ascii=False)
@@ -438,18 +442,20 @@ class PresentationChatService:
         messages: list[Message],
     ) -> str | None:
         try:
-            response = await asyncio.to_thread(
-                client.generate,
+            async for event in stream_generate_events(
+                client,
                 **get_generate_kwargs(
                     model=model,
                     messages=messages,
+                    stream=True,
                 ),
-            )
+            ):
+                if getattr(event, "type", None) == "completion":
+                    return extract_text(getattr(event, "content", None))
         except Exception:
             LOGGER.warning("Final no-tool synthesis call failed", exc_info=True)
             return None
-
-        return extract_text(response.content)
+        return None
 
     @staticmethod
     def _summarize_model_note(chunks: list[str]) -> str:

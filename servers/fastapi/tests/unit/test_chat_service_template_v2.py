@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 
-from llmai.shared import AssistantMessage, AssistantToolCall, SystemMessage, UserMessage
+from utils.llm_messages import AssistantMessage, AssistantToolCall, SystemMessage, UserMessage
 
 from models.chat import ChatAttachment, ChatMessageRequest
 from models.sql.presentation import PresentationModel, PresentationVersion

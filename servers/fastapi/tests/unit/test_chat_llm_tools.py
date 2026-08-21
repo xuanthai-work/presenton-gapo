@@ -1,14 +1,11 @@
 from unittest.mock import Mock
 
 import pytest
-from llmai.openai.client import OpenAIClient  # type: ignore[import-not-found]
-from llmai.shared.configs import OpenAIClientConfig  # type: ignore[import-not-found]
-from llmai.shared.schema import get_schema_as_dict  # type: ignore[import-not-found]
-from llmai.shared import Tool  # type: ignore[import-not-found]
 
 from enums.llm_provider import LLMProvider
 from services.chat.llm_tools import build_chat_llm_tools
 from services.chat.tools import ChatTools
+from utils.llm_messages import Tool
 
 
 def _sample_function_tools() -> list[Tool]:
@@ -111,15 +108,12 @@ def test_chat_tools_expose_only_v2_tool_names():
 
 
 def test_chat_tools_emit_openai_strict_compatible_schemas():
-    client = OpenAIClient(config=OpenAIClientConfig(api_key="test"))
     tools = ChatTools(Mock()).get_tool_definitions()
 
     for tool in tools:
-        schema = client._openai_schema(
-            get_schema_as_dict(tool.input_schema, strict=tool.strict),
-            strict=tool.strict,
-        )
-        _assert_openai_strict_schema(schema, tool.name)
+        openai_payload = tool.to_openai()
+        parameters = openai_payload["function"]["parameters"]
+        _assert_openai_strict_schema(parameters, tool.name)
 
 
 def _assert_openai_strict_schema(node, tool_name: str):

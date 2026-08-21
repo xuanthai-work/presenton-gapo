@@ -1,4 +1,4 @@
-from llmai.shared import Tool  # type: ignore[import-not-found]
+from utils.llm_messages import Tool
 
 
 def build_chat_llm_tools(function_tools: list[Tool]) -> list[Tool]:

@@ -4,7 +4,7 @@ import re
 from typing import Any, Awaitable, Callable, Literal
 
 import dirtyjson  # type: ignore[import-untyped]
-from llmai.shared import AssistantToolCall, Tool  # type: ignore[import-not-found]
+from utils.llm_messages import AssistantToolCall, Tool
 
 from constants.presentation import MAX_NUMBER_OF_SLIDES, MAX_OUTLINE_CONTENT_WORDS
 from services.chat.schemas import (
