@@ -235,7 +235,7 @@ export function ShapeToolbar({
           className={cn(
             "grid h-[22px] w-[22px] place-items-center rounded-[999px] border border-[#D7DAE3] hover:bg-[#F8F8FA]",
             (openPanel === "fill" || fillEnabled) &&
-              "border-[#E4D7FF] bg-[#DBEAFE] ring-2 ring-[#7C3AED]/30",
+              "border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] ring-2 ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]",
           )}
         >
           <span
@@ -377,7 +377,7 @@ export function ShapeToolbar({
         </ToolbarButton>
         {openPanel === "vector" ? (
           <Panel className="w-[300px] space-y-4 p-3">
-              <div className="grid grid-cols-2 gap-1 rounded-md bg-[#F6F6F9] p-1">
+              <div className="grid grid-cols-2 gap-1 rounded-md bg-[var(--gslide-accent-soft)] p-1">
                 {(["polygon", "ellipse"] as const).map((shape) => (
                   <button
                     key={shape}
@@ -423,7 +423,7 @@ export function ShapeToolbar({
                     <div className="text-[12px] font-medium text-[#4B5563]">
                       Curve
                     </div>
-                    <div className="grid grid-cols-2 gap-1 rounded-md bg-[#F6F6F9] p-1">
+                    <div className="grid grid-cols-2 gap-1 rounded-md bg-[var(--gslide-accent-soft)] p-1">
                       {(["none", "smooth"] as const).map((mode) => (
                         <button
                           key={mode}
@@ -549,7 +549,7 @@ export function ToolbarButton({
       onClick={onClick}
       className={cn(
         "relative flex h-7 min-w-7 items-center justify-center gap-1 rounded-[2px] border-0 bg-transparent px-1 text-[#05070A] hover:bg-[#F8F8FA]",
-        pressed && "bg-[#DBEAFE] text-[#7C3AED]",
+        pressed && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
       )}
     >
       {children}
@@ -850,7 +850,7 @@ export function SliderField({
         onBlur={(event) => commit(Number(event.currentTarget.value))}
         onKeyUp={(event) => commit(Number(event.currentTarget.value))}
         onPointerUp={(event) => commit(Number(event.currentTarget.value))}
-        className="w-full cursor-pointer accent-[#1D6FE8]"
+        className="w-full cursor-pointer accent-[var(--gslide-accent)]"
       />
     </label>
   );
