@@ -69,16 +69,8 @@ def set_web_search_max_results_env(value):
     os.environ["WEB_SEARCH_MAX_RESULTS"] = value
 
 
-def set_tavily_api_key_env(value):
-    os.environ["TAVILY_API_KEY"] = value
-
-
-def set_exa_api_key_env(value):
-    os.environ["EXA_API_KEY"] = value
-
-
-def set_brave_search_api_key_env(value):
-    os.environ["BRAVE_SEARCH_API_KEY"] = value
+def set_searxng_base_url_env(value):
+    os.environ["SEARXNG_BASE_URL"] = value
 
 
 def set_gpt_image_1_5_quality_env(value):

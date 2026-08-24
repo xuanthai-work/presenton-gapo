@@ -427,32 +427,6 @@ const waitForProcessHttp = (
   });
 };
 
-const isTruthyEnv = (value) => {
-  if (value == null) {
-    return false;
-  }
-
-  return !["", "0", "false", "no", "off"].includes(
-    String(value).trim().toLowerCase()
-  );
-};
-
-const isOllamaInstalled = () =>
-  existsSync("/usr/bin/ollama") || existsSync("/usr/local/bin/ollama");
-
-const shouldStartOllama = () => isTruthyEnv(process.env.START_OLLAMA);
-
-const ensureOllamaRuntime = async () => {
-  if (!shouldStartOllama() || isOllamaInstalled()) {
-    return;
-  }
-
-  console.log("START_OLLAMA=true; installing Ollama runtime...");
-  await runCommand("sh", ["-c", "curl -fsSL https://ollama.com/install.sh | sh"], {
-    cwd: "/",
-  });
-};
-
 const ensurePresentationExportRuntime = async () => {
   if (process.env.ENSURE_PRESENTATION_EXPORT_RUNTIME === "false") {
     return;
@@ -498,7 +472,7 @@ if (!process.env.FAST_API_INTERNAL_URL) {
   process.env.FAST_API_INTERNAL_URL = `http://127.0.0.1:${fastapiPort}`;
 }
 
-//? UserConfig is only setup if API Keys can be changed
+//? Bootstrap provider settings from environment on startup.
 const setupUserConfigFromEnv = () => {
   const existingConfig = readUserConfig();
   const envConfig = readUserConfigEnv(process.env);
@@ -556,7 +530,6 @@ const startServers = async (nginxReadyPromise) => {
         : [
             nextjsCli,
             isDev ? "dev" : "start",
-            ...(isDev ? ["--webpack"] : []),
             "-H",
             "127.0.0.1",
             "-p",
@@ -653,29 +626,6 @@ const startServers = async (nginxReadyPromise) => {
     suppressStartupUrls,
   });
 
-  const shouldStartOllamaRuntime = shouldStartOllama();
-  const ollamaInstalled = isOllamaInstalled();
-
-  if (shouldStartOllamaRuntime && ollamaInstalled) {
-    const ollamaProcess = spawn("ollama", ["serve"], {
-      cwd: "/",
-      stdio: "inherit",
-      env: process.env,
-    });
-    ollamaProcess.on("error", (err) => {
-      console.error("Ollama process failed to start:", err);
-    });
-    watchManagedProcess("Ollama", ollamaProcess);
-  } else if (shouldStartOllamaRuntime) {
-    console.log(
-      "Ollama requested, but the binary is not installed. Set START_OLLAMA=true to install it at startup, or set OLLAMA_URL to a remote daemon."
-    );
-  } else {
-    console.log(
-      "Ollama disabled (START_OLLAMA=false); use OLLAMA_URL for a remote daemon if needed."
-    );
-  }
-
   try {
     await Promise.all([fastApiReadyPromise, nextjsReadyPromise, nginxReadyPromise]);
     printPresentonStartupBanner({
@@ -717,16 +667,15 @@ const startNginx = () => {
 
 const main = async () => {
   await ensurePresentationExportRuntime();
-  await ensureOllamaRuntime();
 
   if (isDev) {
     await setupNodeModules();
     await ensurePresentationExportNodeDependencies();
   }
 
-  if (canChangeKeys) {
-    setupUserConfigFromEnv();
-  }
+  // Bootstrap provider settings from env even when the UI is locked
+  // (CAN_CHANGE_KEYS=false). The flag only controls in-app editing.
+  setupUserConfigFromEnv();
 
   syncNginxConfigForDev();
 

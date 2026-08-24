@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { ArrowUpRight, Check, ChevronLeft, ChevronUp, Eye, EyeOff, Info, Loader2, Search } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS, LLM_PROVIDERS, WEB_SEARCH_PROVIDERS } from '@/utils/providerConstants';
+import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS, LLM_PROVIDERS } from '@/utils/providerConstants';
 import { cn } from '@/lib/utils';
 import { LLMConfig } from '@/types/llm_config';
 import { RootState } from '@/store/store';
@@ -22,13 +22,6 @@ const TEXT_PROVIDERS = Object.values(LLM_PROVIDERS).filter(
     (provider) => ['openai', 'google', 'custom'].includes(provider.value)
 );
 const TEXT_PROVIDER_VALUES = new Set(TEXT_PROVIDERS.map((provider) => provider.value));
-
-const WEB_SEARCH_PROVIDER_OPTIONS = [
-    WEB_SEARCH_PROVIDERS.auto,
-    WEB_SEARCH_PROVIDERS.tavily,
-    WEB_SEARCH_PROVIDERS.exa,
-    WEB_SEARCH_PROVIDERS.brave,
-];
 
 const PresentonMode = ({
     providerStep,
@@ -482,88 +475,6 @@ const PresentonMode = ({
         }
     };
 
-    const selectedWebProvider = WEB_SEARCH_PROVIDER_OPTIONS.find(
-        (provider) => provider.value === llmConfig.WEB_SEARCH_PROVIDER
-    );
-
-    const renderSelectedWebSearchProviderConfig = () => {
-        if (!selectedWebProvider) return null;
-
-        return (
-            <div className="col-span-full rounded-[10px] border border-[#EDEEEF] bg-[#FBFBFD] p-4 shadow-[0_12px_28px_rgba(16,19,35,0.04)]">
-                <div className="mb-4">
-                    <p className="text-sm font-semibold text-[#191919]">{selectedWebProvider.label} setup</p>
-                    <p className="mt-1 text-xs leading-5 text-gray-500">
-                        {selectedWebProvider.description}
-                    </p>
-                </div>
-
-                <div className="space-y-4">
-                    {selectedWebProvider.value === "auto" && (
-                        <div className="rounded-lg border border-[#D9D6FE] bg-[#F4F3FF] p-3 text-xs leading-5 text-[#5146E5]">
-                            Presenton will use model-native web grounding when available. If the selected text model does not support it, web search stays off until you choose an external provider.
-                        </div>
-                    )}
-
-                    {selectedWebProvider.urlField && (
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                {selectedWebProvider.urlLabel}
-                            </label>
-                            <input
-                                type="url"
-                                value={getFieldValue(selectedWebProvider.urlField)}
-                                onChange={(event) => setLlmConfig(prev => ({ ...prev, [selectedWebProvider.urlField!]: event.target.value }))}
-                                className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                                placeholder="https://search.example.com"
-                            />
-                        </div>
-                    )}
-
-                    {selectedWebProvider.apiKeyField && (
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                {selectedWebProvider.apiKeyLabel}
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type={showApiKey ? "text" : "password"}
-                                    value={getFieldValue(selectedWebProvider.apiKeyField)}
-                                    onChange={(event) => setLlmConfig(prev => ({ ...prev, [selectedWebProvider.apiKeyField!]: event.target.value }))}
-                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 pr-12 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                                    placeholder={`Enter your ${selectedWebProvider.apiKeyLabel}`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowApiKey(prev => !prev)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer bg-white px-2 py-1"
-                                >
-                                    {showApiKey ? <Eye className="h-4 w-4 text-gray-500" /> : <EyeOff className="h-4 w-4 text-gray-500" />}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedWebProvider.value !== "auto" && (
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                Maximum results
-                            </label>
-                            <input
-                                type="number"
-                                min={1}
-                                max={10}
-                                value={llmConfig.WEB_SEARCH_MAX_RESULTS || "5"}
-                                onChange={(event) => setLlmConfig(prev => ({ ...prev, WEB_SEARCH_MAX_RESULTS: event.target.value }))}
-                                className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
-                            />
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
     useEffect(() => {
         llmConfigRef.current = llmConfig;
     }, [llmConfig]);
@@ -607,15 +518,6 @@ const PresentonMode = ({
             return rows;
         },
         [] as Array<Array<(typeof IMAGE_PROVIDERS)[keyof typeof IMAGE_PROVIDERS]>>
-    );
-
-    const webSearchProviderRows = WEB_SEARCH_PROVIDER_OPTIONS.reduce(
-        (rows, provider, index) => {
-            if (index % 3 === 0) rows.push([]);
-            rows[rows.length - 1].push(provider);
-            return rows;
-        },
-        [] as Array<Array<(typeof WEB_SEARCH_PROVIDER_OPTIONS)[number]>>
     );
 
     return (
@@ -1013,6 +915,9 @@ const PresentonMode = ({
                                     setLlmConfig(prev => ({
                                         ...prev,
                                         WEB_GROUNDING: checked,
+                                        WEB_SEARCH_PROVIDER: checked
+                                            ? prev.WEB_SEARCH_PROVIDER || "auto"
+                                            : prev.WEB_SEARCH_PROVIDER,
                                     }));
                                 }}
                             />
@@ -1028,51 +933,33 @@ const PresentonMode = ({
                         </div>
                     </div>
                     {llmConfig.WEB_GROUNDING && <div className="space-y-4">
+                            <div className="rounded-lg border border-[#D9D6FE] bg-[#F4F3FF] p-3 text-xs leading-5 text-[#5146E5]">
+                                Auto uses model-native web grounding when the LLM is OpenAI or Google. Custom models query the SearXNG sidecar (Compose default: http://searxng:8080).
+                            </div>
                             <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700">Select Web Search Provider</label>
-                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                    {webSearchProviderRows.map((row, rowIndex) => (
-                                        <React.Fragment key={`web-search-provider-row-${rowIndex}`}>
-                                            {row.map((provider) => (
-                                                <button
-                                                    type="button"
-                                                    key={provider.value}
-                                                    onClick={() => {
-                                                        trackEvent(MixpanelEvent.Onboarding_Web_Search_Provider_Selected, {
-                                                            web_search_provider: provider.value,
-                                                            web_search_provider_label: provider.label,
-                                                        });
-                                                        setLlmConfig(prev => ({
-                                                            ...prev,
-                                                            WEB_GROUNDING: true,
-                                                            WEB_SEARCH_PROVIDER: provider.value,
-                                                        }));
-                                                    }}
-                                                    className={cn(
-                                                        "group flex min-h-32 flex-col items-center justify-center gap-2 rounded-[10px] border p-3 text-center transition-all hover:border-[#D9D6FE] hover:bg-[#F7F6F9]",
-                                                        selectedWebProvider?.value === provider.value
-                                                            ? "border-[#7A5AF8] bg-[#F4F3FF] shadow-[0_10px_24px_rgba(122,90,248,0.12)]"
-                                                            : "border-[#EDEEEF] bg-white"
-                                                    )}
-                                                >
-                                                    <span
-                                                        className={cn(
-                                                            "flex h-10 w-10 items-center justify-center rounded-lg border bg-white transition-colors",
-                                                            selectedWebProvider?.value === provider.value
-                                                                ? "border-[#D9D6FE]"
-                                                                : "border-[#EDEEEF] group-hover:border-[#D9D6FE]"
-                                                        )}
-                                                    >
-                                                        {provider.icon && <img src={provider.icon} alt="" className="h-7 w-7 object-contain" />}
-                                                    </span>
-                                                    <span className="text-xs font-semibold text-[#191919]">{provider.label}</span>
-                                                    <span className="line-clamp-2 text-[10px] leading-4 text-gray-500">{provider.description}</span>
-                                                </button>
-                                            ))}
-                                            {row.some((provider) => provider.value === selectedWebProvider?.value) && renderSelectedWebSearchProviderConfig()}
-                                        </React.Fragment>
-                                    ))}
-                                </div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700">
+                                    SearXNG base URL
+                                </label>
+                                <input
+                                    type="url"
+                                    value={getFieldValue("SEARXNG_BASE_URL")}
+                                    onChange={(event) => setLlmConfig(prev => ({ ...prev, SEARXNG_BASE_URL: event.target.value }))}
+                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
+                                    placeholder="http://searxng:8080"
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700">
+                                    Maximum results
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={10}
+                                    value={llmConfig.WEB_SEARCH_MAX_RESULTS || "5"}
+                                    onChange={(event) => setLlmConfig(prev => ({ ...prev, WEB_SEARCH_MAX_RESULTS: event.target.value }))}
+                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
+                                />
                             </div>
                         </div>}
                 </div>

@@ -88,9 +88,9 @@ Các template này được **copy vào `app_data/templates/`** lúc runtime.
 
 | File | Vai trò |
 |------|---------|
-| `Dockerfile` | Production image (single-stage, dùng cho web) |
+| `Dockerfile` | Production image (web) |
 | `Dockerfile.dev` | Dev image, hot-reload |
-| `docker-compose.yml` | Compose cho cả stack |
+| `docker-compose.yml` | Hai service: `production`, `development` (không GPU; LLM là HTTP API) |
 | `nginx.conf` | Reverse proxy: serve NextJS, proxy `/api/*` tới FastAPI, serve `/static` & `/app_data` |
 | `.env.example` | Template cho environment variables |
 

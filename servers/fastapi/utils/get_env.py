@@ -126,16 +126,8 @@ def get_web_search_max_results_env():
     return os.getenv("WEB_SEARCH_MAX_RESULTS")
 
 
-def get_tavily_api_key_env():
-    return os.getenv("TAVILY_API_KEY")
-
-
-def get_exa_api_key_env():
-    return os.getenv("EXA_API_KEY")
-
-
-def get_brave_search_api_key_env():
-    return os.getenv("BRAVE_SEARCH_API_KEY")
+def get_searxng_base_url_env():
+    return os.getenv("SEARXNG_BASE_URL")
 
 
 # Gpt Image 1.5 Quality

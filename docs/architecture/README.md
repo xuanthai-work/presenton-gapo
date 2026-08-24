@@ -2,16 +2,16 @@
 
 Tài liệu này mô tả cấu trúc các **level** của dự án **Presenton** — một open-source AI Presentation Generator.
 
-## � Mục tiêu
+## Mục tiêu
 
-Cung cấp cái nhìn t�ng quan, phân tầng và dễ hiểu về kiến trúc dự án, giúp các thành viên mới (developer, contributor, ops) có thể:
+Cung cấp cái nhìn tổng quan, phân tầng và dễ hiểu về kiến trúc dự án, giúp các thành viên mới (developer, contributor, ops) có thể:
 
 - Nắm được bức tranh toàn cảnh của hệ thống
 - Hiểu được cách các thành phần tương tác với nhau
 - Tìm được file/module liên quan đến một tính năng cụ thể nhanh chóng
 - Định hướng khi thêm/sửa module mới
 
-## � Mục lục các level
+## Mục lục các level
 
 | Level | Tài liệu | Phạm vi |
 |-------|----------|---------|
@@ -73,3 +73,5 @@ flowchart TB
 2. Đọc [01-level-workspace.md](./01-level-workspace.md) để biết monorepo được tổ chức thế nào
 3. Đọc [03-level-fastapi.md](./03-level-fastapi.md) hoặc [04-level-nextjs.md](./04-level-nextjs.md) tùy theo bạn làm backend hay frontend
 4. Đọc [06-data-flow.md](./06-data-flow.md) để hiểu một presentation được tạo ra như thế nào
+
+Fork này là **web-only**: Docker Compose `production` / `development`, không Electron, không MCP, không GPU profile. LLM chạy ngoài process (HTTP API). Chi tiết ở [00-overview.md](./00-overview.md#phạm-vi-fork-web-only).

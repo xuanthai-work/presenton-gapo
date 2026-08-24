@@ -232,7 +232,8 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
           if (!runtime.configured) {
             notify.error(
               "Instance not configured",
-              "Ask the administrator to configure the AI providers in Settings."
+              "Ask the administrator to configure the AI providers in Settings.",
+              { id: "instance-not-configured" }
             );
             setIsLoading(false);
             return;

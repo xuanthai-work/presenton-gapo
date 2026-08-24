@@ -44,6 +44,14 @@ export const normalizeLLMConfig = (llmConfig: LLMConfig): LLMConfig => {
     normalizedConfig.WEB_GROUNDING = parsedWebGrounding;
   }
 
+  if (normalizedConfig.WEB_GROUNDING) {
+    const provider = String(normalizedConfig.WEB_SEARCH_PROVIDER || "auto")
+      .trim()
+      .toLowerCase();
+    normalizedConfig.WEB_SEARCH_PROVIDER =
+      provider === "native" || provider === "searxng" ? provider : "auto";
+  }
+
   return normalizedConfig;
 };
 
@@ -122,29 +130,9 @@ export const getLLMConfigValidationError = (
   }
 
   if (llmConfig.WEB_GROUNDING) {
-    if (!isProvided(llmConfig.WEB_SEARCH_PROVIDER)) {
-      return "Select a web search provider, or turn off web search.";
-    }
-    switch (llmConfig.WEB_SEARCH_PROVIDER) {
-      case "tavily":
-        if (!isProvided(llmConfig.TAVILY_API_KEY)) {
-          return "Tavily API key is required.";
-        }
-        break;
-      case "exa":
-        if (!isProvided(llmConfig.EXA_API_KEY)) {
-          return "Exa API key is required.";
-        }
-        break;
-      case "brave":
-        if (!isProvided(llmConfig.BRAVE_SEARCH_API_KEY)) {
-          return "Brave Search API key is required.";
-        }
-        break;
-      case "auto":
-        break;
-      default:
-        return "Select a valid web search provider.";
+    const provider = llmConfig.WEB_SEARCH_PROVIDER || "auto";
+    if (!["auto", "native", "searxng"].includes(provider)) {
+      return "Select a valid web search provider, or turn off web search.";
     }
   }
 

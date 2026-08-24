@@ -84,13 +84,13 @@ graph LR
     Text --> LLM["LLM context"]
 ```
 
-Runner script được copy từ `scripts/liteparse_runner.mjs` (root) vào `/app/document-extraction-liteparse/liteparse_runner.mjs` lúc Docker build. File gốc từng nằm trong Electron resources đã được move ra root scripts.
+Runner script nằm ở `scripts/liteparse_runner.mjs` và được copy vào `/app/document-extraction-liteparse/liteparse_runner.mjs` lúc Docker build.
 
 ## 🏗️ Build matrix
 
 | Target | Lệnh | Output |
 |--------|------|--------|
-| Dev (Web) | `npm run dev` ở root | NextJS + FastAPI trên localhost |
-| Docker | `docker compose up` ở root | Web stack với Nginx |
+| Dev (Web) | `docker compose up development --build` | NextJS + FastAPI, hot-reload |
+| Docker production | `docker compose up production --build` | Web stack với Nginx (CPU; không GPU) |
 | Sync export runtime | `npm run sync:presentation-export` | Download `presentation-export/` |
 | Verify export | `npm run check:presentation-export` | CI gate |

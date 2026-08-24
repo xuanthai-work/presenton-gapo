@@ -2,6 +2,8 @@
 
 File này mô tả các luồng dữ liệu chính xuyên suốt các layer của Presenton.
 
+Mọi ô **LLM Provider** là HTTP API bên ngoài process (OpenAI, Gemini, hoặc `CUSTOM_LLM_URL` trên server AI riêng). FastAPI stream JSON về UI; container Presenton không load model và không cần GPU.
+
 ## 1️⃣ Generate outline từ prompt
 
 ```mermaid

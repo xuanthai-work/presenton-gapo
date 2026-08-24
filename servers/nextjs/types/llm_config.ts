@@ -32,9 +32,7 @@ export interface LLMConfig {
   WEB_GROUNDING?: boolean;
   WEB_SEARCH_PROVIDER?: string;
   WEB_SEARCH_MAX_RESULTS?: string;
-  TAVILY_API_KEY?: string;
-  EXA_API_KEY?: string;
-  BRAVE_SEARCH_API_KEY?: string;
+  SEARXNG_BASE_URL?: string;
 
   // Only used in UI settings
   USE_CUSTOM_URL?: boolean;

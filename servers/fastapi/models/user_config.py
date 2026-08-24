@@ -38,6 +38,4 @@ class UserConfig(BaseModel):
     WEB_GROUNDING: Optional[bool] = None
     WEB_SEARCH_PROVIDER: Optional[str] = None
     WEB_SEARCH_MAX_RESULTS: Optional[str] = None
-    TAVILY_API_KEY: Optional[str] = None
-    EXA_API_KEY: Optional[str] = None
-    BRAVE_SEARCH_API_KEY: Optional[str] = None
+    SEARXNG_BASE_URL: Optional[str] = None

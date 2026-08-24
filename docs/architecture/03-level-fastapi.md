@@ -219,17 +219,21 @@ graph TB
 
 ### LLM Utils (`utils/llm_*.py`)
 
+FastAPI gọi LLM bằng SDK native (`openai`, `google-genai`), không còn package `llmai`. Provider hợp lệ: `openai`, `google`, `custom` (OpenAI-compatible URL).
+
 ```mermaid
 graph LR
-    LlmConfig["llm_config.py<br/>(provider registry)"]
-    LlmProvider["llm_provider.py<br/>(abstract provider)"]
-    LlmUtils["llm_utils.py<br/>(helpers)"]
+    LlmMessages["llm_messages.py<br/>(message/tool dataclasses)"]
+    LlmConfig["llm_config.py<br/>(provider config)"]
+    LlmProvider["llm_provider.py<br/>(openai / google / custom clients)"]
+    LlmUtils["llm_utils.py<br/>(stream_generate_events)"]
     LlmClient["llm_client_error_handler.py"]
     ProviderErr["provider_error_messages.py"]
     ModelAvail["model_availability.py"]
     GetDynModels["get_dynamic_models.py"]
 
     LlmConfig --> LlmProvider
+    LlmMessages --> LlmUtils
     LlmProvider --> LlmUtils
     LlmUtils --> LlmClient
     LlmUtils --> ProviderErr
@@ -279,7 +283,8 @@ OAuth2 PKCE helpers:
 | `user_config.py`, `user_config_store.py` | User config |
 | `get_env.py` | Env getters |
 | `async_iterator.py` | Async iter helpers |
-| `available_models.py` | Model registry |
+| `available_models.py` | Model registry (OpenAI / Gemini / custom URL) |
+| `llm_messages.py` | Message/tool/response shapes thay `llmai.shared` |
 
 ## 📦 Models (`models/`)
 
@@ -339,7 +344,7 @@ Presenton dùng **Server-Sent Events** cho:
 
 Helpers ở `utils/sse.py`.
 
-## � Một request điển hình: generate outline
+## Một request điển hình: generate outline
 
 ```mermaid
 sequenceDiagram

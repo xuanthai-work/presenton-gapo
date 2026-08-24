@@ -40,7 +40,7 @@ body:
       label: Steps to reproduce
       description: Provide the shortest reproducible steps.
       placeholder: |
-        1. Start Presenton Electron app
+        1. Start Presenton with `docker compose up production --build`
         2. Generate presentation with 5 slides
         3. Click "Export PPTX"
         4. Error occurs
@@ -88,8 +88,8 @@ body:
     attributes:
       label: How are you running Presenton?
       options:
-        - Electron Desktop App
-        - Docker
+        - Docker Compose (production)
+        - Docker Compose (development)
         - Local Development
         - API Only
     validations:
@@ -103,8 +103,6 @@ body:
       options:
         - OpenAI
         - Google Gemini
-        - Anthropic
-        - Ollama
         - Custom OpenAI-compatible API
         - Not relevant
   
@@ -138,4 +136,4 @@ body:
     attributes:
       label: Additional information
       description: Any extra context that might help debug the issue.
-      placeholder: Logs from Electron console, template used, or related issues.
+      placeholder: Logs from the Docker container, template used, or related issues.

@@ -7,20 +7,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.sql.provider_settings import ProviderSettings
 from utils.datetime_utils import get_current_utc_datetime
 from utils.db_utils import get_database_url_and_connect_args, to_sync_sqlalchemy_url
-from utils.get_env import get_user_config_path_env
+from utils.get_env import get_user_config_path_env, get_can_change_keys_env
 from utils.user_config_store import read_user_config_file, update_user_config_file
 
 
 logger = logging.getLogger(__name__)
 
 PROVIDER_SETTINGS_ID = 1
-CODEX_MANAGED_FIELDS: set[str] = set()
 PRESENTON_STATUS_FIELDS = {
     "PRESENTON_CONNECTED",
     "PRESENTON_EMAIL",
 }
-OAUTH_MANAGED_FIELDS = CODEX_MANAGED_FIELDS | PRESENTON_STATUS_FIELDS
-EMPTY_VALUE_PRESERVED_FIELDS: set[str] = set()
+OAUTH_MANAGED_FIELDS = PRESENTON_STATUS_FIELDS
 
 
 def sanitize_provider_settings(config: dict[str, Any]) -> dict[str, Any]:
@@ -45,10 +43,6 @@ def merge_provider_settings(
         else:
             merged.pop(key, None)
 
-    for key in EMPTY_VALUE_PRESERVED_FIELDS:
-        if not sanitized.get(key) and key in existing:
-            merged[key] = existing[key]
-
     return merged
 
 
@@ -58,8 +52,23 @@ def _mirror_to_legacy_file(config: dict[str, Any]) -> None:
     if not path:
         return
 
+    db_config = sanitize_provider_settings(config)
+
     def replace_provider_config(existing: dict[str, Any]) -> dict[str, Any]:
-        mirrored = dict(config)
+        mirrored = dict(db_config)
+
+        # Locked deployments (CAN_CHANGE_KEYS=false) configure providers via env.
+        # Fill any unset DB fields from the effective runtime config.
+        if get_can_change_keys_env() == "false":
+            from utils.user_config import get_user_config
+
+            effective = sanitize_provider_settings(
+                get_user_config().model_dump(exclude_none=True)
+            )
+            for key, value in effective.items():
+                if mirrored.get(key) in (None, ""):
+                    mirrored[key] = value
+
         # Authentication is database-backed now, but the compatibility file is
         # also the rollback/recovery copy. Never discard its credential fields.
         for key, value in existing.items():
@@ -77,6 +86,11 @@ async def migrate_provider_settings_from_file(session: AsyncSession) -> dict[str
 
     if row is None:
         legacy_config = read_user_config_file(path) if path else {}
+        if get_can_change_keys_env() == "false":
+            from utils.user_config import get_user_config
+
+            effective = get_user_config().model_dump(exclude_none=True)
+            legacy_config = {**effective, **legacy_config}
         row = ProviderSettings(
             id=PROVIDER_SETTINGS_ID,
             config=sanitize_provider_settings(legacy_config),

@@ -14,9 +14,17 @@ def test_auto_uses_native_search_for_supported_llm(monkeypatch):
     assert web_search.should_expose_external_web_search_tool() is False
 
 
-def test_pruned_web_search_provider_falls_back_to_auto(monkeypatch):
+def test_unknown_web_search_provider_falls_back_to_auto(monkeypatch):
     monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "searxng")
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "serper")
+
+    assert web_search.get_selected_web_search_provider() == WebSearchProvider.AUTO
+    assert web_search.should_use_native_web_search() is True
+
+
+def test_legacy_tavily_provider_falls_back_to_auto(monkeypatch):
+    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "tavily")
 
     assert web_search.get_selected_web_search_provider() == WebSearchProvider.AUTO
     assert web_search.should_use_native_web_search() is True
@@ -25,57 +33,49 @@ def test_pruned_web_search_provider_falls_back_to_auto(monkeypatch):
 def test_auto_reports_unavailable_without_configured_external_provider(monkeypatch):
     monkeypatch.setenv("LLM", LLMProvider.CUSTOM.value)
     monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
+    monkeypatch.delenv("SEARXNG_BASE_URL", raising=False)
 
     assert web_search.should_use_native_web_search() is False
     assert web_search.should_expose_external_web_search_tool() is False
-
-
-def test_auto_still_hides_external_search_when_configured(monkeypatch):
-    monkeypatch.setenv("LLM", LLMProvider.CUSTOM.value)
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
-
-    assert web_search.should_use_native_web_search() is False
-    assert web_search.should_expose_external_web_search_tool() is False
-
-
-def test_get_web_search_route_reports_unavailable_without_configured_external_provider(monkeypatch):
-    monkeypatch.setenv("LLM", LLMProvider.CUSTOM.value)
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
-
     assert web_search.get_web_search_route() == ("unavailable", None)
 
 
-def test_explicit_external_search_overrides_native_llm(monkeypatch):
-    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.TAVILY.value)
+def test_auto_uses_searxng_when_native_unavailable_and_url_configured(monkeypatch):
+    monkeypatch.setenv("LLM", LLMProvider.CUSTOM.value)
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://searxng:8080")
 
     assert web_search.should_use_native_web_search() is False
     assert web_search.should_expose_external_web_search_tool() is True
+    assert web_search.resolve_external_web_search_provider() == WebSearchProvider.SEARXNG
+    assert web_search.get_web_search_route() == (
+        "external",
+        WebSearchProvider.SEARXNG,
+    )
 
 
-def test_explicit_brave_search_is_supported(monkeypatch):
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.BRAVE.value)
+def test_explicit_searxng_search_is_supported(monkeypatch):
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.SEARXNG.value)
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://searxng:8080")
 
-    assert web_search.resolve_external_web_search_provider() == WebSearchProvider.BRAVE
+    assert web_search.resolve_external_web_search_provider() == WebSearchProvider.SEARXNG
     assert web_search.should_expose_external_web_search_tool() is True
-
-
-def test_explicit_exa_search_is_supported(monkeypatch):
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.EXA.value)
-
-    assert web_search.resolve_external_web_search_provider() == WebSearchProvider.EXA
-    assert web_search.should_expose_external_web_search_tool() is True
+    assert web_search.should_use_native_web_search() is False
 
 
 def test_explicit_native_search_does_not_fallback_for_unsupported_llm(monkeypatch):
     monkeypatch.setenv("LLM", LLMProvider.CUSTOM.value)
     monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.NATIVE.value)
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://searxng:8080")
 
     assert web_search.should_use_native_web_search() is False
     assert web_search.should_expose_external_web_search_tool() is False
+    assert web_search.get_web_search_route() == ("unavailable", None)
 
 
-def test_auto_does_not_expose_external_search_when_native_tools_are_unavailable(monkeypatch):
+def test_auto_does_not_expose_external_search_when_native_tools_are_unavailable(
+    monkeypatch,
+):
     monkeypatch.setenv("LLM", LLMProvider.GOOGLE.value)
     monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
 
@@ -111,42 +111,49 @@ def test_format_web_search_context_excludes_source_urls():
     assert "Presentation generation" in context
 
 
-def test_auto_does_not_resolve_external_provider_from_configuration(monkeypatch):
+def test_auto_does_not_resolve_external_provider_when_native_is_available(monkeypatch):
+    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
     monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
-    monkeypatch.setenv("TAVILY_API_KEY", "configured-tavily-key")
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://127.0.0.1:8080")
 
     assert web_search.resolve_external_web_search_provider() is None
-
-
-def test_explicit_external_provider_is_not_replaced(monkeypatch):
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.TAVILY.value)
-    monkeypatch.setenv("TAVILY_API_KEY", "test-key")
-
-    assert (
-        web_search.resolve_external_web_search_provider()
-        == WebSearchProvider.TAVILY
-    )
-
-
-def test_web_search_route_reports_actual_external_provider(monkeypatch):
-    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.TAVILY.value)
-    monkeypatch.setenv("TAVILY_API_KEY", "test-key")
-
-    assert web_search.get_web_search_route() == (
-        "external",
-        WebSearchProvider.TAVILY,
-    )
-
-
-def test_web_search_route_reports_model_native(monkeypatch):
-    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
-    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.AUTO.value)
-
     assert web_search.get_web_search_route() == ("native", None)
 
 
-def test_exa_search_requests_highlights_and_maps_results(monkeypatch):
+def test_explicit_searxng_overrides_native_llm(monkeypatch):
+    monkeypatch.setenv("LLM", LLMProvider.OPENAI.value)
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.SEARXNG.value)
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://127.0.0.1:8080")
+
+    assert web_search.should_use_native_web_search() is False
+    assert web_search.should_expose_external_web_search_tool() is True
+    assert web_search.get_web_search_route() == (
+        "external",
+        WebSearchProvider.SEARXNG,
+    )
+
+
+def test_searxng_accepts_base_or_search_url(monkeypatch):
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://127.0.0.1:8080")
+    assert web_search._get_searxng_search_url() == "http://127.0.0.1:8080/search"
+
+    monkeypatch.setenv(
+        "SEARXNG_BASE_URL",
+        "http://127.0.0.1:8080/search?q=ignored&format=json",
+    )
+    assert web_search._get_searxng_search_url() == "http://127.0.0.1:8080/search"
+
+
+def test_searxng_log_url_redacts_credentials():
+    assert (
+        web_search._redact_url_credentials(
+            "http://user:secret@127.0.0.1:8080/search"
+        )
+        == "http://***:***@127.0.0.1:8080/search"
+    )
+
+
+def test_search_searxng_maps_json_results(monkeypatch):
     captured = {}
 
     class FakeResponse:
@@ -162,48 +169,70 @@ def test_exa_search_requests_highlights_and_maps_results(monkeypatch):
             return {
                 "results": [
                     {
-                        "title": "Search Result",
+                        "title": "SearXNG Result",
                         "url": "https://example.com/page",
-                        "highlights": ["AI presentations.", "Open source."],
+                        "content": "Self-hosted search snippet.",
                     },
-                    {
-                        "title": "Fallback",
-                        "url": "https://example.com/fallback",
-                        "highlights": [],
-                        "summary": "Summary fallback.",
-                    },
+                    {"title": "Skip me", "url": ""},
                 ]
             }
 
+        async def text(self):
+            return ""
+
     class FakeSession:
-        def post(self, url, json, headers):
-            captured.update(url=url, json=json, headers=headers)
+        def get(self, url, params):
+            captured.update(url=url, params=params)
             return FakeResponse()
 
-    monkeypatch.setenv("EXA_API_KEY", "test-exa-key")
+    monkeypatch.setenv("SEARXNG_BASE_URL", "http://searxng:8080")
 
     results = asyncio.run(
-        web_search._search_exa(FakeSession(), "presentation ai", 2)
+        web_search._search_searxng(FakeSession(), "presentation ai", 5)
     )
 
-    assert captured == {
-        "url": "https://api.exa.ai/search",
-        "json": {
-            "query": "presentation ai",
-            "numResults": 2,
-            "contents": {"highlights": True},
-        },
-        "headers": {"x-api-key": "test-exa-key"},
-    }
+    assert captured["url"] == "http://searxng:8080/search"
+    assert captured["params"] == {"q": "presentation ai", "format": "json"}
     assert results == [
         web_search.WebSearchResult(
-            title="Search Result",
+            title="SearXNG Result",
             url="https://example.com/page",
-            snippet="AI presentations. Open source.",
-        ),
-        web_search.WebSearchResult(
-            title="Fallback",
-            url="https://example.com/fallback",
-            snippet="Summary fallback.",
-        ),
+            snippet="Self-hosted search snippet.",
+        )
     ]
+
+
+def test_search_web_logs_provider_and_clamps_max_results(monkeypatch, caplog):
+    captured = {}
+
+    class FakeSession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+    async def fake_search(_session, query, limit):
+        captured.update(query=query, limit=limit)
+        return [
+            web_search.WebSearchResult(
+                title="Presenton",
+                url="https://example.com/presenton",
+            )
+        ]
+
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", WebSearchProvider.SEARXNG.value)
+    monkeypatch.setattr(
+        web_search.aiohttp,
+        "ClientSession",
+        lambda **_kwargs: FakeSession(),
+    )
+    monkeypatch.setattr(web_search, "_search_searxng", fake_search)
+    caplog.set_level(logging.INFO, logger=web_search.__name__)
+
+    results = asyncio.run(web_search.search_web(" current facts ", max_results=50))
+
+    assert captured == {"query": "current facts", "limit": 10}
+    assert len(results) == 1
+    assert "provider=searxng" in caplog.text
+    assert "results=1" in caplog.text

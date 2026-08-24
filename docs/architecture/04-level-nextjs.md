@@ -183,7 +183,7 @@ shadcn-style components:
 | `MarkDownRender.tsx` | Markdown → HTML (sanitized) |
 | `ToolTip.tsx` | Tooltip wrapper |
 | `BackBtn.tsx` | Back button |
-| `LLMSelection.tsx` | Chọn LLM provider |
+| `LLMSelection.tsx` | Chọn LLM: OpenAI / Google / custom (OpenAI-compatible) |
 | `OpenAIConfig.tsx`, `GoogleConfig.tsx`, `CustomConfig.tsx`, `OpenAICompatibleImageFields.tsx` | Provider-specific config UI |
 | `ImageSelectionConfig.tsx` | Image gen provider |
 | `ChatGptAuthRedirectHandler.tsx` | OAuth callback |

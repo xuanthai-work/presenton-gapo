@@ -2,7 +2,11 @@
 
 Repo: [https://github.com/xuanthai-work/presenton-gapo](https://github.com/xuanthai-work/presenton-gapo)
 
-Fork của Presenton. Điểm khác quan trọng: `docker-compose.yml` **không dùng image sẵn** (`ghcr.io/presenton/presenton:latest` bị comment), mà **build từ source**. Trên Windows, cách chạy ổn định nhất là clone + Compose, không phải `docker run` image chính thức.
+Fork của Presenton, chạy **web-only** (Docker). Không còn Electron desktop hay MCP server.
+
+Điểm khác quan trọng: `docker-compose.yml` **không dùng image sẵn** (`ghcr.io/presenton/presenton:latest` bị comment), mà **build từ source**. Compose chỉ còn hai service: `production` và `development`. Không có GPU variant — container Presenton chỉ gọi LLM/image qua HTTP API, không chạy model trên GPU. GPU (nếu có) thuộc về server AI riêng, không gắn vào container này.
+
+Trên Windows, cách chạy ổn định nhất là clone + Compose, không phải `docker run` image chính thức.
 
 Mở app tại **http://localhost:5001**. Dữ liệu (deck, upload, Mem0, SQLite) nằm trong volume `./app_data`.
 
@@ -41,11 +45,7 @@ Lần đầu sẽ lâu. Sau đó mở http://localhost:5001.
 docker compose up development --build
 ```
 
-**GPU (NVIDIA + NVIDIA Container Toolkit):**
-
-```powershell
-docker compose up production-gpu --build
-```
+Không cần NVIDIA Container Toolkit cho Presenton. LLM self-host (vLLM, Ollama, …) chạy trên server AI khác; trỏ `CUSTOM_LLM_URL` tới endpoint OpenAI-compatible của server đó.
 
 Đổi port host:
 
@@ -96,13 +96,13 @@ Các giá trị `LLM` hợp lệ: `openai`, `google`, `custom`.
 
 ## 4. Mem0 (memory theo từng presentation)
 
-Mem0 **bật mặc định** (`MEM0_ENABLED=true`). Dùng Qdrant + SQLite local, lưu dưới `/app_data/mem0`. Image Docker đã cài sẵn spaCy `en_core_web_sm` và cache FastEmbed.
+Mem0 **tắt mặc định** (`MEM0_ENABLED=false` trong compose). Dùng Qdrant + SQLite local, lưu dưới `/app_data/mem0`. Image Docker đã cài sẵn spaCy `en_core_web_sm` và cache FastEmbed (ONNX CPU — không cần GPU).
 
-**Điểm dễ vư�ng:** Mem0 **không** dùng LLM chính. Compose mặc định trỏ Mem0 sang một endpoint OpenAI-compatible local:
+**Điểm dễ vướng:** Mem0 **không** tự dùng LLM chính. Khi bật Mem0, phải trỏ `MEM0_LLM_*` tới một endpoint OpenAI-compatible (cùng server AI, OpenAI, hoặc URL khác):
 
 | Biến | Default |
 |---|---|
-| `MEM0_ENABLED` | `true` |
+| `MEM0_ENABLED` | `false` |
 | `MEM0_LLM_MODEL` | (xem compose) |
 | `MEM0_LLM_BASE_URL` | (xem compose) |
 | `MEM0_DIR` | `/app_data/mem0` |
@@ -110,15 +110,7 @@ Mem0 **bật mặc định** (`MEM0_ENABLED=true`). Dùng Qdrant + SQLite local,
 | `MEM0_EMBEDDER_MODEL` | `BAAI/bge-small-en-v1.5` |
 | `MEM0_EMBEDDING_DIMS` | `384` |
 
-### Nếu LLM chính là OpenAI nhưng không muốn dùng Mem0 với endpoint mặc định
-
-Cách A — tắt Mem0:
-
-```dotenv
-MEM0_ENABLED=false
-```
-
-Cách B — cho Mem0 dùng cùng OpenAI:
+### Bật Mem0 với OpenAI
 
 ```dotenv
 MEM0_ENABLED=true
@@ -127,7 +119,9 @@ MEM0_LLM_API_KEY=sk-...
 MEM0_LLM_MODEL=gpt-4.1-mini
 ```
 
-Embedder chạy local trong container (FastEmbed), không cần API riêng.
+Với LLM self-host, trỏ `MEM0_LLM_BASE_URL` / `MEM0_LLM_MODEL` cùng endpoint OpenAI-compatible (thường trùng `CUSTOM_LLM_URL` / `CUSTOM_MODEL`).
+
+Embedder chạy local trong container (FastEmbed / ONNX CPU), không cần API riêng và không dùng GPU.
 
 ---
 
@@ -161,7 +155,7 @@ LLM và image provider **không** cần cùng hãng (Google LLM + OpenAI image l
 
 ---
 
-## 6. Auth (admin / API / MCP)
+## 6. Auth (admin / API)
 
 Lần đầu mở UI sẽ setup account. Hoặc tạo admin lúc boot:
 
@@ -170,8 +164,7 @@ AUTH_USERNAME=admin
 AUTH_PASSWORD=change-me-min-8-chars
 ```
 
-- REST API: `http://localhost:5001/api/v1/...` với `Authorization: Bearer sk-presenton-...` (tạo key ở **Admin → API keys**).
-- MCP: `http://localhost:5001/mcp`, cùng API key.
+REST API: `http://localhost:5001/api/v1/...` với `Authorization: Bearer sk-presenton-...` (tạo key ở **Admin → API keys**). Fork này không còn MCP endpoint.
 
 ---
 
@@ -192,9 +185,10 @@ Vẫn phải mount `./app_data` — file, export, Mem0, auth **không** nằm h�
 ```dotenv
 WEB_GROUNDING=true
 WEB_SEARCH_PROVIDER=auto
+SEARXNG_BASE_URL=http://searxng:8080
 ```
 
-`auto` dùng search native của OpenAI/Google. Provider khác: `tavily` / `exa` / `brave` + API key tương ứng.
+`auto` dùng search native của OpenAI/Google. Custom/Gemma dùng SearXNG sidecar. Không còn Tavily / Exa / Brave. `docker compose up development` khởi động luôn service `searxng`.
 
 Tắt telemetry: `DISABLE_ANONYMOUS_TRACKING=true`.
 
@@ -246,6 +240,7 @@ docker compose logs --tail 100 production
 3. **Platform** — Compose default `linux/amd64`. Máy ARM (nếu có) có thể set `PRESENTON_DOCKER_PLATFORM=linux/arm64`.
 4. **Không persist data** — luôn giữ volume `./app_data:/app_data`. Xóa folder này là mất deck, user, memory.
 5. **Không pull `ghcr.io/presenton/presenton` cho fork này** — compose đang `build:` từ Dockerfile trong repo.
+6. **`production-gpu` / `development-gpu` không còn** — dùng `production` hoặc `development`. GPU cho LLM nằm ở server AI, không trong container Presenton.
 
 ---
 

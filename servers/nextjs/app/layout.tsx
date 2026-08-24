@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import localFont from "next/font/local";
 import { Manrope, Syne, Unbounded } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
-import { Providers } from "./providers";
-import MixpanelInitializer from "./MixpanelInitializer";
-import { Toaster } from "@/components/ui/sonner";
-import TailwindBrowserRuntime from "@/components/runtime/TailwindBrowserRuntime";
+
+const ClientRoot = dynamic(() => import("./ClientRoot"));
 const inter = localFont({
   src: [
     {
@@ -43,7 +42,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://presenton.ai"),
   title: "Presenton - Open Source AI presentation generator",
   description:
-    "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, Ollama), and PDF/PPTX export. A free Gamma alternative.",
+    "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
   keywords: [
     "AI presentation generator",
     "data storytelling",
@@ -57,7 +56,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Presenton - Open Source AI presentation generator",
     description:
-      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, Ollama), and PDF/PPTX export. A free Gamma alternative.",
+      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
     url: "https://presenton.ai",
     siteName: "Presenton",
     images: [
@@ -78,7 +77,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Presenton - Open Source AI presentation generator",
     description:
-      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, Ollama), and PDF/PPTX export. A free Gamma alternative.",
+      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
     images: ["https://presenton.ai/presenton-feature-graphics.png"],
   },
 };
@@ -94,15 +93,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${syne.variable} ${manrope.variable} ${unbounded.variable} antialiased`}
       >
-        <Providers>
-          <MixpanelInitializer>
-
-            {children}
-
-          </MixpanelInitializer>
-        </Providers>
-        <TailwindBrowserRuntime />
-        <Toaster position="top-center" />
+        <ClientRoot>{children}</ClientRoot>
       </body>
     </html>
   );

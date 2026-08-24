@@ -42,34 +42,18 @@ export interface WebSearchProviderOption {
 export const WEB_SEARCH_PROVIDERS: Record<string, WebSearchProviderOption> = {
   auto: {
     value: "auto",
-    label: "Default (Model)",
+    label: "Auto",
     description:
-      "Use model-native web grounding when available. Otherwise web search stays off until you choose an external provider.",
+      "Use model-native web grounding for OpenAI and Google. Custom models use the SearXNG sidecar.",
     icon: "/providers/model-search.svg",
   },
-  tavily: {
-    value: "tavily",
-    label: "Tavily",
-    description: "Search API optimized for AI applications.",
-    icon: "/providers/tavily.png",
-    apiKeyField: "TAVILY_API_KEY",
-    apiKeyLabel: "Tavily API key",
-  },
-  exa: {
-    value: "exa",
-    label: "Exa",
-    description: "AI-native web search with extracted result highlights.",
-    icon: "/providers/exa.png",
-    apiKeyField: "EXA_API_KEY",
-    apiKeyLabel: "Exa API key",
-  },
-  brave: {
-    value: "brave",
-    label: "Brave",
-    description: "Brave Search API for web search results.",
-    icon: "/providers/brave.svg",
-    apiKeyField: "BRAVE_SEARCH_API_KEY",
-    apiKeyLabel: "Brave Search API key",
+  searxng: {
+    value: "searxng",
+    label: "SearXNG",
+    description: "Self-hosted SearXNG instance.",
+    icon: "/providers/model-search.svg",
+    urlField: "SEARXNG_BASE_URL",
+    urlLabel: "SearXNG base URL",
   },
 };
 

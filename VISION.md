@@ -6,7 +6,7 @@ AI should not only produce unstructured text blobs. It should generate structure
 
 Visual asset generation must not require surrendering data to external platforms. It must run locally. It must work inside private networks. It must remain usable in controlled and air gapped environments.
 
-Users should be free to choose their models. Local models. Open models. Proprietary providers. Hybrid setups. Text models and image models working together. Systems such as Ollama or any compatible runtime. No lock in.
+Users should be free to choose their models. Local models. Open models. Proprietary providers. Hybrid setups. Text models and image models working together. Any OpenAI-compatible runtime (vLLM, LiteLLM proxy, Ollama, …) on the same machine or a separate AI server. No lock in.
 
 Templates and Designs are first class citizens. Users should be able to create them, modify them, package them, share them internally, and distribute them publicly. Themes and Asset packs can be configured manually.
 

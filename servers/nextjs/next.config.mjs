@@ -19,6 +19,15 @@ const nextConfig = {
       }
     : {}),
 
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer && config.output) {
+      // Dev webpack compiles large layout chunks on first request; Docker bind
+      // mounts on Windows can exceed the default 120s chunk load timeout.
+      config.output.chunkLoadTimeout = 300_000;
+    }
+    return config;
+  },
+
   images: {
     remotePatterns: [
       {

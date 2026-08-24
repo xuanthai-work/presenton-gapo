@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { getEffectiveUserConfig } from "@/lib/effective-user-config";
 import { authStatusForRequest } from "@/lib/server-auth-role";
-import { readUserConfigFile } from "@/lib/user-config-store";
-import { hasValidLLMConfig, normalizeLLMConfig } from "@/utils/storeHelpers";
+import { hasValidLLMConfig } from "@/utils/storeHelpers";
 import { LLMConfig } from "@/types/llm_config";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +21,7 @@ export async function GET(request: Request) {
     );
   }
   try {
-    const full = normalizeLLMConfig(
-      readUserConfigFile<LLMConfig>(path) || {}
-    );
+    const full = getEffectiveUserConfig(path);
     const config = Object.fromEntries(
       Object.entries(full).map(([key, value]) => [
         key,

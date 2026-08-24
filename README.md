@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/presenton/presenton/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=flat" alt="Apache2.0" /></a>
   <a href="https://github.com/presenton/presenton"><img src="https://img.shields.io/github/stars/presenton/presenton?style=flat" alt="Stars" /></a>
-  <a href="https://presenton.ai/"><img src="https://img.shields.io/badge/Platform-Docker%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat" alt="Platform" /></a>
+  <a href="https://presenton.ai/"><img src="https://img.shields.io/badge/Platform-Docker-lightgrey?style=flat" alt="Platform" /></a>
 </p>
 
 <p align="center">
@@ -32,8 +32,8 @@ No SaaS lock-in · No forced subscriptions · Full control over models and data
 
 What makes Presenton different?
 
-- Use Fully **self-hosted** in Web through [Docker Package](https://docs.presenton.ai/v3/get-started/quickstart)
-- Works with OpenAI, Google Gemini, or any other OpenAI compatible providers
+- Use Fully **self-hosted** in Web through Docker Compose (`production` / `development`)
+- Works with OpenAI, Google Gemini, or any OpenAI-compatible endpoint (vLLM, LiteLLM proxy, Ollama, …)
 - Comes with AI Presentation Generation API
 - Fully open-source (Apache 2.0)
 - Works with your own design/templates
@@ -181,7 +181,7 @@ Presenton gives you complete control over your AI presentation workflow. Choose 
 - Multi-Provider Support — Mix and match text and image generation providers
 - Versatile Image Generation — Choose from Gemini Flash, NanoBanana Pro, or GPT Image
 - Rich Media Support — Icons, charts, and custom graphics for professional presentations
-- Runs Locally — All processing happens on your device, no cloud dependencies
+- Runs as a web app — slide generation, edit, and export run in Docker; LLM/image calls go to the configured HTTP APIs (cloud or a separate self-hosted AI server). No GPU is reserved for the Presenton container.
 - API Deployment — Host as your own API service for your team
 - Multi-User Workspaces — Give each user a private workspace and manage accounts from a built-in admin panel
 - Fully Open-Source — Apache 2.0 licensed, inspect, modify, and contribute
@@ -216,12 +216,23 @@ Deploy and manage Presenton across your organization with versioned Helm charts 
 ### ⚡ Running Presenton
 
   <p>
-    You can run Presenton in two ways:
-    <strong>Docker</strong> for a one-command setup without installing a local dev
-    stack (ideal for development or offline use).
+    This fork is <strong>web-only</strong> (no desktop app, no MCP server).
+    Run it with <strong>Docker Compose</strong>: <code>production</code> (built image)
+    or <code>development</code> (hot-reload). The Presenton container does not use a
+    GPU; point <code>CUSTOM_LLM_URL</code> at a remote OpenAI-compatible LLM if you self-host models.
   </p>
 
-**Docker**
+**Docker Compose (this fork)**
+
+```bash
+docker compose up production --build
+```
+
+Windows (PowerShell): `docker compose up production --build`
+
+The official `ghcr.io/presenton/presenton:latest` image is **not** what this fork deploys. Compose builds from the repo `Dockerfile`.
+
+**Docker (upstream image, for reference)**
 
 - Start Presenton
   Linux/MacOS (Bash/Zsh Shell):
@@ -249,7 +260,7 @@ Deploy and manage Presenton across your organization with versioned Helm charts 
 
 ### ⚙️ Deployment Configurations
 
-The lists below match the environment variables forwarded in this repository’s **`docker-compose.yml`** (`production`, `production-gpu`, `development`, and `development-gpu`). Put values in a `.env` file next to the compose file, or export them before `docker compose up`.
+The lists below match the environment variables forwarded in this repository’s **`docker-compose.yml`** (`production` and `development`). Put values in a `.env` file next to the compose file, or export them before `docker compose up`.
 
 Other optional variables exist in code (for example advanced Mem0 paths, LiteParse runners, or `FAST_API_INTERNAL_URL` when Next.js and FastAPI are not same-origin); they are **not** wired in `docker-compose.yml`. Supported names are discoverable from `servers/fastapi/utils/get_env.py` and the Next.js server utilities under `servers/nextjs/`.
 
@@ -266,9 +277,9 @@ Other optional variables exist in code (for example advanced Mem0 paths, LitePar
 - **CUSTOM_MODEL**: Model id if **LLM** is **custom**.
 - **DISABLE_THINKING**=[true/false]: If **true**, disables “thinking” for providers that support it.
 - **WEB_GROUNDING**=[true/false]: If **true**, enables web search by default.
-- **WEB_SEARCH_PROVIDER**=[auto/tavily/exa/brave]: Selects the web search mode. `auto` uses native search for OpenAI and Google, and otherwise leaves web search off unless you choose an external provider.
+- **WEB_SEARCH_PROVIDER**=auto (default): OpenAI/Google use native web search; custom LLMs (Gemma) use the SearXNG sidecar. Tavily/Exa/Brave are removed.
 - **WEB_SEARCH_MAX_RESULTS**: Maximum external search results to add to model context (default `5`, maximum `10`).
-- **TAVILY_API_KEY**, **EXA_API_KEY**, **BRAVE_SEARCH_API_KEY**: Credentials for optional hosted search APIs.
+- **SEARXNG_BASE_URL**: Defaults to `http://searxng:8080` in Compose. Override only if SearXNG runs outside this stack. Do not use `localhost` from inside the Presenton container.
 - **EXTENDED_REASONING**=[true/false]: Enables extended reasoning where supported by the configured stack.
 
 #### Presentation memory (Mem0 OSS)
@@ -280,7 +291,7 @@ Docker images install the default spaCy model (`en_core_web_sm`) during build so
 
 | Variable                     | Purpose                                                                                                          |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **MEM0_ENABLED**             | **true**/false (compose default **true**).                                                                       |
+| **MEM0_ENABLED**             | **true**/false (compose default **false**).                                                                      |
 | **MEM0_LLM_MODEL**           | Mem0 LLM model name (compose default **`OPENAI_MODEL`**).                                                        |
 | **MEM0_LLM_API_KEY**         | Mem0 LLM API key placeholder for OpenAI-compatible clients (compose default **`OPENAI_API_KEY`**).              |
 | **MEM0_LLM_BASE_URL**        | Mem0 LLM base URL (compose default OpenAI-compatible endpoint).                                                  |

@@ -72,7 +72,7 @@ graph TB
 
 Chi tiết xem [03-level-fastapi.md](./03-level-fastapi.md).
 
-## �️ NextJS (Node) — `servers/nextjs/`
+## NextJS (Node) — `servers/nextjs/`
 
 ```mermaid
 graph TB
@@ -140,5 +140,6 @@ Session được quản lý ở **cả 2 phía**:
 | `NEXT_PUBLIC_FAST_API` | NextJS | URL public cho client |
 | `NEXT_PUBLIC_URL` | FastAPI | CORS origin |
 | `CAN_CHANGE_KEYS` | start.js | Cho phép user đổi API key qua UI |
+| `LLM` / `CUSTOM_LLM_URL` | FastAPI | Provider text: `openai` / `google` / `custom` (HTTP tới LLM server) |
 | `NODE_ENV` | Cả hai | development/production |
 | `SENTRY_DSN` | Cả hai | Error tracking (optional) |

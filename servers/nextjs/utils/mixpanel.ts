@@ -29,13 +29,6 @@ export enum MixpanelEvent {
   Provider_Logout_Clicked = 'Provider Logout Clicked',
   Provider_Connection_Deleted = 'Provider Connection Deleted',
 
-  Codex_SignIn_API_Call = 'Codex Sign In API Call',
-  Codex_SignIn_Completed = 'Codex Sign In Completed',
-  Codex_SignIn_Failed = 'Codex Sign In Failed',
-  Codex_SignIn_Cancelled = 'Codex Sign In Cancelled',
-  Codex_Signed_Out = 'Codex Signed Out',
-  Codex_Reauth_Required = 'Codex Reauth Required',
-
   Auth_Gate_Viewed = 'Auth Gate Viewed',
   Auth_Status_Checked = 'Auth Status Checked',
   Auth_Unauthorized_Redirect = 'Auth Unauthorized Redirect',

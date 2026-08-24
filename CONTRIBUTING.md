@@ -1,185 +1,88 @@
-# Contributing to Presenton
+# Contributing to Presenton Gapo
 
-Welcome! 🚀  
-Thanks for helping improve **Presenton — the open-source AI presentation generator.**
+This repository is a **web-only fork** of Presenton. There is no Electron desktop app and no MCP server. The supported runtime is Docker Compose.
 
-## Quick Links
+## Quick links
 
-- **GitHub:** https://github.com/presenton/presenton
-- **Docs:** https://docs.presenton.ai
-- **Website:** https://presenton.ai
-- **Discord:** https://discord.gg/9ZsKKxudNE
-- **X:** https://x.com/presentonai
+- **Repo:** https://github.com/xuanthai-work/presenton-gapo
+- **Local setup:** [setup-presonton.md](./setup-presonton.md)
+- **Architecture:** [docs/architecture/README.md](./docs/architecture/README.md)
 
----
+## Current contribution scope
 
-# Current Contribution Scope
+Work happens in:
 
-The Electron application contains:
+- `servers/fastapi` — Python backend
+- `servers/nextjs` — Next.js frontend
+- `docker-compose.yml`, `Dockerfile`, `Dockerfile.dev`
+- `docs/` — architecture and operator docs
 
-- Desktop application
-- FastAPI backend
-- Next.js frontend
-- Local runtime integrations
+LLM, image, and web-search providers are intentionally small: OpenAI, Google Gemini, and OpenAI-compatible (`custom`). Do not reintroduce dropped providers (Anthropic, Bedrock, in-app Ollama, ComfyUI, MCP, Electron, Tavily, Exa, Brave) unless that is an explicit product decision.
 
-Contributions outside `electron/` may not be accepted at this time.
+Exception: SearXNG is the self-hosted fallback when `auto` has no native search (`LLM=custom`). Do not restore Tavily/Exa/Brave or other dropped providers.
 
----
-
-# How to Contribute
+## How to contribute
 
 ### Bugs
-Open an issue and include:
 
-- Steps to reproduce
-- Expected vs actual behavior
-- Logs or screenshots
+Open an issue with steps to reproduce, expected vs actual behavior, and logs.
 
 ### Features
-Start a **GitHub Issue** or **Discussion** explaining:
 
-- The problem
-- Proposed solution
+Start with an issue explaining the problem and proposed solution.
 
-### Code Contributions
+### Code
 
 1. Fork the repository
 2. Create a branch
-3. Implement your changes
-4. Open a Pull Request
+3. Implement the change
+4. Open a pull request
 
 Example branch names:
 
 ```
-
 feature/add-template-support
 fix/export-pptx-error
 docs/update-readme
-
 ```
 
----
-
-# Development Setup (Electron)
+## Development setup
 
 ### Prerequisites
 
-- Node.js (LTS)
-- npm
-- Python
-- `uv` (Python package manager)
+- Docker Desktop (WSL2 on Windows)
+- Git
+- Node.js 20+ and Python 3.11 + `uv` if you run tests outside Docker
 
-# Setup Environment
+### Run the app
 
-From the `electron` directory:
+Copy `.env.example` to `.env`, fill one LLM provider, then:
 
-```
-cd electron
-npm run setup:env
+```powershell
+docker compose up development --build
 ```
 
-This installs:
+App: http://localhost:5001
 
-- Node dependencies
-- FastAPI dependencies
-- Next.js dependencies
+Production-style image:
 
----
-
-# Run the Electron App (Development)
-
+```powershell
+docker compose up production --build
 ```
 
-npm run dev
+Do not use `production-gpu` / `development-gpu` — those services were removed. The Presenton container calls LLMs over HTTP; GPU belongs on a separate AI server if you self-host models.
 
-```
+## Before opening a PR
 
-This will:
+- Keep the change small and focused
+- Explain what and why
+- Run the relevant tests (`servers/fastapi` pytest, Next.js lint/build)
+- For UI changes, include screenshots
 
-- compile TypeScript
-- start the Electron app
-- run the backend and UI locally
+## AI-assisted contributions
 
----
+PRs created with AI tools are welcome. Mention that the PR is AI-assisted, what you tested, and that you reviewed the generated code.
 
-# Build the Electron App
+## Code of conduct
 
-To build all components:
-
-```
-
-npm run build:all
-
-```
-
----
-
-# Before Opening a PR
-
-### CLA and PR age policy
-
-Pull requests must have the Contributor License Agreement (CLA) signed before
-they can be accepted. Pull requests that remain open for more than 30 days
-without a signed CLA may be discarded and closed. Please complete the CLA
-prompt as soon as you open a pull request and update the pull request after
-signing so maintainers can verify it.
-
-Please ensure:
-
-- Changes are **inside `electron/`**
-- Code runs locally on development as well as build environment both
-- PRs are **small and focused**
-- You explain **what and why**
-
-For UI changes, include screenshots.
-
----
-
-# AI-Assisted Contributions
-
-PRs created with **AI tools (ChatGPT, Claude, Codex, etc.) are welcome.**
-
-Please mention:
-
-- that the PR is **AI-assisted**
-- the level of testing performed
-- confirmation that you reviewed the generated code
-
----
-
-# Good First Issues
-
-Look for issues labeled:
-
-```
-
-good first issue
-help wanted
-
-```
-
----
-
-# Community
-
-Questions or discussions:
-
-💬 Discord  
-https://discord.gg/9ZsKKxudNE
-
----
-
-# Code of Conduct
-
-Please follow our community guidelines:
-
-```
-
-CODE_OF_CONDUCT.md
-
-```
-
----
-
-Thanks for helping make **Presenton better for everyone.**
-```
+See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).

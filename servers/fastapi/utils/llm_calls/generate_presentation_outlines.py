@@ -48,9 +48,7 @@ get_client = get_llm_client
 
 def _web_search_provider_display_name(provider_name: str) -> str:
     return {
-        "tavily": "Tavily",
-        "exa": "Exa",
-        "brave": "Brave",
+        "searxng": "SearXNG",
         "model-native": "model-native web search",
     }.get(provider_name, provider_name)
 
