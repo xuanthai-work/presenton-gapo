@@ -33,6 +33,7 @@ import { notify } from "@/components/ui/sonner";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import CommunityDesignPreviewDialog from "./CommunityDesignPreviewDialog";
+import { GSlideSkeleton } from "@/components/gslide";
 
 const PAGE_SIZE = 20;
 
@@ -237,14 +238,14 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="min-h-screen font-manrope">
-      <header className="sticky right-0 top-0 z-40 ml-7 mr-[9px] flex min-h-[105px] items-center justify-between border-b border-[#EDEEEF] bg-white px-1">
-        <h1 className="font-syne text-[22px] font-medium tracking-[-0.66px] text-[#101323]">
+    <div className="min-h-screen bg-[var(--gslide-bg)] font-manrope">
+      <header className="sticky right-0 top-0 z-40 ml-7 mr-[9px] flex min-h-[105px] items-center justify-between border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-1">
+        <h1 className="font-unbounded text-[22px] font-normal tracking-[-0.03em] text-[var(--gslide-ink)]">
           Community
         </h1>
         <Link
           href="/upload"
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-[linear-gradient(270deg,#D5CAFC_2.4%,#E3D2EB_27.88%,#F4DCD3_69.23%,#FDE4C2_100%)] px-4 font-syne text-sm font-medium text-[#191919] shadow-sm transition hover:shadow-md"
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 font-syne text-sm font-medium text-white shadow-sm transition hover:bg-[var(--gslide-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]"
         >
           New presentation
           <ChevronRight className="h-4 w-4" />
@@ -257,20 +258,20 @@ export default function CommunityPage() {
             <h2 className="text-base font-medium text-[#191919]">
               Pick community designs or prompts
             </h2>
-            <p className="mt-1 text-xs text-[#808080]">
+            <p className="mt-1 text-xs text-[var(--gslide-muted)]">
               Preview shared decks, then use their design or prompt in Smart mode.
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
-            <label className="flex h-10 w-full items-center gap-2.5 rounded-full border border-[#DBDBDB99] bg-white px-2.5 sm:w-[234px]">
-              <Search className="h-4 w-4 shrink-0 text-[#808080]" strokeWidth={1.75} />
+            <label className="flex h-10 w-full items-center gap-2.5 rounded-full border border-[var(--gslide-input-border)] bg-white px-2.5 sm:w-[234px]">
+              <Search className="h-4 w-4 shrink-0 text-[var(--gslide-muted)]" strokeWidth={1.75} />
               <span className="sr-only">Search community presentations</span>
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search ..."
-                className="min-w-0 flex-1 bg-transparent font-syne text-base font-normal text-[#191919] outline-none placeholder:text-[#808080]"
+                className="min-w-0 flex-1 bg-transparent font-syne text-base font-normal text-[#191919] outline-none placeholder:text-[var(--gslide-muted)]"
               />
             </label>
             <CommunityPresentationFilters
@@ -299,7 +300,7 @@ export default function CommunityPage() {
             <button
               type="button"
               onClick={() => setRetryVersion((current) => current + 1)}
-              className="mt-4 rounded-full border border-[#E0DDFC] bg-white px-4 py-2 text-xs font-medium text-[#6847F4] transition hover:bg-[#F8F7FF]"
+              className="mt-4 rounded-full border border-[var(--gslide-border)] bg-white px-4 py-2 text-xs font-medium text-[var(--gslide-accent)] transition hover:bg-[var(--gslide-accent-soft)]"
             >
               Try again
             </button>
@@ -398,7 +399,7 @@ function CommunityPresentationCard({
       <button
         type="button"
         onClick={onPreview}
-        className="group block aspect-[306/169] w-full overflow-hidden bg-[#F8FBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#7A5AF8]/35"
+        className="group block aspect-[306/169] w-full overflow-hidden bg-[#F8FBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--gslide-accent)]/35"
         aria-label={`Preview ${title}`}
       >
         {thumbnail ? (
@@ -486,9 +487,9 @@ function CommunityGridSkeleton() {
   return (
     <div className="mt-5 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2200px]:grid-cols-6">
       {Array.from({ length: 10 }).map((_, index) => (
-        <div
+        <GSlideSkeleton
           key={index}
-          className="aspect-[306/267] animate-pulse rounded-xl border border-[#EDEEEF] bg-[#F6F6F9]"
+          className="aspect-[306/267] rounded-xl border border-[var(--gslide-border)]"
         />
       ))}
     </div>

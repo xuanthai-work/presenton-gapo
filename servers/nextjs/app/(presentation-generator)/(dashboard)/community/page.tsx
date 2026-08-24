@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import CommunityPage from "./components/CommunityPage";
 
 export const metadata: Metadata = {
-  title: "Community | Presenton",
+  title: "Community | GSlide",
   description: "Explore community presentation designs and prompts.",
 };
 

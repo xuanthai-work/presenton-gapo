@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { ArrowLeft } from "lucide-react";
+import { GSlideWordmark } from "@/components/gslide";
 
 const PATHS_WITH_HEADER_BACK = [
   "/upload",
@@ -44,23 +45,19 @@ const Header = () => {
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" onClick={() => trackEvent(MixpanelEvent.Navigation, { from: pathname, to: "/dashboard" })}>
-              <img
-                src="/logo-with-bg.png"
-                alt="Presentation logo"
-                className="h-[40px] w-[40px]"
-              />
+              <GSlideWordmark className="text-base" />
             </Link>
           </div>
           <div className="flex items-center">
             {showHeaderBack ? (
               <Link
                 href={backHref}
-                className="text-[#333333] text-xs font-syne font-semibold flex items-center gap-2"
+                className="text-[var(--gslide-ink)] text-xs font-syne font-semibold flex items-center gap-2"
                 onClick={() =>
                   trackEvent(MixpanelEvent.Navigation, { from: pathname, to: backHref })
                 }
               >
-                <ArrowLeft className="w-4 h-4 shrink-0 text-[#333333]" aria-hidden />
+                <ArrowLeft className="w-4 h-4 shrink-0 text-[var(--gslide-ink)]" aria-hidden />
                 <span>{backLabel}</span>
               </Link>
             ) : null}

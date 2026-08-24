@@ -63,10 +63,10 @@ function maskedKey(token: string) {
 }
 
 const primaryButtonClass =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#7C51F8] px-5 text-xs font-semibold text-white transition hover:bg-[#6D46E6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--gslide-accent)] px-5 text-xs font-semibold text-white transition hover:bg-[var(--gslide-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 const inputClass =
-  "h-11 w-full rounded-lg border border-[#E1E1E5] bg-white px-4 text-sm text-[#101323] outline-none transition placeholder:text-[#98A2B3] focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/15";
+  "h-11 w-full rounded-lg border border-[var(--gslide-input-border)] bg-white px-4 text-sm text-[var(--gslide-ink)] outline-none transition placeholder:text-[#98A2B3] focus:border-[var(--gslide-input-focus)] focus:ring-2 focus:ring-[var(--gslide-accent)]/15";
 
 export default function AdminPanel({ embedded = false }: AdminPanelProps) {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -451,16 +451,16 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
           </p>
 
           <Tabs defaultValue="users" className="mt-6">
-          <TabsList className="h-11 rounded-full border border-[#EDEEEF] bg-[#F9FAFB] p-1">
+          <TabsList className="h-11 rounded-full border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] p-1">
             <TabsTrigger
               value="users"
-              className="h-9 rounded-full px-5 text-xs text-[#667085] shadow-none data-[state=active]:bg-white data-[state=active]:text-[#5146E5] data-[state=active]:shadow-sm"
+              className="h-9 rounded-full px-5 text-xs text-[var(--gslide-muted)] shadow-none data-[state=active]:bg-white data-[state=active]:text-[var(--gslide-accent)] data-[state=active]:shadow-sm"
             >
               Users
             </TabsTrigger>
             <TabsTrigger
               value="keys"
-              className="h-9 rounded-full px-5 text-xs text-[#667085] shadow-none data-[state=active]:bg-white data-[state=active]:text-[#5146E5] data-[state=active]:shadow-sm"
+              className="h-9 rounded-full px-5 text-xs text-[var(--gslide-muted)] shadow-none data-[state=active]:bg-white data-[state=active]:text-[var(--gslide-accent)] data-[state=active]:shadow-sm"
             >
               API keys
             </TabsTrigger>
@@ -469,8 +469,8 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
           <TabsContent value="users" className="mt-6 space-y-5">
             <section className="rounded-[12px] border border-[#EDEEEF] bg-white p-6">
               <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F3FF]">
-                  <UserPlus className="h-4 w-4 text-[#5146E5]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)]">
+                  <UserPlus className="h-4 w-4 text-[var(--gslide-accent)]" />
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-[#101323]">Add user</h2>
@@ -676,8 +676,8 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
           {dialog?.kind === "reset-password" && (
             <form onSubmit={resetPassword}>
               <DialogHeader className="px-7 pb-5 pt-7 text-left">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#F4F3FF]">
-                  <LockKeyhole className="h-5 w-5 text-[#5146E5]" />
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)]">
+                  <LockKeyhole className="h-5 w-5 text-[var(--gslide-accent)]" />
                 </div>
                 <DialogTitle className="text-xl font-semibold leading-7 text-[#101323]">
                   Reset password

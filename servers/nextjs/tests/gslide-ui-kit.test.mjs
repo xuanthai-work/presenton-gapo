@@ -133,3 +133,25 @@ test("landing and metadata say GSlide", async () => {
   assert.match(layout, /GSlide/);
   assert.doesNotMatch(layout, /title: "Presenton/);
 });
+
+test("dashboard sidebar uses GSlideSidebar and accent active states", async () => {
+  const sidebar = await readNext(
+    "app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx",
+  );
+  assert.match(sidebar, /GSlideSidebar/);
+  assert.doesNotMatch(sidebar, /#7C51F8/);
+  assert.doesNotMatch(sidebar, /#5146E5/);
+});
+
+test("dashboard and community chrome use GSlide surfaces", async () => {
+  const dash = await readNext(
+    "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
+  );
+  assert.match(dash, /--gslide-bg|#EFF6FF/);
+  assert.doesNotMatch(dash, /#7A5AF8/);
+
+  const community = await readNext(
+    "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
+  );
+  assert.doesNotMatch(community, /#6847F4/);
+});

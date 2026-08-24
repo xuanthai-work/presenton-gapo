@@ -20,35 +20,14 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { usePathname, useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import { notify } from "@/components/ui/sonner";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
-import { IMAGE_PROVIDERS, LLM_PROVIDERS } from "@/utils/providerConstants";
-
-const GITHUB_REPOSITORY_URL = "https://github.com/presenton/presenton";
-const DISCORD_INVITE_URL = "https://discord.com/invite/9ZsKKxudNE";
+import { GSlideHeader } from "@/components/gslide";
 
 const actionCardBase =
   "absolute aspect-[16/9] h-[46.238px] w-[82.201px] rounded-[4.474px] border border-white/50 bg-cover bg-center bg-no-repeat shadow-[0_8px_18px_rgba(16,24,40,0.18)] transition-all duration-500 ease-out opacity-100 translate-y-0 scale-100";
 
-const dashboardHeaderPill =
-  "inline-flex shrink-0 items-center justify-center rounded-full text-[#191919] transition-colors hover:bg-[#F8F8FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8] focus-visible:ring-offset-2";
-
-const dashboardHeaderAsset = (name: string) => `/dashboard-header/${name}`;
 const dashboardBodyAsset = (name: string) => `/dashboard-body/${name}`;
-
-const DashboardHeaderDivider = () => (
-  <span className="relative h-5 w-px shrink-0" aria-hidden="true">
-    <Image
-      src={dashboardHeaderAsset("divider.svg")}
-      alt=""
-      width={20}
-      height={1}
-      className="absolute left-1/2 top-1/2 h-px w-5 max-w-none -translate-x-1/2 -translate-y-1/2 rotate-90"
-    />
-  </span>
-);
 
 const FloatingActionCards = () => (
   <div className="pointer-events-none absolute right-[14px] top-[-35px] z-0 hidden h-[64px] w-[158px] sm:block">
@@ -97,7 +76,7 @@ const DashboardActionCard = ({
   mediaClassName = "w-[96px]",
 }: DashboardActionCardProps) => {
   const className =
-    "group/action relative isolate flex h-[90px] w-full min-w-0 overflow-visible rounded-[10.8px] border border-[#EDEEEF] bg-white text-[#191919] outline-none transition-all duration-300 hover:border-[#D7D8DE] hover:shadow-[0_10px_28px_rgba(16,24,40,0.08)] focus-visible:ring-2 focus-visible:ring-[#7A5AF8] focus-visible:ring-offset-4 disabled:cursor-wait disabled:opacity-70 disabled:hover:border-[#EDEEEF] disabled:hover:shadow-none";
+    "group/action relative isolate flex h-[90px] w-full min-w-0 overflow-visible rounded-[10.8px] border border-[var(--gslide-border)] bg-white text-[#191919] outline-none transition-all duration-300 hover:border-[#D7D8DE] hover:shadow-[0_10px_28px_rgba(16,24,40,0.08)] focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-4 disabled:cursor-wait disabled:opacity-70 disabled:hover:border-[var(--gslide-border)] disabled:hover:shadow-none";
   const content = (
     <>
       {children}
@@ -167,7 +146,7 @@ const BlankPresentationIllustration = ({
 
     {isLoading && (
       <div className="absolute inset-0 flex items-center justify-center bg-[#D1E9FF]/75">
-        <Loader2 className="h-5 w-5 animate-spin text-[#6847F4]" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--gslide-accent)]" />
       </div>
     )}
   </div>
@@ -218,134 +197,8 @@ function formatGitHubStars(stars: number) {
 }
 
 function DashboardHeader() {
-  const pathname = usePathname();
-  const llmConfig = useSelector(
-    (state: RootState) => state.userConfig.llm_config,
-  );
-
-  const textProvider = LLM_PROVIDERS[llmConfig.LLM || "openai"];
-  const imageProvider = llmConfig.DISABLE_IMAGE_GENERATION
-    ? undefined
-    : IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER || ""];
-  const configuredProviders = [textProvider, imageProvider].filter(
-    (provider): provider is NonNullable<typeof provider> =>
-      Boolean(provider?.icon),
-  );
-
-  useEffect(() => {
-    let isMounted = true;
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   return (
-    <header className="sticky top-0 z-50 ml-7 mr-[9px] flex h-[105px] items-center justify-between border-b border-[#EDEEEF] bg-white px-1 max-lg:h-auto max-lg:min-h-[105px] max-lg:flex-col max-lg:items-start max-lg:gap-4 max-lg:py-5">
-      <div className="flex w-[504.392px] max-w-full shrink-0 items-center gap-3.5 max-xl:w-auto">
-        <h1 className="whitespace-nowrap font-syne text-[22px] font-medium leading-normal tracking-[-0.66px] text-[#101323]">
-          Dashboard
-        </h1>
-      </div>
-
-      <div className="max-w-full overflow-x-auto hide-scrollbar lg:overflow-visible">
-        <div className="flex h-[42.24px] w-max max-w-none items-center gap-3 rounded-full pl-3">
-          <div className="flex h-[42.24px] items-center gap-[18px] rounded-[32px] border border-[#EDEEEF] bg-white px-3 py-1">
-            <Link
-              href="/settings"
-              className={`${dashboardHeaderPill} h-[26.1px] gap-1.5 p-1.5`}
-              onClick={() =>
-                trackEvent(MixpanelEvent.Navigation, {
-                  from: pathname,
-                  to: "/settings",
-                  source: "dashboard_header_settings",
-                })
-              }
-            >
-              <span
-                className="flex h-[34.1px] shrink-0 items-center"
-                title={configuredProviders
-                  .map((provider) => provider.label)
-                  .join(" + ")}
-              >
-                {configuredProviders.map((provider, index) => (
-                  <span
-                    key={`${provider.value}-${index}`}
-                    className={`relative h-[22px] w-[22px] shrink-0 overflow-hidden rounded-full border-[1.238px] border-[#EDEEEF] bg-white ${
-                      index > 0 ? "-ml-[4.4px]" : "z-10"
-                    }`}
-                  >
-                    <Image
-                      src={provider.icon!}
-                      alt=""
-                      aria-hidden="true"
-                      width={224}
-                      height={224}
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  </span>
-                ))}
-              </span>
-              <span className="font-syne text-sm font-medium leading-[17.6px] tracking-[0.56px]">
-                Settings
-              </span>
-            </Link>
-
-            <DashboardHeaderDivider />
-
-            <Link
-              href={DISCORD_INVITE_URL}
-              target="_blank"
-              rel="noreferrer"
-              className={`${dashboardHeaderPill} h-[29.6px] gap-[8.8px] p-1.5`}
-              onClick={() =>
-                trackEvent(MixpanelEvent.Navigation, {
-                  from: pathname,
-                  to: DISCORD_INVITE_URL,
-                  source: "dashboard_header_discord",
-                })
-              }
-            >
-              <Image
-                src={dashboardHeaderAsset("discord.svg")}
-                alt=""
-                aria-hidden="true"
-                width={18}
-                height={18}
-                className="h-[17.6px] w-[17.6px] shrink-0"
-              />
-              <span className="font-syne text-sm font-normal leading-normal tracking-[-0.14px] text-[#191919]">
-                Join Discord
-              </span>
-            </Link>
-            <DashboardHeaderDivider />
-            <Link
-              href={GITHUB_REPOSITORY_URL}
-              target="_blank"
-              rel="noreferrer"
-              className={`${dashboardHeaderPill} h-[29.6px] gap-[8.8px] p-1.5`}
-              onClick={() =>
-                trackEvent(MixpanelEvent.Navigation, {
-                  from: pathname,
-                  to: GITHUB_REPOSITORY_URL,
-                  source: "dashboard_header_github",
-                })
-              }
-            >
-              <Image
-                src={dashboardHeaderAsset("github.svg")}
-                alt=""
-                aria-hidden="true"
-                width={18}
-                height={18}
-                className="h-[17.6px] w-[17.6px] shrink-0"
-              />
-            </Link>
-          </div>
-
-        </div>
-      </div>
-    </header>
+    <GSlideHeader title="Dashboard" className="ml-7 mr-[9px] px-1" />
   );
 }
 
@@ -459,7 +312,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full pb-10">
+    <div className="relative min-h-screen w-full bg-[var(--gslide-bg)] pb-10">
       <DashboardHeader />
       <section className="relative z-10 overflow-visible pb-0 pl-3 pr-3 pt-[17px] sm:pl-6 sm:pr-[9px]">
         <h2 className="w-full font-syne text-[16px] font-medium leading-[normal] text-[#191919]">
@@ -522,7 +375,7 @@ const DashboardPage: React.FC = () => {
                 onClick={() => setDeckViewMode("grid")}
                 aria-label="Grid view"
                 aria-pressed={deckViewMode === "grid"}
-                className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8] ${deckViewMode === "grid" ? "bg-[#F6F6F9]" : "hover:bg-[#FAFAFC]"}`}
+                className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] ${deckViewMode === "grid" ? "bg-[var(--gslide-accent-soft)]" : "hover:bg-[#FAFAFC]"}`}
               >
                 <GridViewIcon />
               </button>
@@ -531,7 +384,7 @@ const DashboardPage: React.FC = () => {
                 onClick={() => setDeckViewMode("list")}
                 aria-label="List view"
                 aria-pressed={deckViewMode === "list"}
-                className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8] ${deckViewMode === "list" ? "bg-[#F6F6F9]" : "hover:bg-[#FAFAFC]"}`}
+                className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] ${deckViewMode === "list" ? "bg-[var(--gslide-accent-soft)]" : "hover:bg-[#FAFAFC]"}`}
               >
                 <ListViewIcon />
               </button>
