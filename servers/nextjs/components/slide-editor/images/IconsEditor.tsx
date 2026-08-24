@@ -376,7 +376,7 @@ const IconsEditor = ({
                     aria-label="Apply icon weight to entire presentation"
                     checked={applyStylesToPresentation}
                     onCheckedChange={setApplyStylesToPresentation}
-                    className="h-5 w-9 flex-none data-[state=checked]:bg-[#7C3AED] data-[state=unchecked]:bg-[#DDDEE3]"
+                    className="h-5 w-9 flex-none data-[state=checked]:bg-[var(--gslide-accent)] data-[state=unchecked]:bg-[#DDDEE3]"
                   />
                 </div>
               </aside>
@@ -522,7 +522,7 @@ const IconsEditor = ({
 
           <DialogPrimitive.Close
             aria-label="Close icon editor"
-            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[#F6F6F9] sm:-right-[68px] sm:top-0 sm:size-[52px]"
+            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[var(--gslide-accent-soft)] sm:-right-[68px] sm:top-0 sm:size-[52px]"
           >
             <X className="size-5" strokeWidth={1.5} aria-hidden="true" />
           </DialogPrimitive.Close>

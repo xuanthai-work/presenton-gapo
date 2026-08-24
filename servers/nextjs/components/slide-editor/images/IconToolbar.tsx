@@ -55,7 +55,7 @@ export function IconToolbar({
       <label
         title="Icon color"
         aria-label="Icon color"
-        className="relative flex h-8 cursor-pointer items-center gap-2 rounded-[6px] px-2 text-[13px] font-medium hover:bg-[#F6F6F9]"
+        className="relative flex h-8 cursor-pointer items-center gap-2 rounded-[6px] px-2 text-[13px] font-medium hover:bg-[var(--gslide-accent-soft)]"
       >
         <span
           aria-hidden="true"
@@ -78,7 +78,7 @@ export function IconToolbar({
         title="Change icon"
         aria-label="Change icon"
         onClick={onEditIcon}
-        className="flex h-8 items-center gap-2 rounded-[6px] px-2 text-[13px] font-medium hover:bg-[#F6F6F9]"
+        className="flex h-8 items-center gap-2 rounded-[6px] px-2 text-[13px] font-medium hover:bg-[var(--gslide-accent-soft)]"
       >
         <Replace size={16} strokeWidth={1.7} aria-hidden="true" />
         <span>Change icon</span>

@@ -445,7 +445,7 @@ export function ImagePickerModal({
 
           <DialogPrimitive.Close
             aria-label="Close image picker"
-            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[#F6F6F9] sm:-right-[68px] sm:top-0 sm:size-[52px]"
+            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[var(--gslide-accent-soft)] sm:-right-[68px] sm:top-0 sm:size-[52px]"
           >
             <X className="size-5" strokeWidth={1.5} aria-hidden="true" />
           </DialogPrimitive.Close>
@@ -562,7 +562,7 @@ function ImageSkeletons() {
       {Array.from({ length: 6 }, (_, index) => (
         <div
           key={index}
-          className="aspect-square animate-pulse rounded-[10px] bg-[#F6F6F9]"
+          className="aspect-square animate-pulse rounded-[10px] bg-[var(--gslide-accent-soft)]"
         />
       ))}
     </div>
@@ -598,7 +598,7 @@ function ImageResults({
         <div
           key={`${image.id || image.url}-${index}`}
           className={cn(
-            "group relative aspect-square overflow-hidden rounded-[10px] border border-[#EDEEEF] bg-[#F6F6F9] text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#191919]",
+            "group relative aspect-square overflow-hidden rounded-[10px] border border-[#EDEEEF] bg-[var(--gslide-accent-soft)] text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]",
             image.url === currentSource && "ring-2 ring-[#191919]",
           )}
         >
@@ -606,7 +606,7 @@ function ImageResults({
             type="button"
             aria-label="Use this image"
             onClick={() => onSelect(image)}
-            className="absolute inset-0 h-full w-full overflow-hidden rounded-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#191919]"
+            className="absolute inset-0 h-full w-full overflow-hidden rounded-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
           >
             <Image
               fill
