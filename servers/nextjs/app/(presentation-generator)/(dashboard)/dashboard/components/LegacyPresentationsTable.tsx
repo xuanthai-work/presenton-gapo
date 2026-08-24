@@ -94,7 +94,7 @@ export function LegacyPresentationsTable({
             disabled={isDeleting}
             aria-label="Delete all legacy presentations"
             title="Delete all legacy presentations"
-            className="flex h-[35px] min-w-[51px] items-center justify-center rounded-full border border-[#EDEEEF] bg-white px-3 text-[#191919] transition-colors hover:bg-[#F6F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-[35px] min-w-[51px] items-center justify-center rounded-full border border-[#EDEEEF] bg-white px-3 text-[#191919] transition-colors hover:bg-[var(--gslide-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

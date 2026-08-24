@@ -516,8 +516,8 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
             <section className="overflow-hidden rounded-[12px] border border-[#EDEEEF] bg-white">
               <div className="flex items-center justify-between border-b border-[#EDEEEF] px-6 py-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F3FF]">
-                    <Users className="h-4 w-4 text-[#5146E5]" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)]">
+                    <Users className="h-4 w-4 text-[var(--gslide-accent)]" />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-[#101323]">Accounts</h2>
@@ -529,7 +529,7 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
                 <button
                   type="button"
                   aria-label="Refresh accounts"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EDEEEF] text-[#667085] transition hover:bg-[#F9FAFB] hover:text-[#5146E5]"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EDEEEF] text-[#667085] transition hover:bg-[#F9FAFB] hover:text-[var(--gslide-accent)]"
                   onClick={() => void loadUsers("manual")}
                 >
                   <RefreshCw className={`h-4 w-4 ${busy === "users" ? "animate-spin" : ""}`} />
@@ -581,8 +581,8 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
             <section className="overflow-hidden rounded-[12px] border border-[#EDEEEF] bg-white">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#EDEEEF] px-6 py-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F3FF]">
-                    <KeyRound className="h-4 w-4 text-[#5146E5]" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)]">
+                    <KeyRound className="h-4 w-4 text-[var(--gslide-accent)]" />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-[#101323]">API keys</h2>
@@ -629,7 +629,7 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
                         type="button"
                         aria-label={isVisible ? "Hide API key" : "Show API key"}
                         title={isVisible ? "Hide API key" : "Show API key"}
-                        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EDEEEF] text-[#667085] transition hover:bg-[#F4F3FF] hover:text-[#5146E5]"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EDEEEF] text-[#667085] transition hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)]"
                         onClick={() => toggleKeyVisibility(key.token)}
                       >
                         {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -638,7 +638,7 @@ export default function AdminPanel({ embedded = false }: AdminPanelProps) {
                         type="button"
                         aria-label="Copy API key"
                         title="Copy API key"
-                        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EDEEEF] text-[#667085] transition hover:bg-[#F4F3FF] hover:text-[#5146E5]"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EDEEEF] text-[#667085] transition hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)]"
                         onClick={() => void copyKey(key.token)}
                       >
                         <Copy className="h-4 w-4" />

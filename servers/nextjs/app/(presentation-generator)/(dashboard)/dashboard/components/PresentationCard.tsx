@@ -156,7 +156,7 @@ export const PresentationCard = ({
 
           {isUnsupported ? (
             <div className="flex flex-col items-center gap-2 px-5 text-center text-[#666666]">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4F3FF] text-[#7A5AF8]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]">
                 <Archive className="h-[18px] w-[18px]" aria-hidden="true" />
               </span>
               <p className="text-xs font-medium">Preview unavailable</p>
@@ -255,9 +255,9 @@ export const PresentationCard = ({
           className="z-[101] w-[calc(100vw-32px)] max-w-[420px] gap-0 overflow-hidden rounded-[24px] border-0 bg-white p-0 font-syne shadow-[0_28px_90px_rgba(15,23,42,0.24)] sm:max-w-[420px]"
         >
           <DialogHeader className="items-center px-7 pb-6 pt-8 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F4F3FF] ring-8 ring-[#FAF9FF]">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)] ring-8 ring-[#FAF9FF]">
               <AlertTriangle
-                className="h-6 w-6 text-[#7A5AF8]"
+                className="h-6 w-6 text-[var(--gslide-accent)]"
                 strokeWidth={1.8}
                 aria-hidden="true"
               />
@@ -288,7 +288,7 @@ export const PresentationCard = ({
               type="button"
               onClick={() => setShowDeleteDialog(false)}
               disabled={isDeleting}
-              className="h-11 rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-medium text-[#344054] shadow-sm transition-colors hover:bg-[#F9FAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/30 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-medium text-[#344054] shadow-sm transition-colors hover:bg-[#F9FAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
@@ -296,7 +296,7 @@ export const PresentationCard = ({
               type="button"
               onClick={() => void handleDelete()}
               disabled={isDeleting}
-              className="flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#191919] px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#303030] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#191919] px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#303030] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isDeleting ? (
                 <>

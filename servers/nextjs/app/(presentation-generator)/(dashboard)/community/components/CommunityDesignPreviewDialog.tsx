@@ -174,7 +174,7 @@ export default function CommunityDesignPreviewDialog({
                     <button
                       type="button"
                       onClick={handleBackToCommunity}
-                      className="mb-1 inline-flex items-center gap-1 text-xs text-[#6847F4] transition hover:text-[#5137C8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/30"
+                      className="mb-1 inline-flex items-center gap-1 text-xs text-[var(--gslide-accent)] transition hover:text-[#5137C8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30"
                     >
                       <ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" />
                       Community preview
@@ -185,7 +185,7 @@ export default function CommunityDesignPreviewDialog({
                       {title}
                     </DialogTitle>
                     {loading && (
-                      <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-[#6847F4]" />
+                      <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-[var(--gslide-accent)]" />
                     )}
                   </div>
                   <DialogDescription className="mt-1 line-clamp-2 text-sm font-normal leading-normal tracking-[-0.14px] text-[#808080]">
@@ -301,7 +301,7 @@ export default function CommunityDesignPreviewDialog({
                                     : `Preview reference presentation ${referenceId}`
                                 }
                                 aria-pressed={isActiveReference}
-                                className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-[10px] border border-[#D9D6FE] bg-[#FAFAFF] px-2.5 py-0.5 text-xs font-normal text-[#4C4C4C] transition-colors hover:border-[#BDB4FD] hover:text-[#6847F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/30 disabled:cursor-wait disabled:opacity-60"
+                                className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-[10px] border border-[var(--gslide-border)] bg-[#FAFAFF] px-2.5 py-0.5 text-xs font-normal text-[#4C4C4C] transition-colors hover:border-[#BDB4FD] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30 disabled:cursor-wait disabled:opacity-60"
                               >
                                 <span className="min-w-0 truncate font-mono text-[10px]">
                                   {referenceId}
@@ -338,7 +338,7 @@ export default function CommunityDesignPreviewDialog({
                         type="button"
                         onClick={() => void copyPrompt()}
                         disabled={!displayedPresentation?.prompt?.trim()}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#191919] transition hover:bg-[#F6F6F9] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#191919] transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Copy example prompt"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -385,7 +385,7 @@ export default function CommunityDesignPreviewDialog({
               </div>
             </div>
 
-            <DialogClose className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[#F8F8FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/30 min-[1100px]:-right-[68px] min-[1100px]:top-0 min-[1100px]:h-[52px] min-[1100px]:w-[52px]">
+            <DialogClose className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[#F8F8FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30 min-[1100px]:-right-[68px] min-[1100px]:top-0 min-[1100px]:h-[52px] min-[1100px]:w-[52px]">
               <X
                 className="h-5 w-5 min-[1100px]:h-6 min-[1100px]:w-6"
                 strokeWidth={1.5}
@@ -464,7 +464,7 @@ function SetupRow({ label, children }: { label: string; children: ReactNode }) {
 
 function SetupChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center justify-center rounded-[10px] border border-[#D9D6FE] bg-[#FAFAFF] px-2.5 py-0.5 text-xs font-normal text-[#4C4C4C]">
+    <span className="inline-flex items-center justify-center rounded-[10px] border border-[var(--gslide-border)] bg-[#FAFAFF] px-2.5 py-0.5 text-xs font-normal text-[#4C4C4C]">
       {children}
     </span>
   );

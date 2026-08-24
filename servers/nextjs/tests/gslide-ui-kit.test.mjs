@@ -202,3 +202,56 @@ test("editor chrome uses GSlide wordmark not Presenton PNG", async () => {
   );
   assert.doesNotMatch(studio, /logo-with-bg\.png/);
 });
+
+const BANNED_HEX = [
+  "#7C51F8",
+  "#5146E5",
+  "#7A5AF8",
+  "#6847F4",
+  "#6d46e6",
+  "#6D46E6",
+  "#F4F3FF",
+  "#D9D6FE",
+];
+
+const CHROME_FILES = [
+  "app/page.tsx",
+  "app/layout.tsx",
+  "app/not-found.tsx",
+  "app/ConfigurationInitializer.tsx",
+  "components/Auth/AuthGate.tsx",
+  "components/Home.tsx",
+  "components/Header.tsx",
+  "components/OnBoarding/PresentonMode.tsx",
+  "components/OnBoarding/OnBoardingSlidebar.tsx",
+  "components/ui/overlay-loader.tsx",
+  "app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx",
+  "app/(presentation-generator)/(dashboard)/layout.tsx",
+  "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
+  "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
+  "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+  "app/(presentation-generator)/(dashboard)/admin/AdminPanel.tsx",
+  "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
+  "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
+  "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
+  "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
+];
+
+test("migrated chrome files do not contain banned purple hex", async () => {
+  for (const file of CHROME_FILES) {
+    const source = await readNext(file);
+    for (const hex of BANNED_HEX) {
+      assert.doesNotMatch(
+        source,
+        new RegExp(hex.replace("#", "\\#"), "i"),
+        `${file} still contains ${hex}`,
+      );
+    }
+  }
+});
+
+test("app metadata titles use GSlide", async () => {
+  const notFound = await readNext("app/not-found.tsx");
+  assert.match(notFound, /GSlide/);
+  assert.doesNotMatch(notFound, /Presenton/);
+});
