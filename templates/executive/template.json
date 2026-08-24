@@ -10188,8 +10188,8 @@
               ],
               "decorative": false,
               "name": "main_heading_start",
-              "max_length": 25,
-              "min_length": 27
+              "max_length": 40,
+              "min_length": 10
             }
           ]
         }
@@ -19678,8 +19678,8 @@
               ],
               "decorative": false,
               "name": "main_heading_start",
-              "max_length": 25,
-              "min_length": 27
+              "max_length": 40,
+              "min_length": 10
             }
           ]
         },

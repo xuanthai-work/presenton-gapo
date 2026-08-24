@@ -6,6 +6,8 @@ import copy
 import re
 from typing import Any
 
+from utils.schema_utils import validate_response_schema_definition
+
 from .models.layouts import RawSlideLayout
 
 
@@ -67,7 +69,7 @@ def get_component_schema(component: Any | dict[str, Any]) -> dict[str, Any] | No
     if not properties:
         return None
 
-    return {
+    schema = {
         "$schema": JSON_SCHEMA_URI,
         "type": "object",
         "title": component_data.get("id", "component_content"),
@@ -76,6 +78,8 @@ def get_component_schema(component: Any | dict[str, Any]) -> dict[str, Any] | No
         "properties": properties,
         "required": list(properties),
     }
+    validate_response_schema_definition(schema)
+    return schema
 
 
 def get_repeated_top_level_group_schema_name(elements: list[Any]) -> str | None:
@@ -454,6 +458,7 @@ def _template_layout_schema(layout: dict[str, Any], slide_index: int) -> dict[st
             "properties": properties,
             "required": required,
         }
+        validate_response_schema_definition(schema)
 
     return {
         "slide": slide_index,

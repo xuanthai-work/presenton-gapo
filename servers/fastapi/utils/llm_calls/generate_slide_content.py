@@ -15,6 +15,7 @@ from utils.schema_utils import (
     add_field_in_schema,
     ensure_array_schemas_have_items,
     remove_fields_from_schema,
+    validate_response_schema_definition,
 )
 
 SLIDE_CONTENT_SYSTEM_PROMPT = r"""
@@ -223,7 +224,9 @@ def _prepare_response_schema(json_schema: Optional[dict]) -> Optional[dict]:
         },
         True,
     )
-    return ensure_array_schemas_have_items(response_schema)
+    response_schema = ensure_array_schemas_have_items(response_schema)
+    validate_response_schema_definition(response_schema)
+    return response_schema
 
 
 async def get_slide_content_from_type_and_outline(

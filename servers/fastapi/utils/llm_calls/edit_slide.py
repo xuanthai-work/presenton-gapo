@@ -11,6 +11,7 @@ from utils.schema_utils import (
     add_field_in_schema,
     ensure_array_schemas_have_items,
     remove_fields_from_schema,
+    validate_response_schema_definition,
 )
 
 
@@ -133,6 +134,7 @@ async def get_edited_slide_content(
         True,
     )
     response_schema = ensure_array_schemas_have_items(response_schema)
+    validate_response_schema_definition(response_schema)
 
     client = get_llm_client()
     try:

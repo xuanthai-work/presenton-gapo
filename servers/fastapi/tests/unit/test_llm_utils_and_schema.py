@@ -3,7 +3,9 @@ import copy
 from utils.llm_utils import extract_structured_content, serialize_structured_content
 from utils.schema_utils import (
     ensure_array_schemas_have_items,
+    get_schema_definition_errors,
     get_schema_validation_errors,
+    validate_response_schema_definition,
 )
 
 
@@ -44,6 +46,48 @@ def test_get_schema_validation_errors_reports_path_and_message():
     errors = get_schema_validation_errors(schema, {"title": "too long title"}, strict=False)
     assert errors
     assert any("too long" in e.lower() for e in errors)
+
+
+def test_get_schema_definition_errors_detects_min_length_greater_than_max_length():
+    schema = {
+        "type": "object",
+        "properties": {
+            "header_section_part_1": {
+                "type": "object",
+                "properties": {
+                    "main_heading_start": {
+                        "type": "string",
+                        "minLength": 27,
+                        "maxLength": 25,
+                    }
+                },
+                "required": ["main_heading_start"],
+            }
+        },
+        "required": ["header_section_part_1"],
+    }
+
+    errors = get_schema_definition_errors(schema)
+    assert len(errors) == 1
+    assert "main_heading_start" in errors[0]
+    assert "minLength (27)" in errors[0]
+    assert "maxLength (25)" in errors[0]
+
+
+def test_validate_response_schema_definition_raises_for_unsatisfiable_schema():
+    schema = {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "minLength": 10, "maxLength": 5},
+        },
+    }
+
+    try:
+        validate_response_schema_definition(schema)
+        assert False, "expected ValueError"
+    except ValueError as exc:
+        assert "Invalid response schema" in str(exc)
+        assert "minLength (10)" in str(exc)
 
 
 def test_ensure_array_schemas_have_items_adds_missing_items_recursively():

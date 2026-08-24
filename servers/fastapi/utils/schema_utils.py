@@ -289,6 +289,104 @@ def format_json_path(path: List[Any]) -> str:
     return formatted
 
 
+def get_schema_definition_errors(
+    schema: Any,
+    *,
+    path: str = "$",
+) -> List[str]:
+    """Return human-readable errors when a JSON Schema definition is unsatisfiable."""
+    errors: List[str] = []
+    if not isinstance(schema, dict):
+        return errors
+
+    def _check_min_max(min_key: str, max_key: str, label: str) -> None:
+        min_val = schema.get(min_key)
+        max_val = schema.get(max_key)
+        if (
+            min_val is not None
+            and max_val is not None
+            and min_val > max_val
+        ):
+            errors.append(
+                f"{path}: {label} {min_key} ({min_val}) is greater than "
+                f"{max_key} ({max_val})"
+            )
+
+    _check_min_max("minLength", "maxLength", "string length")
+    _check_min_max("minItems", "maxItems", "array length")
+    _check_min_max("minProperties", "maxProperties", "object property count")
+    _check_min_max("minimum", "maximum", "numeric")
+
+    properties = schema.get("properties")
+    required = schema.get("required")
+    if isinstance(properties, dict) and isinstance(required, list):
+        for name in required:
+            if name not in properties:
+                errors.append(
+                    f"{path}: required property {name!r} is not defined in properties"
+                )
+
+    if isinstance(properties, dict):
+        for name, subschema in properties.items():
+            errors.extend(
+                get_schema_definition_errors(
+                    subschema,
+                    path=f"{path}.properties.{name}",
+                )
+            )
+
+    items = schema.get("items")
+    if isinstance(items, dict):
+        errors.extend(get_schema_definition_errors(items, path=f"{path}.items"))
+    elif isinstance(items, list):
+        for index, item in enumerate(items):
+            errors.extend(
+                get_schema_definition_errors(item, path=f"{path}.items[{index}]")
+            )
+
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        subschemas = schema.get(keyword)
+        if isinstance(subschemas, list):
+            for index, subschema in enumerate(subschemas):
+                errors.extend(
+                    get_schema_definition_errors(
+                        subschema,
+                        path=f"{path}.{keyword}[{index}]",
+                    )
+                )
+
+    for defs_key in ("$defs", "definitions"):
+        defs = schema.get(defs_key)
+        if isinstance(defs, dict):
+            for name, subschema in defs.items():
+                errors.extend(
+                    get_schema_definition_errors(
+                        subschema,
+                        path=f"{path}.{defs_key}.{name}",
+                    )
+                )
+
+    additional = schema.get("additionalProperties")
+    if isinstance(additional, dict):
+        errors.extend(
+            get_schema_definition_errors(
+                additional,
+                path=f"{path}.additionalProperties",
+            )
+        )
+
+    return errors
+
+
+def validate_response_schema_definition(schema: dict) -> None:
+    """Raise ``ValueError`` when a response schema cannot be satisfied."""
+    errors = get_schema_definition_errors(schema)
+    if errors:
+        raise ValueError(
+            "Invalid response schema: " + "; ".join(errors)
+        )
+
+
 def get_schema_validation_errors(
     schema: dict,
     instance: Any,
