@@ -273,7 +273,7 @@ const PresentonMode = ({
                         <a
                             href={provider.getApiKeyUrl}
                             target="_blank"
-                            className="flex shrink-0 items-center gap-1 rounded-full border border-[#EDEEEF] bg-white px-3 py-1.5 text-xs font-medium text-[#666666] transition-colors hover:border-[#D9D6FE] hover:text-[#7A5AF8]"
+                            className="flex shrink-0 items-center gap-1 rounded-full border border-[#EDEEEF] bg-white px-3 py-1.5 text-xs font-medium text-[#666666] transition-colors hover:border-[var(--gslide-border)] hover:text-[var(--gslide-accent)]"
                         >
                             Get API Key <ArrowUpRight className="h-3.5 w-3.5" />
                         </a>
@@ -315,7 +315,7 @@ const PresentonMode = ({
                                 <input
                                     type={showApiKey ? "text" : "password"}
                                     placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
-                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-12 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
+                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-12 outline-none transition-colors focus:border-[var(--gslide-accent)] focus:ring-2 focus:ring-[var(--gslide-accent)]/20"
                                     value={getFieldValue(provider.apiKeyField)}
                                     onChange={(e) => {
                                         setLlmConfig((prev) => ({
@@ -522,7 +522,7 @@ const PresentonMode = ({
 
     return (
         <div className='w-full max-w-[660px] font-syne pb-10'>
-            <p className='px-2.5 py-0.5 w-fit text-[#7A5AF8] rounded-[50px]  border border-[#EDEEEF] text-[10px] font-medium mb-5 font-syne'>PRESENTON</p>
+            <p className='px-2.5 py-0.5 w-fit text-[var(--gslide-accent)] rounded-[50px]  border border-[var(--gslide-border)] text-[10px] font-medium mb-5 font-syne'>GSLIDE</p>
             <div className=''>
 
                 <h2 className='mb-4 text-black text-[26px] font-normal font-unbounded '>
@@ -835,7 +835,7 @@ const PresentonMode = ({
                 </ToolTip>
                 <div className={` flex items-center gap-6 ${llmConfig.DISABLE_IMAGE_GENERATION ? "" : "mb-[42px]"}`}>
                     <div className='w-[74px] h-[74px] px-[13.5px] py-[14.2px] rounded-[4px] flex items-center justify-center'
-                        style={{ backgroundColor: '#F4F3FF' }}
+                        style={{ backgroundColor: 'var(--gslide-accent-soft)' }}
                     >
                         <img src="/image-markup.svg" className='w-full h-full object-cover' alt='image-markup' />
                     </div>
@@ -869,9 +869,9 @@ const PresentonMode = ({
                                                     setLlmConfig(prev => ({ ...prev, IMAGE_PROVIDER: provider.value }));
                                                 }}
                                                 className={cn(
-                                                    "group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[10px] border p-3 text-center transition-all hover:border-[#D9D6FE] hover:bg-[#F7F6F9]",
+                                                    "group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[10px] border p-3 text-center transition-all hover:border-[var(--gslide-border)] hover:bg-[#F7F6F9]",
                                                     llmConfig.IMAGE_PROVIDER === provider.value
-                                                        ? "border-[#7A5AF8] bg-[#F4F3FF] shadow-[0_10px_24px_rgba(122,90,248,0.12)]"
+                                                        ? "border-[var(--gslide-accent)] bg-[var(--gslide-accent-soft)] shadow-[0_10px_24px_rgba(122,90,248,0.12)]"
                                                         : "border-[#EDEEEF] bg-white"
                                                 )}
                                             >
@@ -879,8 +879,8 @@ const PresentonMode = ({
                                                     className={cn(
                                                         "flex h-10 w-10 items-center justify-center rounded-lg border bg-white transition-colors",
                                                         llmConfig.IMAGE_PROVIDER === provider.value
-                                                            ? "border-[#D9D6FE]"
-                                                            : "border-[#EDEEEF] group-hover:border-[#D9D6FE]"
+                                                            ? "border-[var(--gslide-border)]"
+                                                            : "border-[#EDEEEF] group-hover:border-[var(--gslide-border)]"
                                                     )}
                                                 >
                                                     {provider.icon
@@ -924,8 +924,8 @@ const PresentonMode = ({
                         </div>
                     </ToolTip>
                     <div className="mb-[42px] flex items-center gap-6">
-                        <div className='flex h-[74px] w-[74px] items-center justify-center rounded-[4px] bg-[#F4F3FF]'>
-                            <Search className="h-9 w-9 text-[#5146E5]" />
+                        <div className='flex h-[74px] w-[74px] items-center justify-center rounded-[4px] bg-[var(--gslide-accent-soft)]'>
+                            <Search className="h-9 w-9 text-[var(--gslide-accent)]" />
                         </div>
                         <div>
                             <h3 className="text-xl font-normal text-[#191919]">Web Search Settings</h3>
@@ -933,7 +933,7 @@ const PresentonMode = ({
                         </div>
                     </div>
                     {llmConfig.WEB_GROUNDING && <div className="space-y-4">
-                            <div className="rounded-lg border border-[#D9D6FE] bg-[#F4F3FF] p-3 text-xs leading-5 text-[#5146E5]">
+                            <div className="rounded-lg border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] p-3 text-xs leading-5 text-[var(--gslide-accent)]">
                                 Auto uses model-native web grounding when the LLM is OpenAI or Google. Custom models query the SearXNG sidecar (Compose default: http://searxng:8080).
                             </div>
                             <div>
@@ -944,7 +944,7 @@ const PresentonMode = ({
                                     type="url"
                                     value={getFieldValue("SEARXNG_BASE_URL")}
                                     onChange={(event) => setLlmConfig(prev => ({ ...prev, SEARXNG_BASE_URL: event.target.value }))}
-                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
+                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[var(--gslide-accent)] focus:ring-2 focus:ring-[var(--gslide-accent)]/20"
                                     placeholder="http://searxng:8080"
                                 />
                             </div>
@@ -958,7 +958,7 @@ const PresentonMode = ({
                                     max={10}
                                     value={llmConfig.WEB_SEARCH_MAX_RESULTS || "5"}
                                     onChange={(event) => setLlmConfig(prev => ({ ...prev, WEB_SEARCH_MAX_RESULTS: event.target.value }))}
-                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[#7A5AF8] focus:ring-2 focus:ring-[#7A5AF8]/20"
+                                    className="h-12 w-full rounded-lg border border-gray-300 px-4 outline-none transition-colors focus:border-[var(--gslide-accent)] focus:ring-2 focus:ring-[var(--gslide-accent)]/20"
                                 />
                             </div>
                         </div>}
@@ -977,7 +977,7 @@ const PresentonMode = ({
 
                     disabled={savingConfig}
                     onClick={handleContinue}
-                    className='border font-syne border-[#EDEEEF] bg-[#7C51F8]  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
+                    className='border font-syne border-[var(--gslide-border)] bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold transition-colors'>
                     {providerStep === 1
                         ? "Continue to image provider"
                         : providerStep === 2

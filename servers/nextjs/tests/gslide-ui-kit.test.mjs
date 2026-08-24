@@ -170,3 +170,17 @@ test("OnboardingPresentonAccount is not imported by product surfaces", async () 
   assert.doesNotMatch(home, /OnboardingPresentonAccount/);
   assert.doesNotMatch(mode, /OnboardingPresentonAccount/);
 });
+
+test("onboarding wizard chrome is GSlide blue", async () => {
+  const mode = await readNext("components/OnBoarding/PresentonMode.tsx");
+  assert.doesNotMatch(mode, />PRESENTON</);
+  assert.doesNotMatch(mode, /bg-\[#7C51F8\]/);
+  assert.match(mode, /GSlide|GSLIDE|--gslide-accent|#1D6FE8/);
+});
+
+test("outline header does not use Presenton PNG", async () => {
+  const outline = await readNext(
+    "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
+  );
+  assert.doesNotMatch(outline, /logo-with-bg\.png/);
+});
