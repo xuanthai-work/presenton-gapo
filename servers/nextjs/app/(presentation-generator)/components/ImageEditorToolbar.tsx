@@ -76,8 +76,8 @@ export function ImageEditorToolbar({
               key={option.value}
               onSelect={() => onObjectFitChange(option.value)}
               className={cn(
-                "cursor-pointer rounded-none px-3 py-2 text-[14px] text-[#191919] font-manrope focus:bg-[#F6F6F9]",
-                objectFit === option.value && "bg-[#F4F1FF] text-[#7C3AED]",
+                "cursor-pointer rounded-none px-3 py-2 text-[14px] text-[#191919] font-manrope focus:bg-[var(--gslide-accent-soft)]",
+                objectFit === option.value && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
               )}
             >
               {option.label}
@@ -116,7 +116,7 @@ export function ImageEditorToolbar({
           onClick={() => onObjectFitChange("cover")}
           className={cn(
             "rounded-[2px] p-1 text-[#191919] hover:bg-[#F8F8FA]",
-            objectFit === "cover" && "bg-[#F4F1FF] text-[#7C3AED]",
+            objectFit === "cover" && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
           )}
         >
           <Maximize size={16} strokeWidth={1.8} />
@@ -128,7 +128,7 @@ export function ImageEditorToolbar({
           onClick={() => onObjectFitChange("contain")}
           className={cn(
             "rounded-[2px] p-1 text-[#191919] hover:bg-[#F8F8FA]",
-            objectFit === "contain" && "bg-[#F4F1FF] text-[#7C3AED]",
+            objectFit === "contain" && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
           )}
         >
           <Minimize size={16} strokeWidth={1.8} />
@@ -140,7 +140,7 @@ export function ImageEditorToolbar({
           onClick={() => onObjectFitChange("fill")}
           className={cn(
             "rounded-[2px] p-1 text-[#191919] hover:bg-[#F8F8FA]",
-            objectFit === "fill" && "bg-[#F4F1FF] text-[#7C3AED]",
+            objectFit === "fill" && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
           )}
         >
           <span className="inline-block h-[16px] w-[16px] rounded-[2px] border border-current" />
@@ -156,7 +156,7 @@ export function ImageEditorToolbar({
         onClick={onToggleFocusPoint}
         className={cn(
           "rounded-[2px] p-1 text-[#191919] hover:bg-[#F8F8FA]",
-          isFocusPointMode && "bg-[#F4F1FF] text-[#7C3AED]",
+          isFocusPointMode && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
         )}
       >
         {isFocusPointMode ? <Focus size={16} strokeWidth={1.8} /> : <PatternIcon />}
