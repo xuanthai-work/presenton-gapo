@@ -73,3 +73,20 @@ test("GSlide primitives use tokens and GSlide wordmark", async () => {
   assert.match(barrel, /GSlideButton/);
   assert.match(barrel, /GSlideSkeleton/);
 });
+
+test("GSlide splash uses Auth background, wordmark, and accent spinner", async () => {
+  const splash = await readNext("components/gslide/GSlideSplashLoader.tsx");
+  assert.match(splash, /GSlideWordmark/);
+  assert.match(splash, /--gslide-bg/);
+  assert.match(splash, /--gslide-accent/);
+  assert.match(splash, /GSLIDE_SPLASH_MIN_DURATION_MS/);
+  assert.doesNotMatch(splash, /#7[Aa]5[Aa][Ff]8/);
+  assert.doesNotMatch(splash, /Presenton_Splash\.png/);
+});
+
+test("legacy splash module re-exports GSlide splash", async () => {
+  const legacy = await readNext("components/ui/presenton-splash-loader.tsx");
+  assert.match(legacy, /GSlideSplashLoader/);
+  assert.match(legacy, /PresentonSplashLoader/);
+  assert.match(legacy, /PRESENTON_SPLASH_MIN_DURATION_MS/);
+});
