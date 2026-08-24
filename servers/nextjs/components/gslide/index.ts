@@ -9,3 +9,9 @@ export {
   GSlideSplashLoader,
   GSLIDE_SPLASH_MIN_DURATION_MS,
 } from "./GSlideSplashLoader";
+export {
+  GSlideSidebar,
+  gslideNavActiveClass,
+  gslideNavIdleClass,
+} from "./GSlideSidebar";
+export { GSlideHeader } from "./GSlideHeader";

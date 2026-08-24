@@ -90,3 +90,18 @@ test("legacy splash module re-exports GSlide splash", async () => {
   assert.match(legacy, /PresentonSplashLoader/);
   assert.match(legacy, /PRESENTON_SPLASH_MIN_DURATION_MS/);
 });
+
+test("GSlide sidebar and header use tokens and wordmark, not purple chrome", async () => {
+  const sidebar = await readNext("components/gslide/GSlideSidebar.tsx");
+  assert.match(sidebar, /GSlideWordmark/);
+  assert.match(sidebar, /--gslide-bg/);
+  assert.match(sidebar, /--gslide-border/);
+  assert.match(sidebar, /href="\/dashboard"|href=\{`\/dashboard`\}/);
+  assert.doesNotMatch(sidebar, /#7C51F8/);
+  assert.doesNotMatch(sidebar, /#F6F6F9/);
+
+  const header = await readNext("components/gslide/GSlideHeader.tsx");
+  assert.match(header, /--gslide-bg/);
+  assert.match(header, /--gslide-border/);
+  assert.match(header, /font-unbounded|--gslide-ink/);
+});
