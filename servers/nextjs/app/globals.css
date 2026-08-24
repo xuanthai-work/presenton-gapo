@@ -40,6 +40,16 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --gslide-bg: #EFF6FF;
+    --gslide-card: #FFFFFF;
+    --gslide-border: #BFDBFE;
+    --gslide-ink: #1E3A5F;
+    --gslide-muted: #4B7AB5;
+    --gslide-accent: #1D6FE8;
+    --gslide-accent-hover: #1558C0;
+    --gslide-accent-soft: #DBEAFE;
+    --gslide-input-border: #93C5FD;
+    --gslide-input-focus: #1D6FE8;
   }
 
   .dark {
