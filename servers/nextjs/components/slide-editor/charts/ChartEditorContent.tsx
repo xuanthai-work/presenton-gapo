@@ -45,6 +45,7 @@ import {
 } from "@/components/slide-editor/types";
 import { ChartColorPaletteCard } from "@/components/slide-editor/charts/ChartColorPalette";
 import { TemplateV2ChartJsElement } from "@/components/slide-editor/charts/TemplateV2ChartJsElement";
+import { GSlideInput } from "@/components/gslide";
 
 const CHART_TYPES: Array<{ label: string; value: ChartType }> = [
   { label: "Bar Chart", value: "bar" },
@@ -109,7 +110,7 @@ export function ChartEditorContent({
           ) : null}
         </div>
 
-        <label className="mb-2 block text-[12px] font-medium text-[#686873]">
+        <label className="mb-2 block text-[12px] font-medium text-[var(--gslide-muted)]">
           Chart type
         </label>
         <ChartTypeSelect
@@ -570,8 +571,8 @@ function ChartSeriesColorControls({
             key={`${target.mode}-${target.index}`}
             aria-label={`Change chart color ${target.index + 1}`}
             className={`grid h-8 w-8 place-items-center rounded-full border bg-white p-1 transition ${paletteAnchor?.index === target.index
-              ? "border-[#1D6FE8] ring-2 ring-[#DBEAFE]"
-              : "border-[#E6E6EA] hover:border-[#93C5FD]"
+              ? "border-[var(--gslide-accent)] ring-2 ring-[var(--gslide-accent-soft)]"
+              : "border-[#E6E6EA] hover:border-[var(--gslide-input-border)]"
               }`}
             ref={(node) => {
               if (node) {
@@ -602,7 +603,7 @@ function ChartSeriesColorControls({
           <button
             type="button"
             aria-label="Add chart color"
-            className="grid h-8 w-8 place-items-center rounded-full border border-dashed border-[#93C5FD] bg-white text-[#1D6FE8] transition hover:bg-[#DBEAFE]"
+            className="grid h-8 w-8 place-items-center rounded-full border border-dashed border-[var(--gslide-input-border)] bg-white text-[var(--gslide-accent)] transition hover:bg-[var(--gslide-accent-soft)]"
             title="Add chart color"
             onClick={() => onChange(appendChartColorTarget(chart))}
           >
@@ -735,10 +736,10 @@ function TextField({
   };
 
   return (
-    <label className="block text-[12px] font-medium text-[#686873]">
+    <label className="block text-[12px] font-medium text-[var(--gslide-muted)]">
       {label}
-      <input
-        className="mt-1.5 h-9 w-full truncate rounded-lg border border-[#E6E6EA] bg-white px-3 text-[12px] text-[#191919] outline-none transition placeholder:text-[#A6A6AF] focus:border-[#1D6FE8]"
+      <GSlideInput
+        className="mt-1.5 h-9 px-3 text-[12px]"
         maxLength={CHART_TEXT_MAX_LENGTH}
         placeholder={placeholder}
         spellCheck={false}
@@ -1259,7 +1260,7 @@ function EditableDataTable({
           style={{ left: seriesMenu.left }}
         >
           <input
-            className="h-full min-w-0 flex-1 truncate bg-transparent text-[12px] font-medium outline-none"
+            className="h-full min-w-0 flex-1 truncate bg-transparent text-[12px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
             maxLength={CHART_TEXT_MAX_LENGTH}
             spellCheck={false}
             value={selectedSeries.name}

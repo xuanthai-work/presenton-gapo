@@ -189,7 +189,7 @@ const styles = {
     background: "transparent",
     border: 0,
     borderRadius: 6,
-    color: "#686873",
+    color: "var(--gslide-muted)",
     cursor: "pointer",
     display: "inline-flex",
     height: 28,
@@ -218,7 +218,7 @@ const styles = {
     fontWeight: 500,
     lineHeight: "16px",
     marginBottom: 10,
-    color: "#686873",
+    color: "var(--gslide-muted)",
   },
   header: {
     alignItems: "flex-start",
