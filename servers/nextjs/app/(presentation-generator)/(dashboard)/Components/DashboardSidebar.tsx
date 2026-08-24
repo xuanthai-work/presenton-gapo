@@ -5,6 +5,8 @@ import { LayoutDashboard, Star, Brain, Settings, HelpCircle, UsersRound } from "
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
+import LogoutButton from "@/components/Auth/LogoutButton";
+
 
 
 export const defaultNavItems = [
@@ -114,6 +116,11 @@ const DashboardSidebar = () => {
                     <HelpCircle className="h-4 w-4" />
                     <span className="text-[11px] text-slate-800">Help</span>
                 </Link>
+                <div className="py-2" />
+                <LogoutButton
+                    label="Log out"
+                    className="flex w-full flex-col items-center gap-2 text-[11px] text-slate-800 transition-colors hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
+                />
             </div>
 
         </aside>

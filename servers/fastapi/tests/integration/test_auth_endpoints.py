@@ -231,3 +231,66 @@ def test_admin_provider_settings_include_safe_global_presenton_status(
     assert "PRESENTON_ACCESS_TOKEN" not in response.json()
     assert "PRESENTON_REFRESH_TOKEN" not in response.json()
     asyncio.run(engine.dispose())
+
+
+def test_register_creates_non_admin_user_and_sets_cookie(monkeypatch, tmp_path):
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
+    monkeypatch.delenv("DISABLE_AUTH", raising=False)
+    client, engine = _build_client(tmp_path)
+
+    setup = client.post(
+        "/api/v1/auth/setup",
+        json={"username": "admin", "password": "secret123"},
+    )
+    assert setup.status_code == 200
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"username": "alice", "password": "secret123"},
+    )
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["authenticated"] is True
+    assert payload["username"] == "alice"
+    assert payload["role"] == "user"
+    assert SESSION_COOKIE_NAME in response.cookies
+
+    status = client.get("/api/v1/auth/status")
+    assert status.json()["authenticated"] is True
+    assert status.json()["username"] == "alice"
+    asyncio.run(engine.dispose())
+
+
+def test_register_rejected_when_instance_not_configured(monkeypatch, tmp_path):
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
+    monkeypatch.delenv("DISABLE_AUTH", raising=False)
+    client, engine = _build_client(tmp_path)
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"username": "alice", "password": "secret123"},
+    )
+    assert response.status_code == 428
+    asyncio.run(engine.dispose())
+
+
+def test_register_conflict_on_duplicate_username(monkeypatch, tmp_path):
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
+    monkeypatch.delenv("DISABLE_AUTH", raising=False)
+    client, engine = _build_client(tmp_path)
+    client.post(
+        "/api/v1/auth/setup",
+        json={"username": "admin", "password": "secret123"},
+    )
+    first = client.post(
+        "/api/v1/auth/register",
+        json={"username": "alice", "password": "secret123"},
+    )
+    client.cookies.clear()
+    second = client.post(
+        "/api/v1/auth/register",
+        json={"username": "ALICE", "password": "otherpass1"},
+    )
+    assert first.status_code == 201
+    assert second.status_code == 409
+    asyncio.run(engine.dispose())

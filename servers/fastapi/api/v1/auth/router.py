@@ -6,7 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
-from api.v1.auth.schemas import AuthCredentialsRequest, LoginCredentialsRequest
+from api.v1.auth.schemas import (
+    AuthCredentialsRequest,
+    LoginCredentialsRequest,
+    RegisterCredentialsRequest,
+)
 from api.v1.auth.assets import is_app_data_path_authorized
 from api.v1.auth.rate_limit import LOGIN_RATE_LIMITER, login_rate_limit_key
 from api.v1.auth.principal import resolve_request_principal
@@ -221,6 +225,64 @@ async def login(
             "authenticated": True,
             **serialize_user(user),
         }
+    )
+    _set_login_cookie(response, token, request)
+    return response
+
+
+@API_V1_AUTH_ROUTER.post("/register", status_code=201)
+async def register(
+    body: RegisterCredentialsRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_async_session),
+):
+    if is_disable_auth_enabled():
+        raise HTTPException(status_code=400, detail="Auth is disabled")
+    if not await _account_count(session):
+        raise HTTPException(status_code=428, detail="Login setup is required")
+
+    username = normalize_username(body.username)
+    rate_limit_key = login_rate_limit_key(_login_client_host(request), username)
+    retry_after = await LOGIN_RATE_LIMITER.retry_after(rate_limit_key)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many registration attempts. Please try again later.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    if len(username) < 3:
+        raise HTTPException(status_code=422, detail="Username must be at least 3 characters")
+
+    exists = await session.scalar(
+        select(User.id).where(func.lower(User.username) == username.casefold())
+    )
+    if exists:
+        await LOGIN_RATE_LIMITER.record_failure(rate_limit_key)
+        raise HTTPException(status_code=409, detail="Username already exists")
+
+    user = User(
+        username=username,
+        hashed_password=PASSWORD_HELPER.hash(body.password),
+        is_active=True,
+        is_verified=True,
+        is_superuser=False,
+        auth_version=1,
+    )
+    session.add(user)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        await LOGIN_RATE_LIMITER.record_failure(rate_limit_key)
+        raise HTTPException(status_code=409, detail="Username already exists")
+    await session.refresh(user)
+    await LOGIN_RATE_LIMITER.clear(rate_limit_key)
+
+    token = await get_jwt_strategy().write_token(user)
+    response = JSONResponse(
+        status_code=201,
+        content={"configured": True, "authenticated": True, **serialize_user(user)},
     )
     _set_login_cookie(response, token, request)
     return response

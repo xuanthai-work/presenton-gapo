@@ -49,5 +49,9 @@ class AdminCreateUserRequest(AuthCredentialsRequest):
     pass
 
 
+class RegisterCredentialsRequest(AuthCredentialsRequest):
+    """Public self-signup; same validation as setup/admin create."""
+
+
 class AdminResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
