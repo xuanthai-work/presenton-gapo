@@ -118,6 +118,9 @@ test("global loading copy is GSlide not Presenton", async () => {
   const config = await readNext("app/ConfigurationInitializer.tsx");
   assert.match(config, /Loading GSlide/);
   assert.doesNotMatch(config, /Loading Presenton/);
+  assert.doesNotMatch(config, /auth\/presenton/);
+  assert.doesNotMatch(config, /hasPresentonCloud/);
+  assert.doesNotMatch(config, /revalidatePresentonConnection/);
 });
 
 test("AuthGate uses GSlide tokens/kit instead of AUTH_THEME", async () => {
@@ -162,13 +165,29 @@ test("settings does not tell users to connect Presenton Cloud", async () => {
   );
   assert.doesNotMatch(settings, /Connect Presenton first/);
   assert.doesNotMatch(settings, /Presenton Cloud/);
+  assert.doesNotMatch(settings, /LLM === "presenton"/);
 });
 
-test("OnboardingPresentonAccount is not imported by product surfaces", async () => {
-  const home = await readNext("components/Home.tsx");
-  const mode = await readNext("components/OnBoarding/PresentonMode.tsx");
-  assert.doesNotMatch(home, /OnboardingPresentonAccount/);
-  assert.doesNotMatch(mode, /OnboardingPresentonAccount/);
+test("template and generation APIs do not request Presenton Cloud", async () => {
+  const template = await readNext(
+    "app/(presentation-generator)/services/api/template.ts",
+  );
+  assert.doesNotMatch(template, /presenton_cloud_only/);
+  assert.doesNotMatch(template, /presentonCloudOnly/);
+
+  const generation = await readNext(
+    "app/(presentation-generator)/services/api/presentation-generation.ts",
+  );
+  assert.doesNotMatch(generation, /LLM === "presenton"/);
+  assert.doesNotMatch(generation, /usePresentonSmartEndpoint/);
+});
+
+test("Presenton Cloud onboarding UI file is removed", async () => {
+  await assert.rejects(
+    () =>
+      readNext("components/OnBoarding/OnboardingPresentonAccount.tsx"),
+    (error) => error && error.code === "ENOENT",
+  );
 });
 
 test("onboarding wizard chrome is GSlide blue", async () => {
@@ -191,6 +210,8 @@ test("editor chrome uses GSlide wordmark not Presenton PNG", async () => {
   );
   assert.doesNotMatch(presentation, /logo-with-bg\.png/);
   assert.match(presentation, /GSlideWordmark/);
+  assert.match(presentation, /aria-label="Go to dashboard"/);
+  assert.doesNotMatch(presentation, /className="w-10 h-10"/);
 
   const template = await readNext(
     "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
@@ -235,6 +256,10 @@ const CHROME_FILES = [
   "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
   "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
   "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
+  "app/(presentation-generator)/upload/components/GenerationModeDialog.tsx",
+  "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
+  "components/OnBoarding/FinalStep.tsx",
+  "app/(presentation-generator)/upload/page.tsx",
 ];
 
 test("migrated chrome files do not contain banned purple hex", async () => {
@@ -248,6 +273,13 @@ test("migrated chrome files do not contain banned purple hex", async () => {
       );
     }
   }
+});
+
+test("onboarding sidebar and shared Header use GSlide wordmark", async () => {
+  const sidebar = await readNext("components/OnBoarding/OnBoardingSlidebar.tsx");
+  assert.match(sidebar, /GSlideWordmark/);
+  const header = await readNext("components/Header.tsx");
+  assert.match(header, /GSlideWordmark/);
 });
 
 test("app metadata titles use GSlide", async () => {

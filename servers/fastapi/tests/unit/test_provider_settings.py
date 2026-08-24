@@ -2,6 +2,7 @@ import asyncio
 
 from models.sql.user import User
 from services.provider_settings import (
+    fill_unset_from_runtime,
     migrate_provider_settings_from_file,
     sanitize_provider_settings,
 )
@@ -63,15 +64,45 @@ def test_startup_migrates_user_config_and_rewrites_compatibility_file(
 
     migrated = asyncio.run(migrate_provider_settings_from_file(session))
 
-    assert migrated == {
+    assert session.row.config == {
         "LLM": "openai",
         "OPENAI_API_KEY": "provider-key",
     }
-    assert session.row.config == migrated
-    assert read_user_config_file(str(path)) == {
-        "LLM": "openai",
-        "OPENAI_API_KEY": "provider-key",
-        "AUTH_USERNAME": "admin",
-        "AUTH_PASSWORD_HASH": "legacy-hash",
-        "AUTH_SECRET_KEY": "jwt-secret",
-    }
+    assert migrated["LLM"] == "openai"
+    assert migrated["OPENAI_API_KEY"] == "provider-key"
+    assert "AUTH_USERNAME" not in migrated
+    assert read_user_config_file(str(path))["LLM"] == "openai"
+    assert read_user_config_file(str(path))["AUTH_USERNAME"] == "admin"
+    assert read_user_config_file(str(path))["AUTH_PASSWORD_HASH"] == "legacy-hash"
+    assert read_user_config_file(str(path))["AUTH_SECRET_KEY"] == "jwt-secret"
+
+
+def test_empty_provider_settings_fill_custom_llm_from_env(monkeypatch, tmp_path):
+    path = tmp_path / "userConfig.json"
+    monkeypatch.setenv("USER_CONFIG_PATH", str(path))
+    monkeypatch.setenv("LLM", "custom")
+    monkeypatch.setenv("CUSTOM_LLM_URL", "http://llm.example/v1")
+    monkeypatch.setenv("CUSTOM_LLM_API_KEY", "sk-env")
+    monkeypatch.setenv("CUSTOM_MODEL", "cb/hnw-llm")
+    monkeypatch.setenv("DISABLE_IMAGE_GENERATION", "true")
+    update_user_config_file(str(path), lambda _: {})
+
+    filled = fill_unset_from_runtime({})
+
+    assert filled["LLM"] == "custom"
+    assert filled["CUSTOM_LLM_URL"] == "http://llm.example/v1"
+    assert filled["CUSTOM_LLM_API_KEY"] == "sk-env"
+    assert filled["CUSTOM_MODEL"] == "cb/hnw-llm"
+
+
+def test_saved_provider_settings_are_not_overwritten_by_env(monkeypatch, tmp_path):
+    path = tmp_path / "userConfig.json"
+    monkeypatch.setenv("USER_CONFIG_PATH", str(path))
+    monkeypatch.setenv("LLM", "custom")
+    monkeypatch.setenv("OPENAI_API_KEY", "env-key")
+    update_user_config_file(str(path), lambda _: {"LLM": "openai"})
+
+    filled = fill_unset_from_runtime({"LLM": "openai", "OPENAI_API_KEY": "db-key"})
+
+    assert filled["LLM"] == "openai"
+    assert filled["OPENAI_API_KEY"] == "db-key"

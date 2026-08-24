@@ -6,7 +6,7 @@ import { RootState } from '@/store/store'
 
 export type SettingsSection = 'text-provider' | 'image-provider' | 'web-search-provider' | 'privacy' | 'admin' | 'session'
 
-const SettingSideBar = ({ selectedProvider, setSelectedProvider, presentonSelected = false }: { selectedProvider: SettingsSection, setSelectedProvider: (provider: SettingsSection) => void, presentonSelected?: boolean }) => {
+const SettingSideBar = ({ selectedProvider, setSelectedProvider }: { selectedProvider: SettingsSection, setSelectedProvider: (provider: SettingsSection) => void }) => {
     const { llm_config } = useSelector((state: RootState) => state.userConfig)
     const textProviderIcon = LLM_PROVIDERS[llm_config.LLM as keyof typeof LLM_PROVIDERS]?.icon
     const imageProviderIcon = IMAGE_PROVIDERS[llm_config.IMAGE_PROVIDER as keyof typeof IMAGE_PROVIDERS]?.icon || '/providers/pexel.png'
@@ -23,22 +23,18 @@ const SettingSideBar = ({ selectedProvider, setSelectedProvider, presentonSelect
                         </div>
                         <p className='text-[#191919] text-xs  font-medium' >Text Provider</p>
                     </button>
-                    {!presentonSelected ? (
-                        <>
-                            <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'image-provider' ? 'bg-[var(--gslide-accent-soft)] border-[var(--gslide-border)]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('image-provider')}>
-                                <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
-                                    <img src={imageProviderIcon} className=' object-cover w-full h-full overflow-hidden' alt='image provider' />
-                                </div>
-                                <p className='text-[#191919] text-xs  font-medium' >Image Provider</p>
-                            </button>
-                            <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'web-search-provider' ? 'bg-[var(--gslide-accent-soft)] border-[var(--gslide-border)]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('web-search-provider')}>
-                                <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF] flex items-center justify-center bg-white'>
-                                    <Search className='w-3 h-3 text-[var(--gslide-accent)]' />
-                                </div>
-                                <p className='text-[#191919] text-xs font-medium'>Web Search Provider</p>
-                            </button>
-                        </>
-                    ) : null}
+                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'image-provider' ? 'bg-[var(--gslide-accent-soft)] border-[var(--gslide-border)]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('image-provider')}>
+                        <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
+                            <img src={imageProviderIcon} className=' object-cover w-full h-full overflow-hidden' alt='image provider' />
+                        </div>
+                        <p className='text-[#191919] text-xs  font-medium' >Image Provider</p>
+                    </button>
+                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'web-search-provider' ? 'bg-[var(--gslide-accent-soft)] border-[var(--gslide-border)]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('web-search-provider')}>
+                        <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF] flex items-center justify-center bg-white'>
+                            <Search className='w-3 h-3 text-[var(--gslide-accent)]' />
+                        </div>
+                        <p className='text-[#191919] text-xs font-medium'>Web Search Provider</p>
+                    </button>
                 </div>
             </div>
 

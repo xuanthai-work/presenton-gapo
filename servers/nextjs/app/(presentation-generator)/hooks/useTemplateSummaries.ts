@@ -49,23 +49,10 @@ function filterTemplatesWithLayouts(templates: TemplateListItem[]) {
   );
 }
 
-function deduplicateCloudTemplates(templates: TemplateListItem[]) {
-  const seen = new Set<string>();
-  return templates.filter((template) => {
-    const normalizedName = template.name.trim().toLowerCase();
-    const key = `${template.is_default ? "default" : "custom"}:${normalizedName}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
 export function useTemplateSummaries({
   includeProcessingTemplateTasks = false,
-  presentonCloudOnly = false,
 }: {
   includeProcessingTemplateTasks?: boolean;
-  presentonCloudOnly?: boolean;
 } = {}) {
   const [templates, setTemplates] = useState<TemplateListItem[]>([]);
   const [processingTemplateTasks, setProcessingTemplateTasks] = useState<
@@ -94,16 +81,13 @@ export function useTemplateSummaries({
 
     const loadTemplateSummaries = async () => {
       const [defaultResponse, customResponse] = await Promise.all([
-        TemplateService.getTemplateSummaries(true, { presentonCloudOnly }),
-        TemplateService.getTemplateSummaries(false, { presentonCloudOnly }),
+        TemplateService.getTemplateSummaries(true),
+        TemplateService.getTemplateSummaries(false),
       ]);
-      const loadedTemplates = [
+      return [
         ...filterTemplatesWithLayouts(defaultResponse.items ?? []),
         ...filterTemplatesWithLayouts(customResponse.items ?? []),
       ];
-      return presentonCloudOnly
-        ? deduplicateCloudTemplates(loadedTemplates)
-        : loadedTemplates;
     };
 
     const loadInitialTemplates = async () => {
@@ -164,7 +148,7 @@ export function useTemplateSummaries({
         clearInterval(intervalId);
       }
     };
-  }, [includeProcessingTemplateTasks, presentonCloudOnly]);
+  }, [includeProcessingTemplateTasks]);
 
   const { defaultTemplates, customTemplates } = useMemo(
     () => splitTemplatesByDefault(templates),

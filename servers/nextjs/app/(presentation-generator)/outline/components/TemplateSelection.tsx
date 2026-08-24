@@ -10,8 +10,6 @@ import {
   TemplateListSection,
 } from "../../components/TemplateListUi";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store/store";
 
 interface TemplateSelectionProps {
   presentationId: string | null;
@@ -44,11 +42,8 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
     onSelectTemplate,
     onCreateTemplate,
   }) {
-    const presentonCloudOnly = useSelector(
-      (state: RootState) => state.userConfig.llm_config.LLM === "presenton"
-    );
     const { defaultTemplates, customTemplates, loading } =
-      useTemplateSummaries({ presentonCloudOnly });
+      useTemplateSummaries();
 
     useEffect(() => {
       if (loading || !suggestedTemplate || selectedTemplateId) return;
@@ -143,12 +138,10 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
           {suggestionNotice}
           <TemplateListSection label="Templates" selectionPage>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {!presentonCloudOnly && (
-                <CreateCustomTemplate
+              <CreateCustomTemplate
                   selectionPage
                   onClick={onCreateTemplate}
                 />
-              )}
               {defaultTemplates.map((template, index) =>
                 renderTemplateCard(template, index, "default")
               )}
@@ -163,12 +156,10 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
         {suggestionNotice}
         <TemplateListSection label="Custom" selectionPage>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {!presentonCloudOnly && (
-              <CreateCustomTemplate
-                selectionPage
-                onClick={onCreateTemplate}
-              />
-            )}
+            <CreateCustomTemplate
+              selectionPage
+              onClick={onCreateTemplate}
+            />
             {customTemplates.map((template, index) =>
               renderTemplateCard(template, index, "custom")
             )}

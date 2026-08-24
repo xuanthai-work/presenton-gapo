@@ -31,3 +31,4 @@ def test_create_db_and_tables_without_alembic_does_not_reference_ollama():
     tables = create_all.call_args.kwargs["tables"]
     names = {getattr(table, "name", "") for table in tables}
     assert "ollamapullstatus" not in names
+    assert "presenton_cloud_provider" not in names

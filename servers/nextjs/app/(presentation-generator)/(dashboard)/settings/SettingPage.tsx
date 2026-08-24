@@ -21,7 +21,6 @@ import {
   LLM_PROVIDERS,
   WEB_SEARCH_PROVIDERS,
 } from "@/utils/providerConstants";
-import { getApiUrl } from "@/utils/api";
 import LogoutButton from "@/components/Auth/LogoutButton";
 import AdminPanel from "../admin/AdminPanel";
 
@@ -81,35 +80,8 @@ const SettingsPage = () => {
     });
   }, [selectedProvider, llmConfig.DISABLE_IMAGE_GENERATION, llmConfig.WEB_GROUNDING]);
 
-  const checkPresentonAuthStatus = async () => {
-    try {
-      const response = await fetch(
-        getApiUrl("/api/v1/auth/presenton/status"),
-        {
-          credentials: "include",
-          cache: "no-store",
-        }
-      );
-      if (!response.ok) return false;
-      const data = (await response.json()) as { linked?: boolean };
-      return data.linked === true;
-    } catch {
-      return false;
-    }
-  };
   const handleSaveConfig = async () => {
 
-    if (llmConfig.LLM === "presenton") {
-      // Cloud provider is no longer exposed in product chrome; the value is
-      // kept on disk for backward compatibility but cannot be saved through
-      // the user-facing settings flow.
-      notify.warning(
-        "Provider unavailable",
-        "The Cloud text provider is not available in this deployment. Pick a different text provider before saving."
-      );
-      setSelectedProvider("text-provider");
-      return;
-    }
     trackEvent(MixpanelEvent.Settings_SaveConfiguration_Button_Clicked, {
       pathname,
     });
@@ -173,9 +145,7 @@ const SettingsPage = () => {
   const textProviderLabel =
     LLM_PROVIDERS[textProviderKey]?.label || textProviderKey;
   const selectedTextModel =
-    textProviderKey === "presenton"
-      ? ""
-      : textProviderKey === "openai"
+    textProviderKey === "openai"
         ? llmConfig.OPENAI_MODEL
         : textProviderKey === "google"
           ? llmConfig.GOOGLE_MODEL
@@ -186,29 +156,16 @@ const SettingsPage = () => {
     ? `${textProviderLabel} (${selectedTextModel})`
     : textProviderLabel;
 
-  const imageSummary = textProviderKey === "presenton"
-    ? "Cloud images"
-    : llmConfig.DISABLE_IMAGE_GENERATION
+  const imageSummary = llmConfig.DISABLE_IMAGE_GENERATION
       ? "Image generation disabled"
       : llmConfig.IMAGE_PROVIDER
         ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label ||
         llmConfig.IMAGE_PROVIDER
         : "No image provider";
   const webSearchProviderKey = (llmConfig.WEB_SEARCH_PROVIDER || "").toLowerCase();
-  const webSearchSummary = textProviderKey === "presenton"
-    ? "Cloud web search"
-    : llmConfig.WEB_GROUNDING
+  const webSearchSummary = llmConfig.WEB_GROUNDING
       ? `Web: ${WEB_SEARCH_PROVIDERS[webSearchProviderKey]?.label || "No provider"}`
       : "Web search disabled";
-
-  useEffect(() => {
-    if (
-      llmConfig.LLM === "presenton" &&
-      (selectedProvider === "image-provider" || selectedProvider === "web-search-provider")
-    ) {
-      setSelectedProvider("text-provider");
-    }
-  }, [llmConfig.LLM, selectedProvider]);
 
 
   useEffect(() => {
@@ -279,7 +236,6 @@ const SettingsPage = () => {
         <SettingSideBar
           selectedProvider={selectedProvider}
           setSelectedProvider={selectSettingsSection}
-          presentonSelected={llmConfig.LLM === "presenton"}
         />
         <div className="w-full">
           <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
@@ -297,8 +253,8 @@ const SettingsPage = () => {
             onInputChange={handleTextProviderInputChange}
             llmConfig={llmConfig}
           />}
-          {selectedProvider === 'image-provider' && llmConfig.LLM !== "presenton" && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
-          {selectedProvider === 'web-search-provider' && llmConfig.LLM !== "presenton" && <WebSearchProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
+          {selectedProvider === 'image-provider' && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
+          {selectedProvider === 'web-search-provider' && <WebSearchProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
           {selectedProvider === 'privacy' && <PrivacySettings />}
           {selectedProvider === "admin" && <AdminPanel embedded />}
           {selectedProvider === "session" && (

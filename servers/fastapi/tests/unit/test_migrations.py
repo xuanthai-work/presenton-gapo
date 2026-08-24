@@ -83,24 +83,51 @@ def test_upgrade_from_baseline_stamp_skips_existing_theme_column(tmp_path):
                 row[1]
                 for row in connection.execute(text("PRAGMA index_list('user')"))
             }
-            provider_columns = {
-                row[1]
-                for row in connection.execute(
-                    text("PRAGMA table_info('presenton_cloud_provider')")
-                )
-            }
-
         assert version == migrations.REVISION_HEAD
         assert "theme" in columns
         assert "fonts" in columns
         assert "async_tasks" in tables
         assert "presenton_oauth_identity" not in tables
-        assert "presenton_cloud_provider" in tables
-        assert "access_token_encrypted" in provider_columns
-        assert "refresh_token_encrypted" not in provider_columns
-        assert "scopes" not in provider_columns
+        assert "presenton_cloud_provider" not in tables
         assert "admin_slot" in user_columns
         assert "uq_user_admin_slot" in user_indexes
+    finally:
+        engine.dispose()
+
+
+def test_upgrade_from_smart_mode_backfill_drops_presenton_cloud_provider(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'drop-cloud.db'}"
+    engine = create_engine(database_url)
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE presenton_cloud_provider (id INTEGER PRIMARY KEY)"
+                )
+            )
+            connection.execute(
+                text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
+            )
+            connection.execute(
+                text("INSERT INTO alembic_version (version_num) VALUES (:revision)"),
+                {"revision": migrations.REVISION_SMART_MODE_BACKFILL},
+            )
+
+        command.upgrade(_alembic_config(database_url), "head")
+
+        with engine.connect() as connection:
+            version = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one()
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    text("SELECT name FROM sqlite_master WHERE type = 'table'")
+                )
+            }
+
+        assert version == migrations.REVISION_HEAD
+        assert "presenton_cloud_provider" not in tables
     finally:
         engine.dispose()
 

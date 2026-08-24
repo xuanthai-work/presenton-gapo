@@ -6,7 +6,6 @@ import { hasValidLLMConfig, normalizeLLMConfig } from '@/utils/storeHelpers';
 import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { LLMConfig } from '@/types/llm_config';
-import { getApiUrl } from '@/utils/api';
 import { notify } from '@/components/ui/sonner';
 import { GSlideSplashLoader } from '@/components/gslide';
 import { PRESENTON_SPLASH_MIN_DURATION_MS } from '@/components/ui/presenton-splash-loader';
@@ -31,60 +30,10 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
   );
   const router = useRouter();
 
-  // Fetch user config state
   useEffect(() => {
     fetchUserConfigState();
-    // Configuration bootstrap runs once. Presenton is revalidated separately
-    // below whenever the user navigates to another application route.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (
-      isAuthRoute ||
-      isSettingsRoute ||
-      route.startsWith('/pdf-maker')
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-    let presentonSelected = false;
-    const revalidatePresentonConnection = async () => {
-      try {
-        const configResponse = await fetch('/api/user-config', {
-          cache: 'no-store',
-        });
-        if (!configResponse.ok) return;
-
-        const config = normalizeLLMConfig(await configResponse.json());
-        presentonSelected = config.LLM === 'presenton';
-        if (!presentonSelected) return;
-
-        const statusResponse = await fetch(
-          getApiUrl('/api/v1/auth/presenton/status'),
-          { cache: 'no-store', credentials: 'include' }
-        );
-        const status = statusResponse.ok
-          ? await statusResponse.json() as { linked?: boolean }
-          : null;
-
-        if (!cancelled && !status?.linked) {
-          router.push('/settings');
-        }
-      } catch (error) {
-        console.error('Failed to revalidate Presenton connection:', error);
-        if (!cancelled && presentonSelected) {
-          router.push('/settings');
-        }
-      }
-    };
-
-    void revalidatePresentonConnection();
-    return () => {
-      cancelled = true;
-    };
-  }, [isSettingsRoute, route, router]);
 
   useEffect(() => {
     if (!shouldShowStartupSplash) {
@@ -164,21 +113,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
       dispatch(setLLMConfig(llmConfig));
 
-      let hasPresentonCloud = false;
-      try {
-        const response = await fetch(
-          getApiUrl('/api/v1/auth/presenton/status'),
-          { cache: 'no-store', credentials: 'include' }
-        );
-        if (response.ok) {
-          const status = await response.json();
-          hasPresentonCloud = Boolean(status.linked);
-        }
-      } catch (error) {
-        console.error('Failed to fetch Presenton cloud status:', error);
-      }
-      const isValid = hasValidLLMConfig(llmConfig) &&
-        (llmConfig.LLM !== 'presenton' || hasPresentonCloud);
+      const isValid = hasValidLLMConfig(llmConfig);
       if (route.startsWith('/pdf-maker')) {
         setIsLoading(false);
         return;
@@ -190,10 +125,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
         } else {
           setIsLoading(false);
         }
-      } else if (
-        !isAuthRoute &&
-        !(isSettingsRoute && llmConfig.LLM === 'presenton')
-      ) {
+      } else if (!isAuthRoute && !isSettingsRoute) {
         notify.warning(
           "AI provider not configured",
           "Open Settings to configure your text, image, and web search providers.",

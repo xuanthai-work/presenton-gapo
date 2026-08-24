@@ -14,7 +14,6 @@ from api.v1.auth.principal import resolve_request_principal
 from api.v1.auth.users import get_jwt_strategy
 from models.sql.user import User
 from services.database import async_session_maker
-from services.presenton_cloud_proxy import maybe_proxy_presenton_cloud_request
 from utils.get_env import get_can_change_keys_env, is_disable_auth_enabled
 from utils.user_config import update_env_with_user_config
 
@@ -55,18 +54,6 @@ class SessionAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         if is_disable_auth_enabled():
-            # Auth-disabled single-user runtime. It still needs the Presenton
-            # Cloud provider proxy when that provider is selected; unowned
-            # rows use the existing nullable owner_id.
-            async with async_session_maker() as session:
-                cloud_response = await maybe_proxy_presenton_cloud_request(
-                    request,
-                    session,
-                    None,
-                    allow_unowned=True,
-                )
-                if cloud_response is not None:
-                    return cloud_response
             return await call_next(request)
 
         path = request.url.path
@@ -118,14 +105,6 @@ class SessionAuthMiddleware(BaseHTTPMiddleware):
             context_token = set_current_owner_id(principal.user_id)
             admin_context_token = set_current_owner_is_admin(principal.is_admin)
             try:
-                if principal.method == "jwt":
-                    cloud_response = await maybe_proxy_presenton_cloud_request(
-                        request,
-                        session,
-                        user,
-                    )
-                    if cloud_response is not None:
-                        return cloud_response
                 if path.startswith(
                     "/app_data/"
                 ) and not is_app_data_path_authorized(

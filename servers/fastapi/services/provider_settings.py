@@ -7,43 +7,53 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.sql.provider_settings import ProviderSettings
 from utils.datetime_utils import get_current_utc_datetime
 from utils.db_utils import get_database_url_and_connect_args, to_sync_sqlalchemy_url
-from utils.get_env import get_user_config_path_env, get_can_change_keys_env
+from utils.get_env import get_user_config_path_env
 from utils.user_config_store import read_user_config_file, update_user_config_file
 
 
 logger = logging.getLogger(__name__)
 
 PROVIDER_SETTINGS_ID = 1
-PRESENTON_STATUS_FIELDS = {
+_CLOUD_STATUS_FIELDS = {
     "PRESENTON_CONNECTED",
     "PRESENTON_EMAIL",
 }
-OAUTH_MANAGED_FIELDS = PRESENTON_STATUS_FIELDS
 
 
 def sanitize_provider_settings(config: dict[str, Any]) -> dict[str, Any]:
-    """Keep provider/runtime settings and exclude every legacy auth field."""
-    return {
+    """Keep provider/runtime settings and exclude legacy auth and Cloud status."""
+    cleaned = {
         key: value
         for key, value in config.items()
-        if not key.upper().startswith("AUTH_")
+        if not key.upper().startswith("AUTH_") and key not in _CLOUD_STATUS_FIELDS
     }
+    if cleaned.get("LLM") == "presenton":
+        cleaned.pop("LLM", None)
+    return cleaned
 
 
 def merge_provider_settings(
     existing: dict[str, Any], incoming: dict[str, Any]
 ) -> dict[str, Any]:
-    """Preserve the previous settings API's patch and managed-token behavior."""
-    sanitized = sanitize_provider_settings(incoming)
-    merged = {**sanitize_provider_settings(existing), **sanitized}
+    """Preserve the previous settings API's patch behavior."""
+    return {
+        **sanitize_provider_settings(existing),
+        **sanitize_provider_settings(incoming),
+    }
 
-    for key in OAUTH_MANAGED_FIELDS:
-        if key in existing:
-            merged[key] = existing[key]
-        else:
-            merged.pop(key, None)
 
-    return merged
+def fill_unset_from_runtime(config: dict[str, Any]) -> dict[str, Any]:
+    """Fill blank DB/file provider fields from env (+ userConfig.json fallbacks)."""
+    from utils.user_config import get_user_config
+
+    filled = dict(sanitize_provider_settings(config))
+    effective = sanitize_provider_settings(
+        get_user_config().model_dump(exclude_none=True)
+    )
+    for key, value in effective.items():
+        if filled.get(key) in (None, ""):
+            filled[key] = value
+    return filled
 
 
 def _mirror_to_legacy_file(config: dict[str, Any]) -> None:
@@ -57,17 +67,9 @@ def _mirror_to_legacy_file(config: dict[str, Any]) -> None:
     def replace_provider_config(existing: dict[str, Any]) -> dict[str, Any]:
         mirrored = dict(db_config)
 
-        # Locked deployments (CAN_CHANGE_KEYS=false) configure providers via env.
-        # Fill any unset DB fields from the effective runtime config.
-        if get_can_change_keys_env() == "false":
-            from utils.user_config import get_user_config
-
-            effective = sanitize_provider_settings(
-                get_user_config().model_dump(exclude_none=True)
-            )
-            for key, value in effective.items():
-                if mirrored.get(key) in (None, ""):
-                    mirrored[key] = value
+        for key, value in fill_unset_from_runtime(mirrored).items():
+            if mirrored.get(key) in (None, ""):
+                mirrored[key] = value
 
         # Authentication is database-backed now, but the compatibility file is
         # also the rollback/recovery copy. Never discard its credential fields.
@@ -85,15 +87,12 @@ async def migrate_provider_settings_from_file(session: AsyncSession) -> dict[str
     path = get_user_config_path_env()
 
     if row is None:
-        legacy_config = read_user_config_file(path) if path else {}
-        if get_can_change_keys_env() == "false":
-            from utils.user_config import get_user_config
-
-            effective = get_user_config().model_dump(exclude_none=True)
-            legacy_config = {**effective, **legacy_config}
+        legacy_config = sanitize_provider_settings(
+            read_user_config_file(path) if path else {}
+        )
         row = ProviderSettings(
             id=PROVIDER_SETTINGS_ID,
-            config=sanitize_provider_settings(legacy_config),
+            config=legacy_config,
         )
         session.add(row)
         await session.commit()
@@ -106,7 +105,7 @@ async def migrate_provider_settings_from_file(session: AsyncSession) -> dict[str
             row.updated_at = get_current_utc_datetime()
             await session.commit()
 
-    config = dict(row.config or {})
+    config = fill_unset_from_runtime(dict(row.config or {}))
     _mirror_to_legacy_file(config)
     return config
 
@@ -115,7 +114,7 @@ async def get_provider_settings(session: AsyncSession) -> dict[str, Any]:
     row = await session.get(ProviderSettings, PROVIDER_SETTINGS_ID)
     if row is None:
         return await migrate_provider_settings_from_file(session)
-    return sanitize_provider_settings(dict(row.config or {}))
+    return fill_unset_from_runtime(dict(row.config or {}))
 
 
 async def save_provider_settings(
