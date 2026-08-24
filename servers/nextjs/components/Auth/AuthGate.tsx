@@ -1,7 +1,6 @@
 "use client";
 
-import { CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getApiUrl } from "@/utils/api";
 import { isAuthDisabled } from "@/utils/auth";
 import { formatFastApiDetail, UNAUTHORIZED_DETAIL } from "@/utils/authErrors";
@@ -9,6 +8,13 @@ import {
   PRESENTON_SPLASH_MIN_DURATION_MS,
   PresentonSplashLoader,
 } from "@/components/ui/presenton-splash-loader";
+import {
+  GSlideButton,
+  GSlideCard,
+  GSlideInput,
+  GSlidePage,
+  GSlideWordmark,
+} from "@/components/gslide";
 import { notify } from "@/components/ui/sonner";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
@@ -28,20 +34,6 @@ const initialStatus: AuthStatus = {
   username: null,
   role: null,
 };
-
-/** Personal-brand auth palette — warm editorial, no purple glow */
-const AUTH_THEME = {
-  bg: "#FAF9F7",
-  card: "#FFFFFF",
-  cardBorder: "#E8E4DF",
-  ink: "#1A1A18",
-  muted: "#6B6560",
-  accent: "#C45C3E",
-  accentHover: "#A84D33",
-  accentSoft: "#F5EBE8",
-  inputBorder: "#D9D4CE",
-  inputFocus: "#C45C3E",
-} as const;
 
 function authFlow(mode: AuthMode): string {
   if (mode === "setup") return "setup";
@@ -106,7 +98,7 @@ export default function AuthGate() {
     }
 
     setIsRedirecting(true);
-    window.location.replace("/");
+    window.location.replace("/dashboard");
   }, [isLoading, isRedirecting, status.authenticated]);
 
   useEffect(() => {
@@ -443,73 +435,27 @@ export default function AuthGate() {
   }
 
   return (
-    <main
-      className="auth-theme relative flex min-h-screen items-center justify-center overflow-hidden p-6 font-syne"
-      style={
-        {
-          "--auth-bg": AUTH_THEME.bg,
-          "--auth-card": AUTH_THEME.card,
-          "--auth-card-border": AUTH_THEME.cardBorder,
-          "--auth-ink": AUTH_THEME.ink,
-          "--auth-muted": AUTH_THEME.muted,
-          "--auth-accent": AUTH_THEME.accent,
-          "--auth-accent-hover": AUTH_THEME.accentHover,
-          "--auth-accent-soft": AUTH_THEME.accentSoft,
-          "--auth-input-border": AUTH_THEME.inputBorder,
-          "--auth-input-focus": AUTH_THEME.inputFocus,
-          backgroundColor: "var(--auth-bg)",
-        } as CSSProperties
-      }
-    >
-      <section
-        className="relative z-10 w-full max-w-md rounded-2xl border p-7 shadow-sm sm:p-9"
-        style={{
-          borderColor: "var(--auth-card-border)",
-          backgroundColor: "var(--auth-card)",
-        }}
-      >
-        <div className="mb-8">
-          <div className="flex items-center gap-4">
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg p-2.5"
-              style={{ backgroundColor: "var(--auth-accent-soft)" }}
-            >
-              <Image
-                src="/logo-with-bg.png"
-                alt=""
-                width={161}
-                height={166}
-                className="h-9 w-auto object-contain"
-              />
-            </div>
-            <div>
-              <p
-                className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--auth-accent)" }}
-              >
-                Presentations
-              </p>
-              <h1
-                className="mt-1 font-unbounded text-xl font-normal leading-tight tracking-[-0.03em] sm:text-[22px]"
-                style={{ color: "var(--auth-ink)" }}
-              >
-                {headline}
-              </h1>
-            </div>
+    <GSlidePage className="relative flex items-center justify-center overflow-hidden p-6 font-syne">
+      <GSlideCard className="relative z-10 w-full max-w-md">
+        <div className="mb-8 flex flex-col gap-4">
+          <GSlideWordmark className="text-2xl" />
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--gslide-accent)]">
+              Presentations
+            </p>
+            <h1 className="mt-1 font-unbounded text-xl font-normal leading-tight tracking-[-0.03em] text-[var(--gslide-ink)] sm:text-[22px]">
+              {headline}
+            </h1>
           </div>
         </div>
 
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: "var(--auth-muted)" }}
-        >
+        <p className="text-sm leading-relaxed text-[var(--gslide-muted)]">
           {description}
         </p>
 
         {status.configured ? (
           <div
-            className="mt-6 flex rounded-lg border p-1"
-            style={{ borderColor: "var(--auth-card-border)" }}
+            className="mt-6 flex rounded-lg border border-[var(--gslide-border)] p-1"
             role="tablist"
             aria-label="Authentication mode"
           >
@@ -519,13 +465,12 @@ export default function AuthGate() {
               aria-selected={authMode === "login"}
               onClick={() => switchConfiguredView("login")}
               disabled={isSubmitting}
-              className="flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                backgroundColor:
-                  authMode === "login" ? "var(--auth-accent-soft)" : "transparent",
-                color:
-                  authMode === "login" ? "var(--auth-accent)" : "var(--auth-muted)",
-              }}
+              className={
+                "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 " +
+                (authMode === "login"
+                  ? "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]"
+                  : "text-[var(--gslide-muted)]")
+              }
             >
               Sign in
             </button>
@@ -535,17 +480,12 @@ export default function AuthGate() {
               aria-selected={authMode === "register"}
               onClick={() => switchConfiguredView("register")}
               disabled={isSubmitting}
-              className="flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                backgroundColor:
-                  authMode === "register"
-                    ? "var(--auth-accent-soft)"
-                    : "transparent",
-                color:
-                  authMode === "register"
-                    ? "var(--auth-accent)"
-                    : "var(--auth-muted)",
-              }}
+              className={
+                "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 " +
+                (authMode === "register"
+                  ? "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]"
+                  : "text-[var(--gslide-muted)]")
+              }
             >
               Create account
             </button>
@@ -556,12 +496,11 @@ export default function AuthGate() {
           <div className="space-y-2">
             <label
               htmlFor="username"
-              className="block text-sm font-medium"
-              style={{ color: "var(--auth-ink)" }}
+              className="block text-sm font-medium text-[var(--gslide-ink)]"
             >
               Username
             </label>
-            <input
+            <GSlideInput
               id="username"
               autoComplete="username"
               value={username}
@@ -575,11 +514,6 @@ export default function AuthGate() {
               title="Username cannot contain spaces"
               required
               spellCheck={false}
-              className="h-12 w-full rounded-lg border bg-white px-4 text-sm outline-none transition placeholder:text-[#9CA3AF] focus:border-[var(--auth-input-focus)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--auth-input-focus)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                borderColor: "var(--auth-input-border)",
-                color: "var(--auth-ink)",
-              }}
               disabled={isSubmitting}
             />
           </div>
@@ -587,12 +521,11 @@ export default function AuthGate() {
           <div className="space-y-2">
             <label
               htmlFor="password"
-              className="block text-sm font-medium"
-              style={{ color: "var(--auth-ink)" }}
+              className="block text-sm font-medium text-[var(--gslide-ink)]"
             >
               Password
             </label>
-            <input
+            <GSlideInput
               id="password"
               type="password"
               autoComplete={
@@ -608,11 +541,6 @@ export default function AuthGate() {
               minLength={authMode === "login" ? 6 : 8}
               maxLength={128}
               required
-              className="h-12 w-full rounded-lg border bg-white px-4 text-sm outline-none transition placeholder:text-[#9CA3AF] focus:border-[var(--auth-input-focus)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--auth-input-focus)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                borderColor: "var(--auth-input-border)",
-                color: "var(--auth-ink)",
-              }}
               disabled={isSubmitting}
             />
           </div>
@@ -621,12 +549,11 @@ export default function AuthGate() {
             <div className="space-y-2">
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium"
-                style={{ color: "var(--auth-ink)" }}
+                className="block text-sm font-medium text-[var(--gslide-ink)]"
               >
                 Confirm password
               </label>
-              <input
+              <GSlideInput
                 id="confirmPassword"
                 type="password"
                 autoComplete="new-password"
@@ -636,37 +563,21 @@ export default function AuthGate() {
                 minLength={8}
                 maxLength={128}
                 required
-                className="h-12 w-full rounded-lg border bg-white px-4 text-sm outline-none transition placeholder:text-[#9CA3AF] focus:border-[var(--auth-input-focus)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--auth-input-focus)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  borderColor: "var(--auth-input-border)",
-                  color: "var(--auth-ink)",
-                }}
                 disabled={isSubmitting}
               />
             </div>
           ) : null}
 
-          <button
+          <GSlideButton
             type="submit"
+            variant="primary"
             disabled={isSubmitting}
-            className="w-full rounded-full px-5 py-3 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-            style={{
-              backgroundColor: "var(--auth-accent)",
-            }}
-            onMouseEnter={(event) => {
-              if (!isSubmitting) {
-                event.currentTarget.style.backgroundColor =
-                  "var(--auth-accent-hover)";
-              }
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.backgroundColor = "var(--auth-accent)";
-            }}
+            className="w-full"
           >
             {isSubmitting ? submittingLabel : submitLabel}
-          </button>
+          </GSlideButton>
         </form>
-      </section>
-    </main>
+      </GSlideCard>
+    </GSlidePage>
   );
 }

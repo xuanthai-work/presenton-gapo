@@ -119,3 +119,17 @@ test("global loading copy is GSlide not Presenton", async () => {
   assert.match(config, /Loading GSlide/);
   assert.doesNotMatch(config, /Loading Presenton/);
 });
+
+test("AuthGate uses GSlide tokens/kit instead of AUTH_THEME", async () => {
+  const auth = await readNext("components/Auth/AuthGate.tsx");
+  assert.doesNotMatch(auth, /const AUTH_THEME/);
+  assert.match(auth, /GSlideWordmark|GSlideCard|var\(--gslide-/);
+});
+
+test("landing and metadata say GSlide", async () => {
+  const landing = await readNext("app/page.tsx");
+  assert.match(landing, /GSlide/);
+  const layout = await readNext("app/layout.tsx");
+  assert.match(layout, /GSlide/);
+  assert.doesNotMatch(layout, /title: "Presenton/);
+});
