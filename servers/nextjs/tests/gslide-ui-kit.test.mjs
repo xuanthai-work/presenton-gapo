@@ -41,3 +41,35 @@ test("tokens.ts matches CSS hex values", async () => {
   }
   assert.match(source, /export const GSLIDE_TOKENS/);
 });
+
+test("GSlide primitives use tokens and GSlide wordmark", async () => {
+  const wordmark = await readNext("components/gslide/GSlideWordmark.tsx");
+  assert.match(wordmark, />GSlide</);
+  assert.match(wordmark, /font-unbounded/);
+  assert.match(wordmark, /--gslide-ink/);
+
+  const button = await readNext("components/gslide/GSlideButton.tsx");
+  assert.match(button, /--gslide-accent/);
+  assert.match(button, /rounded-full/);
+  assert.match(button, /variant\?: *"primary" *\| *"secondary"/);
+
+  const card = await readNext("components/gslide/GSlideCard.tsx");
+  assert.match(card, /--gslide-card/);
+  assert.match(card, /--gslide-border/);
+
+  const page = await readNext("components/gslide/GSlidePage.tsx");
+  assert.match(page, /--gslide-bg/);
+
+  const input = await readNext("components/gslide/GSlideInput.tsx");
+  assert.match(input, /--gslide-input-border/);
+  assert.match(input, /--gslide-input-focus/);
+
+  const skeleton = await readNext("components/gslide/GSlideSkeleton.tsx");
+  assert.match(skeleton, /--gslide-accent-soft/);
+  assert.doesNotMatch(skeleton, /#F6F6F9/);
+
+  const barrel = await readNext("components/gslide/index.ts");
+  assert.match(barrel, /GSlideWordmark/);
+  assert.match(barrel, /GSlideButton/);
+  assert.match(barrel, /GSlideSkeleton/);
+});
