@@ -24,6 +24,7 @@ import {
 import { useSelector } from "react-redux";
 
 import { Button } from "@/components/ui/button";
+import { GSlideWordmark } from "@/components/gslide";
 import {
   Command,
   CommandEmpty,
@@ -113,15 +114,10 @@ function StudioTopBar({ activeStep }: { activeStep: StudioStep }) {
       <div className="relative mx-auto flex h-full max-w-[1280px] 2xl:max-w-[1536px] items-center justify-between px-5 sm:px-8 2xl:px-[90px]">
         <a
           href="/dashboard"
-          className="pointer-events-auto block h-8 w-8 sm:h-[34px] sm:w-[34px] 2xl:h-[44px] 2xl:w-[44px] shrink-0"
+          className="pointer-events-auto flex h-8 items-center sm:h-[34px] 2xl:h-[44px] shrink-0"
           aria-label="Dashboard"
         >
-          <img
-            src="/logo-with-bg.png"
-            alt="Presenton"
-            className="h-full w-full"
-            draggable={false}
-          />
+          <GSlideWordmark className="text-sm sm:text-base 2xl:text-lg" />
         </a>
 
         <nav
@@ -262,7 +258,7 @@ function UploadPanel({
               onClick={() => inputRef.current?.click()}
               className="flex h-[34px] 2xl:h-[42px] items-center gap-1.5 2xl:gap-2 rounded-[80px] bg-white px-3.5 2xl:px-4 text-[12px] 2xl:text-sm font-semibold text-black shadow-[0_0_4px_rgba(0,0,0,0.06)]"
             >
-              <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#7A5AF8]" />
+              <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[var(--gslide-accent)]" />
               Upload PPTX File
             </button>
             <input
@@ -578,7 +574,7 @@ function FontFallbackPicker({
                     >
                       <span className="min-w-0 truncate">{option.family}</span>
                       {isSelected ? (
-                        <Check className="h-4 w-4 shrink-0 text-[#5146E5]" />
+                        <Check className="h-4 w-4 shrink-0 text-[var(--gslide-accent)]" />
                       ) : (
                         <span className="shrink-0 text-xs font-semibold text-[#8B8E99]">
                           Aa
@@ -686,7 +682,7 @@ function AnalyzePanel({
             }}
             className="flex h-[34px] 2xl:h-[42px] items-center gap-1.5 2xl:gap-2 rounded-[80px] bg-white px-3.5 2xl:px-4 text-[12px] 2xl:text-sm font-semibold text-black shadow-[0_0_4px_rgba(0,0,0,0.06)]"
           >
-            <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#7A5AF8]" />
+            <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[var(--gslide-accent)]" />
             Fonts Upload
           </button>
         </div>
@@ -1347,7 +1343,7 @@ function ReviewPanel({
           className={`relative ${enableEditing ? "" : ""}`}
         >
           {enableEditing ? (
-            <div className="relative border border-[#7A5AF8] bg-white shadow-[0_2px_16px_rgba(16,24,40,0.08)]">
+            <div className="relative border border-[var(--gslide-accent)] bg-white shadow-[0_2px_16px_rgba(16,24,40,0.08)]">
               <SelectionHandles />
               <div className="absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-[5px] border border-[#E6E7EC] bg-white px-2 py-1.5 shadow-[0_4px_12px_rgba(16,24,40,0.12)] sm:top-3 2xl:px-3 2xl:py-2">
                 <div className="flex items-center gap-1 2xl:gap-1.5">
@@ -1355,7 +1351,7 @@ function ReviewPanel({
                     type="button"
                     onClick={() => retrySlide(selectedIndex)}
                     disabled={!selectedSlide || selectedSlide.processing}
-                    className="h-8 rounded-[4px] px-2.5 text-[12px] font-medium text-black transition hover:bg-[#F6F6F9] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:px-3 2xl:text-sm"
+                    className="h-8 rounded-[4px] px-2.5 text-[12px] font-medium text-black transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:px-3 2xl:text-sm"
                   >
                     Re-Construct
                   </button>
@@ -1364,7 +1360,7 @@ function ReviewPanel({
                     type="button"
                     onClick={handleDelete}
                     disabled={!isReady}
-                    className="flex h-8 w-8 items-center justify-center rounded-[4px] text-black transition hover:bg-[#F6F6F9] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:w-9"
+                    className="flex h-8 w-8 items-center justify-center rounded-[4px] text-black transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:w-9"
                     aria-label="Delete slide"
                   >
                     <Trash2 className="h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" />

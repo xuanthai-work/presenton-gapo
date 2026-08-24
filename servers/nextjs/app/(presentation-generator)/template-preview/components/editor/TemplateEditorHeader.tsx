@@ -11,6 +11,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GSlideWordmark } from "@/components/gslide";
 
 const SAVE_BUTTON_GRADIENT =
   "linear-gradient(270deg, rgb(213, 202, 252) 2.4038%, rgb(227, 210, 235) 27.885%, rgb(244, 220, 211) 69.231%, rgb(253, 228, 194) 100%)";
@@ -81,11 +82,9 @@ export function TemplateEditorHeader({
     <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-[#EDEEEF] bg-white">
       <div className="flex h-full min-w-0 flex-1 items-center gap-[12px] px-5 text-left sm:w-[347px] sm:flex-none sm:px-[24px]">
         <button onClick={onBack} aria-label="Dashboard" type="button">
-          <img
-            src="/logo-with-bg.png"
-            alt="Presenton"
-            className="h-10 w-10 cursor-pointer object-contain"
-          />
+          <GSlideWordmark className="text-base" />
+
+          <span className="h-10 w-10 block" aria-hidden="true" />
         </button>
         <label
           className={cn(
@@ -133,7 +132,7 @@ export function TemplateEditorHeader({
           {canEdit ? (
             <Edit3
               aria-hidden="true"
-              className="h-[15px] w-[15px] shrink-0 text-[#9B9B9B] transition-colors group-hover:text-[#7C51F8] group-focus-within:text-[#7C51F8]"
+              className="h-[15px] w-[15px] shrink-0 text-[#9B9B9B] transition-colors group-hover:text-[var(--gslide-accent)] group-focus-within:text-[var(--gslide-accent)]"
             />
           ) : null}
         </label>

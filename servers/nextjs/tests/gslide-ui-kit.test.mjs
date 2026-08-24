@@ -184,3 +184,21 @@ test("outline header does not use Presenton PNG", async () => {
   );
   assert.doesNotMatch(outline, /logo-with-bg\.png/);
 });
+
+test("editor chrome uses GSlide wordmark not Presenton PNG", async () => {
+  const presentation = await readNext(
+    "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
+  );
+  assert.doesNotMatch(presentation, /logo-with-bg\.png/);
+  assert.match(presentation, /GSlideWordmark/);
+
+  const template = await readNext(
+    "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
+  );
+  assert.doesNotMatch(template, /logo-with-bg\.png/);
+
+  const studio = await readNext(
+    "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
+  );
+  assert.doesNotMatch(studio, /logo-with-bg\.png/);
+});
