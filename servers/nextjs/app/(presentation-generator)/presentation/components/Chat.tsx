@@ -1992,7 +1992,7 @@ const Chat = ({
             className={cn(
               "rounded-[8px] border bg-white px-[10px] py-3 transition-colors",
               isDraggingAttachment
-                ? "border-[#7A5AF8] bg-[#F7F5FF]"
+                ? "border-[#1D6FE8] bg-[#DBEAFE]"
                 : "border-[#DBDBDB]/60",
             )}
             style={{ boxShadow: "0 4px 7px rgba(0, 0, 0, 0.04)" }}
@@ -2016,7 +2016,7 @@ const Chat = ({
               >
                 {chatSlideReference && (
                   <span
-                    className="inline-flex h-7 max-w-[86px] shrink-0 items-center gap-1 rounded-full border border-[#E8E3FF] bg-[#F8F6FF] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#6941C6] shadow-[0_1px_2px_rgba(105,65,198,0.06)]"
+                    className="inline-flex h-7 max-w-[86px] shrink-0 items-center gap-1 rounded-full border border-[#E8E3FF] bg-[#DBEAFE] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#1558C0] shadow-[0_1px_2px_rgba(105,65,198,0.06)]"
                     title={chatSlideReference}
                   >
                     <span className="truncate">{chatSlideReference}</span>
@@ -2024,7 +2024,7 @@ const Chat = ({
                       <button
                         type="button"
                         onClick={onClearChatSlideReference}
-                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#8069C5] transition-colors hover:bg-[#E4DFFF] hover:text-[#5235A8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/40"
+                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#4B7AB5] transition-colors hover:bg-[#DBEAFE] hover:text-[#1558C0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40"
                         aria-label={`Remove ${chatSlideReference} from context`}
                         title={`Remove ${chatSlideReference} from context`}
                       >
@@ -2035,7 +2035,7 @@ const Chat = ({
                 )}
                 {chatTargetReference && (
                   <span
-                    className="inline-flex h-7 min-w-0 max-w-[138px] items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#6941C6] shadow-[0_1px_2px_rgba(105,65,198,0.08)]"
+                    className="inline-flex h-7 min-w-0 max-w-[138px] items-center gap-1 rounded-full border border-[#DBEAFE] bg-[#F5F3FF] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#1558C0] shadow-[0_1px_2px_rgba(105,65,198,0.08)]"
                     title={chatTargetReference}
                   >
                     <span className="truncate">{chatTargetReference}</span>
@@ -2043,7 +2043,7 @@ const Chat = ({
                       <button
                         type="button"
                         onClick={clearChatTargetReference}
-                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#8069C5] transition-colors hover:bg-[#E4DFFF] hover:text-[#5235A8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/40"
+                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#4B7AB5] transition-colors hover:bg-[#DBEAFE] hover:text-[#1558C0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40"
                         aria-label="Remove selected element from context"
                         title="Remove selected element from context"
                       >
@@ -2195,12 +2195,12 @@ const Chat = ({
                           cx="7"
                           cy="7"
                           r="4.7"
-                          stroke={isFollowAgentEnabled ? "#7A5AF8" : "#191919"}
+                          stroke={isFollowAgentEnabled ? "#1D6FE8" : "#191919"}
                           strokeWidth="1.15"
                         />
                         <path
                           d="M7 0.8v2.3M7 10.9v2.3M.8 7h2.3M10.9 7h2.3"
-                          stroke={isFollowAgentEnabled ? "#7A5AF8" : "#191919"}
+                          stroke={isFollowAgentEnabled ? "#1D6FE8" : "#191919"}
                           strokeWidth="1.15"
                           strokeLinecap="round"
                         />
@@ -2217,7 +2217,7 @@ const Chat = ({
                     <button
                       type="button"
                       disabled={chatInputDisabled}
-                      className="inline-flex h-[28px] items-center gap-1.5 rounded-full border border-[#EDEEEF] bg-white px-[11px] font-syne text-xs font-medium tracking-[0.16px] text-[#191919] transition-colors hover:bg-[#FAFAFF] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-[28px] items-center gap-1.5 rounded-full border border-[#EDEEEF] bg-white px-[11px] font-syne text-xs font-medium tracking-[0.16px] text-[#191919] transition-colors hover:bg-[#EFF6FF] disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Open quick prompts"
                     >
                       <Image
@@ -2291,7 +2291,7 @@ const Chat = ({
                 key={prompt}
                 type="button"
                 onClick={() => applyPrompt(prompt)}
-                className="h-[28px] shrink-0 rounded-full border-[1.345px] border-[#F4F4F4] bg-[#F9FAFB] px-3 font-syne text-xs font-medium leading-5 tracking-[0.16px] text-[#666666] transition-colors hover:border-[#D9D6FE] hover:bg-[#FAFAFF]"
+                className="h-[28px] shrink-0 rounded-full border-[1.345px] border-[#F4F4F4] bg-[#F9FAFB] px-3 font-syne text-xs font-medium leading-5 tracking-[0.16px] text-[#666666] transition-colors hover:border-[#BFDBFE] hover:bg-[#EFF6FF]"
               >
                 {prompt}
               </button>
@@ -2328,17 +2328,17 @@ const Chat = ({
               >
                 <path
                   d="M19.1407 9.46542C16.5537 9.21616 14.5067 7.17009 14.2577 4.58528L13.8376 0.220703L13.4175 4.58528C13.1685 7.17053 11.1215 9.2166 8.53451 9.46542L4.1731 9.88521L8.53451 10.305C11.1215 10.5543 13.1685 12.6003 13.4175 15.1852L13.8376 19.5497L14.2577 15.1852C14.5067 12.5999 16.5537 10.5538 19.1407 10.305L23.5021 9.88521L19.1407 9.46542Z"
-                  fill="#7A5AF8"
+                  fill="#1D6FE8"
                 />
                 <path
                   d="M9.07681 16.8431C7.62808 16.7035 6.48175 15.5577 6.34232 14.1102L6.10707 11.666L5.87183 14.1102C5.7324 15.5579 4.58606 16.7037 3.13734 16.8431L0.694946 17.0781L3.13734 17.3132C4.58606 17.4528 5.7324 18.5986 5.87183 20.0461L6.10707 22.4903L6.34232 20.0461C6.48175 18.5984 7.62808 17.4526 9.07681 17.3132L11.5192 17.0781L9.07681 16.8431Z"
-                  fill="#7A5AF8"
+                  fill="#1D6FE8"
                 />
               </svg>
               AI Assistant
             </h4>
             {isSending && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#F4F3FF] px-2 py-0.5 text-[10px] font-medium text-[#6941C6]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#DBEAFE] px-2 py-0.5 text-[10px] font-medium text-[#1558C0]">
                 <Loader2 className="h-2.5 w-2.5 animate-spin" />
                 Live
               </span>
@@ -2592,7 +2592,7 @@ const Chat = ({
           showEditorEmptyState ? "ml-[18px] mr-1" : "mx-4",
           showEditorEmptyState ? "mb-2" : "mb-4",
           isDraggingAttachment
-            ? "border-[#7A5AF8] bg-[#F7F5FF]"
+            ? "border-[#1D6FE8] bg-[#DBEAFE]"
             : "border-[#F4F4F4]"
         )}
         style={{
@@ -2617,7 +2617,7 @@ const Chat = ({
           >
             {chatSlideReference && (
               <span
-                className="inline-flex h-7 max-w-[86px] shrink-0 items-center gap-1 rounded-full border border-[#E8E3FF] bg-[#F8F6FF] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#6941C6] shadow-[0_1px_2px_rgba(105,65,198,0.06)]"
+                className="inline-flex h-7 max-w-[86px] shrink-0 items-center gap-1 rounded-full border border-[#E8E3FF] bg-[#DBEAFE] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#1558C0] shadow-[0_1px_2px_rgba(105,65,198,0.06)]"
                 title={chatSlideReference}
               >
                 <span className="truncate">{chatSlideReference}</span>
@@ -2625,7 +2625,7 @@ const Chat = ({
                   <button
                     type="button"
                     onClick={onClearChatSlideReference}
-                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#8069C5] transition-colors hover:bg-[#E4DFFF] hover:text-[#5235A8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/40"
+                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#4B7AB5] transition-colors hover:bg-[#DBEAFE] hover:text-[#1558C0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40"
                     aria-label={`Remove ${chatSlideReference} from context`}
                     title={`Remove ${chatSlideReference} from context`}
                   >
@@ -2636,7 +2636,7 @@ const Chat = ({
             )}
             {chatTargetReference && (
               <span
-                className="inline-flex h-7 min-w-0 max-w-[138px] items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#6941C6] shadow-[0_1px_2px_rgba(105,65,198,0.08)]"
+                className="inline-flex h-7 min-w-0 max-w-[138px] items-center gap-1 rounded-full border border-[#DBEAFE] bg-[#F5F3FF] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[#1558C0] shadow-[0_1px_2px_rgba(105,65,198,0.08)]"
                 title={chatTargetReference}
               >
                 <span className="truncate">{chatTargetReference}</span>
@@ -2644,7 +2644,7 @@ const Chat = ({
                   <button
                     type="button"
                     onClick={clearChatTargetReference}
-                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#8069C5] transition-colors hover:bg-[#E4DFFF] hover:text-[#5235A8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/40"
+                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#4B7AB5] transition-colors hover:bg-[#DBEAFE] hover:text-[#1558C0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40"
                     aria-label="Remove selected element from context"
                     title="Remove selected element from context"
                   >
@@ -2824,35 +2824,35 @@ const Chat = ({
                     <g clipPath="url(#clip0_6216_326)">
                       <path
                         d="M5.50008 10.0837C8.03139 10.0837 10.0834 8.03163 10.0834 5.50033C10.0834 2.96902 8.03139 0.916992 5.50008 0.916992C2.96878 0.916992 0.916748 2.96902 0.916748 5.50033C0.916748 8.03163 2.96878 10.0837 5.50008 10.0837Z"
-                        stroke={isFollowAgentEnabled ? "#7A5AF8" : "#000000"}
+                        stroke={isFollowAgentEnabled ? "#1D6FE8" : "#000000"}
                         strokeWidth="0.938667"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       <path
                         d="M10.0833 5.5H8.25"
-                        stroke={isFollowAgentEnabled ? "#7A5AF8" : "#000000"}
+                        stroke={isFollowAgentEnabled ? "#1D6FE8" : "#000000"}
                         strokeWidth="0.938667"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       <path
                         d="M2.75008 5.5H0.916748"
-                        stroke={isFollowAgentEnabled ? "#7A5AF8" : "#000000"}
+                        stroke={isFollowAgentEnabled ? "#1D6FE8" : "#000000"}
                         strokeWidth="0.938667"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       <path
                         d="M5.5 2.75033V0.916992"
-                        stroke={isFollowAgentEnabled ? "#7A5AF8" : "#000000"}
+                        stroke={isFollowAgentEnabled ? "#1D6FE8" : "#000000"}
                         strokeWidth="0.938667"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       <path
                         d="M5.5 10.0833V8.25"
-                        stroke={isFollowAgentEnabled ? "#7A5AF8" : "#000000"}
+                        stroke={isFollowAgentEnabled ? "#1D6FE8" : "#000000"}
                         strokeWidth="0.938667"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -2884,11 +2884,11 @@ const Chat = ({
               >
                 <path
                   d="M6.5 1.25c.22 2.93 1.32 4.03 4.25 4.25-2.93.22-4.03 1.32-4.25 4.25-.22-2.93-1.32-4.03-4.25-4.25 2.93-.22 4.03-1.32 4.25-4.25Z"
-                  fill="#7A5AF8"
+                  fill="#1D6FE8"
                 />
                 <path
                   d="M10.5 9.25c.1 1.3.6 1.8 1.9 1.9-1.3.1-1.8.6-1.9 1.9-.1-1.3-.6-1.8-1.9-1.9 1.3-.1 1.8-.6 1.9-1.9Z"
-                  fill="#7A5AF8"
+                  fill="#1D6FE8"
                 />
               </svg>
               Prompt

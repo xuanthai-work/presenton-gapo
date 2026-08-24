@@ -777,7 +777,7 @@ const ThemePanel: React.FC = () => {
         <div
           className={`p-3 rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer group
             ${isFontUploading
-              ? 'bg-[#F8F7FF] border-[#7A5AF8]'
+              ? 'bg-[#DBEAFE] border-[#1D6FE8]'
               : 'bg-[#F9FAFB] border-[#E0E0E0] '
             }`}
           onClick={() => {
@@ -790,24 +790,24 @@ const ThemePanel: React.FC = () => {
         >
           {isFontUploading ? (
             <div className='flex items-center gap-3'>
-              <div className='w-10 h-10 rounded-lg bg-[#EBE9FE] flex items-center justify-center'>
-                <Loader2 className='w-5 h-5 text-[#7A5AF8] animate-spin' />
+              <div className='w-10 h-10 rounded-lg bg-[#BFDBFE] flex items-center justify-center'>
+                <Loader2 className='w-5 h-5 text-[#1D6FE8] animate-spin' />
               </div>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-[#7A5AF8]'>Uploading font...</p>
+                <p className='text-sm font-medium text-[#1D6FE8]'>Uploading font...</p>
                 <p className='text-xs text-[#888]'>Please wait</p>
               </div>
             </div>
           ) : (
             <div className='flex items-center gap-3'>
-              <div className='w-10 h-10 rounded-lg bg-[#EBE9FE] flex items-center justify-center group-hover:bg-[#DDD8FD] transition-colors'>
-                <Plus className='w-5 h-5 text-[#7A5AF8]' />
+              <div className='w-10 h-10 rounded-lg bg-[#BFDBFE] flex items-center justify-center group-hover:bg-[#DDD8FD] transition-colors'>
+                <Plus className='w-5 h-5 text-[#1D6FE8]' />
               </div>
               <div className='flex-1'>
                 <p className='text-sm font-medium text-[#151515]'>Upload Font File</p>
                 <p className='text-xs text-[#888]'>.ttf, .otf, .woff, .woff2</p>
               </div>
-              <ChevronRight className='w-4 h-4 text-[#999] group-hover:text-[#7A5AF8] transition-colors' />
+              <ChevronRight className='w-4 h-4 text-[#999] group-hover:text-[#1D6FE8] transition-colors' />
             </div>
           )}
         </div>
@@ -923,8 +923,8 @@ const ThemePanel: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className='w-[42px] h-[42px] mx-auto flex justify-center items-center rounded-full bg-[#EBE9FE]' >
-                <div className='w-[22px] h-[22px] rounded-full bg-[#7A5AF8] flex items-center justify-center text-white'>
+              <div className='w-[42px] h-[42px] mx-auto flex justify-center items-center rounded-full bg-[#BFDBFE]' >
+                <div className='w-[22px] h-[22px] rounded-full bg-[#1D6FE8] flex items-center justify-center text-white'>
                   <Plus className='w-3 h-3' />
                 </div>
               </div>

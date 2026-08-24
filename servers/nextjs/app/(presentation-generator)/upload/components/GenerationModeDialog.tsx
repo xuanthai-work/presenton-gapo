@@ -75,10 +75,10 @@ export default function GenerationModeDialog({
                   />
                 </div>
               </div>
-              <div className="rounded-[20px] border border-[#EBE9FE] bg-[#F4F3FF] px-3.5 pb-5 pt-3.5">
+              <div className="rounded-[20px] border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] px-3.5 pb-5 pt-3.5">
                 <div className="flex items-center justify-between border-b border-[#EBE9FE] pb-3.5">
                   <p className="text-xl font-medium text-[#333333]">Standard</p>
-                  <p className="text-[10px] font-medium text-[#6938EF]">
+                  <p className="text-[10px] font-medium text-[var(--gslide-accent)]">
                     Fixed layout
                   </p>
                 </div>
@@ -88,7 +88,7 @@ export default function GenerationModeDialog({
                 </p>
                 <Button
                   type="button"
-                  className="rounded-[80px] bg-[#7A5AF8] px-5 text-base font-medium text-white shadow-none hover:bg-[#6938EF]/90"
+                  className="rounded-[80px] bg-[var(--gslide-accent)] px-5 text-base font-medium text-white shadow-none hover:bg-[var(--gslide-accent-hover)]"
                   onClick={() => selectMode("standard")}
                 >
                   Select Standard
@@ -109,10 +109,10 @@ export default function GenerationModeDialog({
                   />
                 </div>
               </div>
-              <div className="rounded-[20px] border border-[#EBE9FE] bg-[#F4F3FF] px-3.5 pb-5 pt-3.5">
+              <div className="rounded-[20px] border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] px-3.5 pb-5 pt-3.5">
                 <div className="flex items-center justify-between border-b border-[#EBE9FE] pb-3.5">
                   <p className="text-xl font-medium text-[#333333]">Smart</p>
-                  <p className="text-[10px] font-medium text-[#6938EF]">
+                  <p className="text-[10px] font-medium text-[var(--gslide-accent)]">
                     Flexible layout
                   </p>
                 </div>

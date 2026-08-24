@@ -282,7 +282,7 @@ type ElementAlignmentDragState = {
   targets: AlignmentSnapTargets;
 };
 
-const ALIGNMENT_GUIDE_COLOR = "#7A5AF8";
+const ALIGNMENT_GUIDE_COLOR = "#1D6FE8";
 const ALIGNMENT_GUIDE_HALO_COLOR = "rgba(255, 255, 255, 0.72)";
 const ALIGNMENT_GUIDE_SNAP_DISTANCE_PX = 8;
 const ALIGNMENT_GUIDE_STROKE_WIDTH_PX = 1.25;

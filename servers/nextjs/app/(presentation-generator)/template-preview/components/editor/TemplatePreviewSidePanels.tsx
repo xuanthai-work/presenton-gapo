@@ -99,7 +99,7 @@ function ToolRailButton({
       className={cn(
         "flex w-[58px] shrink-0 flex-col items-center justify-center gap-[6px] rounded-[10px] py-[7px] text-[11px] font-medium leading-none transition-colors",
         active
-          ? "text-[#7A5AF8]"
+          ? "text-[#1D6FE8]"
           : "text-[#191919] hover:bg-[#F8F8FA]",
       )}
       onClick={onClick}
@@ -109,7 +109,7 @@ function ToolRailButton({
         className={cn(
           "flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border border-transparent",
           active &&
-            "border-[#EDEEEF] bg-white shadow-[0_6px_13px_rgba(124,81,248,0.14)]",
+            "border-[#EDEEEF] bg-white shadow-[0_6px_13px_rgba(29,111,232,0.14)]",
         )}
       >
         <Icon className="h-[14px] w-[14px]" />
@@ -283,13 +283,13 @@ export function AiPanel({
                   className="flex h-[28px] w-[28px] items-center justify-center rounded-full border border-[#EDEEEF] text-[#191919]"
                   title="AI options"
                 >
-                  <Sparkles className="h-[13px] w-[13px] text-[#7A5AF8]" />
+                  <Sparkles className="h-[13px] w-[13px] text-[#1D6FE8]" />
                 </button>
                 <button
                   type="button"
                   className="flex h-[28px] items-center gap-[6px] rounded-full border border-[#EDEEEF] px-[10px] text-[12px] font-medium text-[#191919]"
                 >
-                  <Sparkles className="h-[13px] w-[13px] text-[#7A5AF8]" />
+                  <Sparkles className="h-[13px] w-[13px] text-[#1D6FE8]" />
                   Prompt
                 </button>
               </div>
@@ -340,7 +340,7 @@ function DensitySelector({
           className={cn(
             "h-[30px] rounded-[6px] border text-[14px] font-normal transition-colors",
             density === option
-              ? "border-[#D9D6FE] bg-[#F8F6FF] text-[#7A5AF8]"
+              ? "border-[#BFDBFE] bg-[#DBEAFE] text-[#1D6FE8]"
               : "border-[#EDEEEF] bg-white text-[#191919] hover:bg-[#F8F8F8]",
           )}
           onClick={() => onDensityChange(option)}
@@ -411,7 +411,7 @@ export function SchemaPanel({
           </p>
           <button
             aria-label="Reset content density preview"
-            className="flex h-7 items-center gap-1.5 rounded-[6px] border border-[#EDEEEF] bg-white px-2 text-[11px] font-medium text-[#667085] transition-colors hover:border-[#D9D6FE] hover:bg-[#F8F6FF] hover:text-[#7A5AF8] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-7 items-center gap-1.5 rounded-[6px] border border-[#EDEEEF] bg-white px-2 text-[11px] font-medium text-[#667085] transition-colors hover:border-[#BFDBFE] hover:bg-[#DBEAFE] hover:text-[#1D6FE8] disabled:cursor-not-allowed disabled:opacity-40"
             disabled={!canResetDensity}
             onClick={onDensityReset}
             title="Restore the original slide content"
@@ -537,13 +537,13 @@ function SchemaFieldRow({
           className={cn(
             "flex h-[30px] min-w-0 flex-1 items-center gap-[8px] rounded-[4px] border bg-[#FEFEFF] px-[10px] text-left transition-colors",
             isOpen
-              ? "border-[#D9D6FE] text-[#191919]"
+              ? "border-[#BFDBFE] text-[#191919]"
               : "border-[#EDEEEF] text-[#191919] hover:bg-[#F8F8F8]",
           )}
           onClick={onToggle}
           type="button"
         >
-          <Icon className="h-[14px] w-[14px] shrink-0 text-[#7A5AF8]" />
+          <Icon className="h-[14px] w-[14px] shrink-0 text-[#1D6FE8]" />
           <span className="min-w-0 truncate text-[14px] font-normal tracking-[0.56px]">
             {field.label}
           </span>
@@ -570,7 +570,7 @@ function SchemaFieldRow({
             <Switch
               aria-label={`Set ${field.label} decorative`}
               checked={field.decorative}
-              className="ml-auto data-[state=checked]:bg-[#7A5AF8] data-[state=unchecked]:bg-[#D0D5DD]"
+              className="ml-auto data-[state=checked]:bg-[#1D6FE8] data-[state=unchecked]:bg-[#D0D5DD]"
               onCheckedChange={onDecorativeChange}
             />
           </div>
@@ -586,7 +586,7 @@ function SchemaFieldRow({
                 <span>Min Chars</span>
                 <input
                   className={cn(
-                    "ml-auto h-[24px] w-[76px] rounded-[4px] border border-transparent bg-transparent text-right text-[#191919] outline-none transition-colors focus:border-[#D9D6FE] focus:bg-[#F8F6FF]",
+                    "ml-auto h-[24px] w-[76px] rounded-[4px] border border-transparent bg-transparent text-right text-[#191919] outline-none transition-colors focus:border-[#BFDBFE] focus:bg-[#DBEAFE]",
                     field.decorative &&
                       "cursor-default bg-[#F8F8FA] text-[#667085] focus:border-transparent",
                   )}
@@ -603,7 +603,7 @@ function SchemaFieldRow({
                 <span>Max Chars</span>
                 <input
                   className={cn(
-                    "ml-auto h-[24px] w-[76px] rounded-[4px] border border-transparent bg-transparent text-right text-[#191919] outline-none transition-colors focus:border-[#D9D6FE] focus:bg-[#F8F6FF]",
+                    "ml-auto h-[24px] w-[76px] rounded-[4px] border border-transparent bg-transparent text-right text-[#191919] outline-none transition-colors focus:border-[#BFDBFE] focus:bg-[#DBEAFE]",
                     field.decorative &&
                       "cursor-default bg-[#F8F8FA] text-[#667085] focus:border-transparent",
                   )}
@@ -624,7 +624,7 @@ function SchemaFieldRow({
               {field.type === "image" ? (
                 <input
                   className={cn(
-                    "h-[30px] rounded-[4px] border border-[#E7E8EC] bg-white px-[8px] text-[13px] tracking-normal text-[#191919] outline-none transition-colors focus:border-[#D9D6FE]",
+                    "h-[30px] rounded-[4px] border border-[#E7E8EC] bg-white px-[8px] text-[13px] tracking-normal text-[#191919] outline-none transition-colors focus:border-[#BFDBFE]",
                     field.decorative &&
                       "cursor-default bg-[#F8F8FA] text-[#667085] focus:border-[#E7E8EC]",
                   )}
@@ -635,7 +635,7 @@ function SchemaFieldRow({
               ) : (
                 <textarea
                   className={cn(
-                    "min-h-[72px] resize-y rounded-[4px] border border-[#E7E8EC] bg-white px-[8px] py-[6px] text-[13px] leading-[17px] tracking-normal text-[#191919] outline-none transition-colors focus:border-[#D9D6FE]",
+                    "min-h-[72px] resize-y rounded-[4px] border border-[#E7E8EC] bg-white px-[8px] py-[6px] text-[13px] leading-[17px] tracking-normal text-[#191919] outline-none transition-colors focus:border-[#BFDBFE]",
                     field.decorative &&
                       "cursor-default resize-none bg-[#F8F8FA] text-[#667085] focus:border-[#E7E8EC]",
                   )}

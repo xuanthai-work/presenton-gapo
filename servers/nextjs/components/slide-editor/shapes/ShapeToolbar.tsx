@@ -235,7 +235,7 @@ export function ShapeToolbar({
           className={cn(
             "grid h-[22px] w-[22px] place-items-center rounded-[999px] border border-[#D7DAE3] hover:bg-[#F8F8FA]",
             (openPanel === "fill" || fillEnabled) &&
-              "border-[#E4D7FF] bg-[#F4F1FF] ring-2 ring-[#7C3AED]/30",
+              "border-[#E4D7FF] bg-[#DBEAFE] ring-2 ring-[#7C3AED]/30",
           )}
         >
           <span
@@ -387,7 +387,7 @@ export function ShapeToolbar({
                     className={cn(
                       "flex h-8 items-center justify-center gap-1 rounded-[4px] text-xs capitalize text-[#4B5563] hover:bg-white",
                       vectorShape === shape &&
-                        "bg-white text-[#7A5AF8] shadow-sm",
+                        "bg-white text-[#1D6FE8] shadow-sm",
                     )}
                   >
                     {shape === "polygon" ? (
@@ -409,7 +409,7 @@ export function ShapeToolbar({
                     className="flex w-full items-center justify-between rounded-md border border-[#EDEEEF] px-3 py-2 text-left text-xs text-[#4B5563] hover:bg-[#F8F8FA]"
                   >
                     <span className="font-medium text-[#191919]">Closed path</span>
-                    <span className="flex items-center gap-1 text-[#7A5AF8]">
+                    <span className="flex items-center gap-1 text-[#1D6FE8]">
                       {vectorClosed ? (
                         <ToggleRight size={17} aria-hidden="true" />
                       ) : (
@@ -433,7 +433,7 @@ export function ShapeToolbar({
                           className={cn(
                             "h-8 rounded-[4px] text-xs capitalize text-[#4B5563] hover:bg-white",
                             vectorCurveMode === mode &&
-                              "bg-white text-[#7A5AF8] shadow-sm",
+                              "bg-white text-[#1D6FE8] shadow-sm",
                           )}
                         >
                           {mode === "none" ? "Straight" : mode}
@@ -549,7 +549,7 @@ export function ToolbarButton({
       onClick={onClick}
       className={cn(
         "relative flex h-7 min-w-7 items-center justify-center gap-1 rounded-[2px] border-0 bg-transparent px-1 text-[#05070A] hover:bg-[#F8F8FA]",
-        pressed && "bg-[#F4F1FF] text-[#7C3AED]",
+        pressed && "bg-[#DBEAFE] text-[#7C3AED]",
       )}
     >
       {children}
@@ -597,7 +597,7 @@ export function ToggleRow({
       className="flex w-full items-center justify-between rounded-md border border-[#EDEEEF] px-3 py-2 text-left text-xs text-[#4B5563] hover:bg-[#F8F8FA]"
     >
       <span className="font-medium text-[#191919]">{label}</span>
-      <span className="flex items-center gap-1 text-[#7A5AF8]">
+      <span className="flex items-center gap-1 text-[#1D6FE8]">
         {enabled ? (
           <ToggleRight size={17} aria-hidden="true" />
         ) : (
@@ -765,7 +765,7 @@ export function NumberField({
   return (
     <label className="flex min-w-0 flex-1 items-center gap-2 text-xs text-[#4B5563]">
       <span className="font-semibold">{label}</span>
-      <span className="flex min-w-0 flex-1 items-center rounded-md border border-[#EDEEEF] bg-white px-2 focus-within:border-[#7C51F8]">
+      <span className="flex min-w-0 flex-1 items-center rounded-md border border-[#EDEEEF] bg-white px-2 focus-within:border-[#1D6FE8]">
         <input
           aria-label={label}
           type="text"
@@ -850,7 +850,7 @@ export function SliderField({
         onBlur={(event) => commit(Number(event.currentTarget.value))}
         onKeyUp={(event) => commit(Number(event.currentTarget.value))}
         onPointerUp={(event) => commit(Number(event.currentTarget.value))}
-        className="w-full cursor-pointer accent-[#7A5AF8]"
+        className="w-full cursor-pointer accent-[#1D6FE8]"
       />
     </label>
   );

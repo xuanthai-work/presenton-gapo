@@ -347,7 +347,7 @@ const NavButton = ({
       className={cn(
         "group flex w-full flex-col items-center justify-center text-[12px] font-normal leading-normal transition-colors",
         item.id === "images" ? "h-[52px] gap-2" : "h-12 gap-1",
-        active ? "text-[#7A5AF8]" : "text-black",
+        active ? "text-[#1D6FE8]" : "text-black",
       )}
       aria-pressed={active}
     >
@@ -848,7 +848,7 @@ function BlockVariantButton({
       data-block-variant
       disabled={disabled}
       className={cn(
-        "template-block-variant group relative w-full overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-2 text-left transition hover:border-[#D6BBFB] hover:bg-[#FAF9FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/40",
+        "template-block-variant group relative w-full overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-2 text-left transition hover:border-[#BFDBFE] hover:bg-[#EFF6FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40",
         disabled && "cursor-not-allowed opacity-50 hover:border-[#E5E7EB] hover:bg-[#F9FAFB]",
       )}
       onClick={() => {
@@ -927,11 +927,11 @@ function BlockGroupCard({
       {variantCount > 1 ? (
         <button
           type="button"
-          className="mt-3 flex w-full items-center justify-between gap-3 border-t border-[#E5E7EB] pt-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/40"
+          className="mt-3 flex w-full items-center justify-between gap-3 border-t border-[#E5E7EB] pt-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40"
           aria-expanded={expanded}
           onClick={toggleExpanded}
         >
-          <span className="shrink-0 rounded-full border border-[#D6BBFB] bg-[#FAF8FF] px-3 py-1.5 text-[11px] font-medium leading-4 text-[#7F00FF]">
+          <span className="shrink-0 rounded-full border border-[#BFDBFE] bg-[#FAF8FF] px-3 py-1.5 text-[11px] font-medium leading-4 text-[#7F00FF]">
             {variantCount} Layouts
           </span>
           <ChevronDown
@@ -1149,7 +1149,7 @@ function PrimaryActionButton({
           src={iconSrc}
         />
       </span>
-      <span className="text-[12px] font-normal leading-normal text-[#7A5AF8]">
+      <span className="text-[12px] font-normal leading-normal text-[#1D6FE8]">
         {label}
       </span>
     </button>

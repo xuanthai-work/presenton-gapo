@@ -176,7 +176,7 @@ const styles = {
     border: "1px dashed #B8A3F8",
     borderRadius: 999,
     boxSizing: "border-box",
-    color: "#7C51F8",
+    color: "#1D6FE8",
     cursor: "pointer",
     display: "inline-grid",
     height: 28,

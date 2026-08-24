@@ -697,17 +697,17 @@ thead {
   aspect-ratio: 2;
   --_g-left: no-repeat radial-gradient(
     circle closest-side,
-    rgb(122 90 248 / 20%) 90%,
+    rgb(29 111 232 / 20%) 90%,
     transparent
   );
   --_g-center: no-repeat radial-gradient(
     circle closest-side,
-    rgb(122 90 248 / 60%) 90%,
+    rgb(29 111 232 / 60%) 90%,
     transparent
   );
   --_g-right: no-repeat radial-gradient(
     circle closest-side,
-    #7a5af8 90%,
+    #1d6fe8 90%,
     transparent
   );
   background:

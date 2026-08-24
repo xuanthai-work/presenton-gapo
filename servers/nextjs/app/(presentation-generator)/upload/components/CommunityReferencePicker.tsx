@@ -87,7 +87,7 @@ export default function CommunityReferencePicker({
             <button
               type="button"
               onClick={() => onSelect(null)}
-              className="whitespace-nowrap text-xs font-medium text-[#7A5AF8] hover:text-[#6938EF]"
+              className="whitespace-nowrap text-xs font-medium text-[var(--gslide-accent)] hover:text-[var(--gslide-accent-hover)]"
             >
               Clear selection
             </button>
@@ -96,14 +96,14 @@ export default function CommunityReferencePicker({
       </div>
 
       {loading ? (
-        <div className="flex h-52 items-center justify-center text-[#7A5AF8]">
+        <div className="flex h-52 items-center justify-center text-[var(--gslide-accent)]">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       ) : error ? (
         <button
           type="button"
           onClick={() => load()}
-          className="mx-auto mt-5 flex h-40 w-[calc(100%-3rem)] items-center justify-center gap-2 rounded-xl border border-dashed border-[#D9D9DE] text-xs text-[#7A5AF8]"
+          className="mx-auto mt-5 flex h-40 w-[calc(100%-3rem)] items-center justify-center gap-2 rounded-xl border border-dashed border-[#D9D9DE] text-xs text-[var(--gslide-accent)]"
         >
           <RefreshCw className="h-4 w-4" /> Retry community designs
         </button>
@@ -124,7 +124,7 @@ export default function CommunityReferencePicker({
                 key={item.id}
                 className={`min-w-0 overflow-hidden rounded-xl border bg-white transition ${
                   selected
-                    ? "border-[#7A5AF8] ring-2 ring-[#7A5AF8]/15"
+                    ? "border-[var(--gslide-accent)] ring-2 ring-[var(--gslide-accent)]/15"
                     : "border-[#EDEEEF] hover:border-[#D8D3FA]"
                 }`}
               >
@@ -158,7 +158,7 @@ export default function CommunityReferencePicker({
                       onClick={() => onSelect(selected ? null : item)}
                       className="flex h-[26px] items-center gap-1.5 rounded-full border border-[#EDEEEF] bg-white px-3 font-syne text-xs font-medium text-[#191919] hover:bg-[#F6F6F9]"
                     >
-                      {selected && <Check className="h-3.5 w-3.5 text-[#7A5AF8]" />}
+                      {selected && <Check className="h-3.5 w-3.5 text-[var(--gslide-accent)]" />}
                       {selected ? "Selected" : "Use"}
                     </button>
                   </div>

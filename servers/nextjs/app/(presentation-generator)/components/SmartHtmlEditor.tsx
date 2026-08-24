@@ -529,7 +529,7 @@ export default function SmartHtmlEditor({
             {hoverRect && (
               <div
                 aria-hidden="true"
-                className="pointer-events-none fixed z-[80] rounded-[8px] border-2 border-dotted border-[#7A5AF8]"
+                className="pointer-events-none fixed z-[80] rounded-[8px] border-2 border-dotted border-[#1D6FE8]"
                 style={{
                   ...hoverRect,
                   backgroundColor: "rgba(122, 90, 248, 0.07)",
@@ -537,14 +537,14 @@ export default function SmartHtmlEditor({
                     "radial-gradient(rgba(122, 90, 248, 0.38) 1px, transparent 1px)",
                   backgroundSize: "8px 8px",
                   boxShadow:
-                    "0 0 0 1px rgba(255,255,255,0.9), 0 0 0 5px rgba(122,90,248,0.12)",
+                    "0 0 0 1px rgba(255,255,255,0.9), 0 0 0 5px rgba(29,111,232,0.12)",
                 }}
               />
             )}
             {selectionRect && (
               <div
                 aria-hidden="true"
-                className="pointer-events-none fixed z-[81] rounded-[8px] border-2 border-dotted border-[#6941C6]"
+                className="pointer-events-none fixed z-[81] rounded-[8px] border-2 border-dotted border-[#1558C0]"
                 style={{
                   ...selectionRect,
                   backgroundColor: "rgba(105, 65, 198, 0.08)",
@@ -555,7 +555,7 @@ export default function SmartHtmlEditor({
                     "0 0 0 1px rgba(255,255,255,0.95), 0 0 0 5px rgba(105,65,198,0.16)",
                 }}
               >
-                <span className="absolute -top-8 left-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-[#6941C6] px-2 py-1.5 font-syne text-[11px] font-semibold text-white shadow-sm">
+                <span className="absolute -top-8 left-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-[#1558C0] px-2 py-1.5 font-syne text-[11px] font-semibold text-white shadow-sm">
                   <Sparkles className="h-3.5 w-3.5" />
                   Selected for AI
                 </span>

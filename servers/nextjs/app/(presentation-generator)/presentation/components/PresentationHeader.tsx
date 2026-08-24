@@ -538,20 +538,16 @@ const PresentationHeader = ({
     <>
       <div className="py-[18px] px-4 sticky top-0 bg-white z-50 shadow-sm font-syne flex justify-between items-center gap-4">
         <div className="flex items-center gap-3">
-          <GSlideWordmark
-            onClick={() => {
-              router.push("/dashboard");
-            }}
-            className="text-base cursor-pointer"
-          />
           <button
             type="button"
             onClick={() => {
               router.push("/dashboard");
             }}
             aria-label="Go to dashboard"
-            className="w-10 h-10"
-          />
+            className="shrink-0"
+          >
+            <GSlideWordmark className="text-base" />
+          </button>
           {presentationData && !isStreaming && !isEditingTitle ? (
             <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
           ) : (

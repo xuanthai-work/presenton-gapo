@@ -45,8 +45,8 @@ export const OverlayLoader = ({
     >
       <div
         className={cn(
-          "flex flex-col items-center justify-center px-6 pt-6 pb-10 rounded-xl bg-white shadow-2xl relative min-h-[347px]",
-          "min-w-[280px] sm:min-w-[447px] border border-white/10 transition-all duration-400 ease-out",
+          "flex flex-col items-center justify-center px-6 pt-6 pb-10 rounded-xl bg-[var(--gslide-card)] shadow-2xl relative min-h-[347px]",
+          "min-w-[280px] sm:min-w-[447px] border border-[var(--gslide-border)] transition-all duration-400 ease-out",
           isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90",
           className
         )}
@@ -61,11 +61,11 @@ export const OverlayLoader = ({
             <ProgressBar duration={duration} onComplete={onProgressComplete} />
             {text && (
               <div className="space-y-1">
-                <p className="text-[#191919] text-base text-center font-medium font-inter">
+                <p className="text-[var(--gslide-ink)] text-base text-center font-medium font-inter">
                   {text}
                 </p>
                 {extra_info && (
-                  <p className="text-[#191919]/80 text-xs text-center font-medium font-inter">
+                  <p className="text-[var(--gslide-ink)]/80 text-xs text-center font-medium font-inter">
                     {extra_info}
                   </p>
                 )}
@@ -74,11 +74,11 @@ export const OverlayLoader = ({
           </div>
         ) : (
           <>
-            <p className="text-[#191919] text-base text-center font-medium font-inter">
+            <p className="text-[var(--gslide-ink)] text-base text-center font-medium font-inter">
               {text}
             </p>
             {extra_info && (
-              <p className="text-[#191919]/80 text-xs text-center font-medium font-inter">
+              <p className="text-[var(--gslide-ink)]/80 text-xs text-center font-medium font-inter">
                 {extra_info}
               </p>
             )}

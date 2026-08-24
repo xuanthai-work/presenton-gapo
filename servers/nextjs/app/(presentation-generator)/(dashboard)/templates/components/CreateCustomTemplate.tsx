@@ -54,7 +54,7 @@ const CreateCustomTemplate = ({
                 >
                     <div
                       className={cn(
-                        "flex items-center justify-center rounded-full bg-[#7A5AF8]",
+                        "flex items-center justify-center rounded-full bg-[var(--gslide-accent)]",
                         selectionPage ? "h-12 w-12" : "h-[36px] w-[36px]"
                       )}
                       style={{
@@ -88,7 +88,7 @@ const CreateCustomTemplate = ({
             >
                 <div
                   className={cn(
-                    "flex items-center justify-center rounded-lg bg-[#7A5AF8] p-2",
+                    "flex items-center justify-center rounded-lg bg-[var(--gslide-accent)] p-2",
                     selectionPage ? "h-[46px] w-[45px]" : "h-[45px] w-[45px]"
                   )}
                 >

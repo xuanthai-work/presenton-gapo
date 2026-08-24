@@ -15,7 +15,7 @@ interface ConfigurationSelectsProps {
 }
 
 const toggleClassName =
-    'h-[22px] w-[36px] border-0 bg-[#D8D8DD] data-[state=checked]:bg-[#7A5AF8] ';
+    'h-[22px] w-[36px] border-0 bg-[#D8D8DD] data-[state=checked]:bg-[var(--gslide-accent)] ';
 
 const AdvanceSettings = ({
     config,

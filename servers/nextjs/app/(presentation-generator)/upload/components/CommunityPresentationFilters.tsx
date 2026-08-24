@@ -157,7 +157,7 @@ export default function CommunityPresentationFilters({
         disabled={disabled}
       >
         <SelectTrigger
-          className="h-10 w-[148px] rounded-full border-[#DBDBDB99] bg-white px-3 font-manrope text-xs shadow-none focus:ring-[#7A5AF8]/20"
+          className="h-10 w-[148px] rounded-full border-[#DBDBDB99] bg-white px-3 font-manrope text-xs shadow-none focus:ring-[var(--gslide-accent)]/20"
           aria-label="Sort community presentations"
         >
           <SelectValue />
@@ -183,7 +183,7 @@ export default function CommunityPresentationFilters({
             type="button"
             disabled={disabled}
             className={cn(
-              "inline-flex h-10 items-center gap-2 rounded-full border bg-white px-3 font-manrope text-xs font-medium text-[#191919] transition hover:border-[#D8D3FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/20 disabled:cursor-not-allowed disabled:opacity-50",
+              "inline-flex h-10 items-center gap-2 rounded-full border bg-white px-3 font-manrope text-xs font-medium text-[#191919] transition hover:border-[var(--gslide-border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/20 disabled:cursor-not-allowed disabled:opacity-50",
               activeFilterCount > 0
                 ? "border-[#CFC8FD] bg-[#FAFAFF]"
                 : "border-[#DBDBDB99]"
@@ -192,7 +192,7 @@ export default function CommunityPresentationFilters({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#7A5AF8] px-1 text-[10px] text-white">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--gslide-accent)] px-1 text-[10px] text-white">
                 {activeFilterCount}
               </span>
             )}
@@ -280,7 +280,7 @@ export default function CommunityPresentationFilters({
             <button
               type="button"
               onClick={applyFilters}
-              className="h-9 rounded-full bg-[#7A5AF8] px-5 text-xs font-medium text-white transition hover:bg-[#6938EF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A5AF8]/30"
+              className="h-9 rounded-full bg-[var(--gslide-accent)] px-5 text-xs font-medium text-white transition hover:bg-[var(--gslide-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30"
             >
               Apply
             </button>
@@ -309,7 +309,7 @@ function DateFilter({
         type="date"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-lg border border-[#E0E0E3] bg-white px-2 text-[11px] text-[#191919] outline-none transition focus:border-[#BDB4FB] focus:ring-2 focus:ring-[#7A5AF8]/10"
+        className="h-9 w-full rounded-lg border border-[#E0E0E3] bg-white px-2 text-[11px] text-[#191919] outline-none transition focus:border-[var(--gslide-input-focus)] focus:ring-2 focus:ring-[var(--gslide-accent)]/10"
       />
     </label>
   );
@@ -340,7 +340,7 @@ function CountFilter({
             onComparisonChange(nextValue as CountComparison)
           }
         >
-          <SelectTrigger className="h-9 border-[#E0E0E3] text-xs shadow-none focus:ring-[#7A5AF8]/10">
+          <SelectTrigger className="h-9 border-[#E0E0E3] text-xs shadow-none focus:ring-[var(--gslide-accent)]/10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="font-manrope">
@@ -359,7 +359,7 @@ function CountFilter({
           onChange={(event) => onValueChange(event.target.value)}
           disabled={comparison === "any"}
           placeholder="Count"
-          className="h-9 w-full rounded-lg border border-[#E0E0E3] bg-white px-3 text-xs text-[#191919] outline-none transition placeholder:text-[#A0A0A0] focus:border-[#BDB4FB] focus:ring-2 focus:ring-[#7A5AF8]/10 disabled:bg-[#F7F7F9] disabled:text-[#A0A0A0]"
+          className="h-9 w-full rounded-lg border border-[#E0E0E3] bg-white px-3 text-xs text-[#191919] outline-none transition placeholder:text-[#A0A0A0] focus:border-[var(--gslide-input-focus)] focus:ring-2 focus:ring-[var(--gslide-accent)]/10 disabled:bg-[#F7F7F9] disabled:text-[#A0A0A0]"
         />
       </div>
     </div>

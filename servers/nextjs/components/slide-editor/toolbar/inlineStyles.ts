@@ -7,8 +7,8 @@ const editorTheme = {
   surface: "#FFFFFF",
   border: "#EDEEEF",
   text: "#191919",
-  primary: "#7C51F8",
-  primarySoft: "#F4F3FF",
+  primary: "#1D6FE8",
+  primarySoft: "#DBEAFE",
   danger: "#D83B3B",
 } as const;
 
