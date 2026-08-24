@@ -155,3 +155,18 @@ test("dashboard and community chrome use GSlide surfaces", async () => {
   );
   assert.doesNotMatch(community, /#6847F4/);
 });
+
+test("settings does not tell users to connect Presenton Cloud", async () => {
+  const settings = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+  );
+  assert.doesNotMatch(settings, /Connect Presenton first/);
+  assert.doesNotMatch(settings, /Presenton Cloud/);
+});
+
+test("OnboardingPresentonAccount is not imported by product surfaces", async () => {
+  const home = await readNext("components/Home.tsx");
+  const mode = await readNext("components/OnBoarding/PresentonMode.tsx");
+  assert.doesNotMatch(home, /OnboardingPresentonAccount/);
+  assert.doesNotMatch(mode, /OnboardingPresentonAccount/);
+});

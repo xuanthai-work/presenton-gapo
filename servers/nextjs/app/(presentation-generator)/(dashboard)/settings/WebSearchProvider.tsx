@@ -48,8 +48,8 @@ const WebSearchProvider = ({
         </div>
         <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:gap-10">
           <div className="max-w-[300px] shrink-0 pb-2 lg:pb-[20px]">
-            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[4px] bg-[#F4F3FF]">
-              <Search className="h-7 w-7 text-[#5146E5]" />
+            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[4px] bg-[var(--gslide-accent-soft)]">
+              <Search className="h-7 w-7 text-[var(--gslide-accent)]" />
             </div>
             <h3 className="py-2.5 text-xl font-normal text-[#191919]">
               Web Search Settings
@@ -61,9 +61,9 @@ const WebSearchProvider = ({
           </div>
           {isWebSearchEnabled && (
             <div className="w-full max-w-[720px] space-y-4">
-              <div className="rounded-lg border border-[#D9D6FE] bg-[#F4F3FF] p-3 text-xs text-[#5146E5]">
+              <div className="rounded-lg border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] p-3 text-xs text-[var(--gslide-ink)]">
                 Auto uses model-native web grounding when the LLM is OpenAI or
-                Google. Otherwise Presenton queries SearXNG at the URL below
+                Google. Otherwise GSlide queries SearXNG at the URL below
                 (Compose default: http://searxng:8080).
               </div>
               <div>
