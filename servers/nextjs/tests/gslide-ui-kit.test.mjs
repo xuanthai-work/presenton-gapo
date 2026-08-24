@@ -275,6 +275,76 @@ test("migrated chrome files do not contain banned purple hex", async () => {
   }
 });
 
+const SLIDE_EDITOR_BANNED_HEX = [
+  ...BANNED_HEX,
+  "#7C3AED",
+  "#F4F1FF",
+  "#E4D7FF",
+  "#F6F6F9",
+];
+
+const SLIDE_EDITOR_CHROME_FILES = [
+  "components/slide-editor/toolbar/inlineStyles.ts",
+  "components/slide-editor/text/TextToolbar.tsx",
+  "components/slide-editor/charts/ChartEditorContent.tsx",
+  "components/slide-editor/charts/ChartColorPalette.tsx",
+  "components/slide-editor/images/ImageToolbar.tsx",
+  "components/slide-editor/images/IconsEditor.tsx",
+  "components/slide-editor/images/ImagePickerModal.tsx",
+  "components/slide-editor/images/IconToolbar.tsx",
+  "components/slide-editor/shapes/ShapeToolbar.tsx",
+  "components/slide-editor/tables/TableToolbar.tsx",
+  "components/slide-editor/selection/ComponentActionsMenu.tsx",
+  "components/slide-editor/layout/LayoutToolbar.tsx",
+  "components/slide-editor/layout/InfographicToolbarControls.tsx",
+  "app/(presentation-generator)/components/ImageEditorToolbar.tsx",
+];
+
+test("slide-editor chrome files do not contain banned purple or skeleton gray", async () => {
+  for (const file of SLIDE_EDITOR_CHROME_FILES) {
+    const source = await readNext(file);
+    for (const hex of SLIDE_EDITOR_BANNED_HEX) {
+      assert.doesNotMatch(
+        source,
+        new RegExp(hex.replace("#", "\\#"), "i"),
+        `${file} still contains ${hex}`,
+      );
+    }
+  }
+});
+
+test("slide-editor chrome uses GSlide accent tokens for active toolbar states", async () => {
+  const imageToolbar = await readNext(
+    "components/slide-editor/images/ImageToolbar.tsx",
+  );
+  assert.match(imageToolbar, /--gslide-accent/);
+  assert.doesNotMatch(imageToolbar, /#7C3AED/);
+
+  const shapeToolbar = await readNext(
+    "components/slide-editor/shapes/ShapeToolbar.tsx",
+  );
+  assert.match(shapeToolbar, /--gslide-accent/);
+
+  const layoutToolbar = await readNext(
+    "components/slide-editor/layout/LayoutToolbar.tsx",
+  );
+  assert.match(layoutToolbar, /--gslide-accent/);
+});
+
+test("chart slide palette is unchanged", async () => {
+  const chart = await readNext(
+    "components/slide-editor/charts/TemplateV2ChartJsElement.tsx",
+  );
+  assert.match(chart, /#8B5CF6/);
+  assert.match(chart, /#7F22FE/);
+});
+
+test("Konva surface nodes are not restyled as product chrome", async () => {
+  const nodes = await readNext("components/slide-editor/surface/nodes.tsx");
+  assert.doesNotMatch(nodes, /--gslide-accent/);
+  assert.doesNotMatch(nodes, /--gslide-bg/);
+});
+
 test("onboarding sidebar and shared Header use GSlide wordmark", async () => {
   const sidebar = await readNext("components/OnBoarding/OnBoardingSlidebar.tsx");
   assert.match(sidebar, /GSlideWordmark/);

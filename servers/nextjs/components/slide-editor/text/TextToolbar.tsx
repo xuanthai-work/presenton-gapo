@@ -1621,8 +1621,8 @@ const textToolbarStyles = {
     background: "#F8F8FA",
   },
   buttonActive: {
-    color: "#1D6FE8",
-    background: "#DBEAFE",
+    color: "var(--gslide-accent)",
+    background: "var(--gslide-accent-soft)",
   },
   buttonDisabled: {
     color: "#A4A7AE",
