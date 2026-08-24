@@ -332,7 +332,7 @@ const IconsEditor = ({
                             className={cn(
                               "relative flex h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-[10px] border bg-white px-1 outline-none transition hover:bg-[#F4F4F4] focus-visible:ring-2 focus-visible:ring-[#BFDBFE]",
                               isSelected
-                                ? "border-[#93C5FD] bg-[#DBEAFE]"
+                                ? "border-[#93C5FD] bg-[var(--gslide-accent-soft)]"
                                 : "border-[#E1E1E5]"
                             )}
                           >
@@ -457,7 +457,7 @@ const IconsEditor = ({
                               className={cn(
                                 "group relative aspect-square min-w-0 overflow-hidden rounded-[10px] border bg-[#F9FAFB] p-4 outline-none transition hover:border-[#CACBD0] hover:bg-[#F4F4F4] focus-visible:ring-2 focus-visible:ring-[#191919]",
                                 isSelected
-                                  ? "border-[#1D6FE8] bg-[#DBEAFE] ring-1 ring-[#1D6FE8]"
+                                  ? "border-[var(--gslide-accent)] bg-[var(--gslide-accent-soft)] ring-1 ring-[var(--gslide-accent)]"
                                   : "border-[#EDEEEF]"
                               )}
                             >

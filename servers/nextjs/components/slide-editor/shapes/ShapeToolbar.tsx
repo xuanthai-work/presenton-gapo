@@ -387,7 +387,7 @@ export function ShapeToolbar({
                     className={cn(
                       "flex h-8 items-center justify-center gap-1 rounded-[4px] text-xs capitalize text-[#4B5563] hover:bg-white",
                       vectorShape === shape &&
-                        "bg-white text-[#1D6FE8] shadow-sm",
+                        "bg-white text-[var(--gslide-accent)] shadow-sm",
                     )}
                   >
                     {shape === "polygon" ? (
@@ -409,7 +409,7 @@ export function ShapeToolbar({
                     className="flex w-full items-center justify-between rounded-md border border-[#EDEEEF] px-3 py-2 text-left text-xs text-[#4B5563] hover:bg-[#F8F8FA]"
                   >
                     <span className="font-medium text-[#191919]">Closed path</span>
-                    <span className="flex items-center gap-1 text-[#1D6FE8]">
+                    <span className="flex items-center gap-1 text-[var(--gslide-accent)]">
                       {vectorClosed ? (
                         <ToggleRight size={17} aria-hidden="true" />
                       ) : (
@@ -433,7 +433,7 @@ export function ShapeToolbar({
                           className={cn(
                             "h-8 rounded-[4px] text-xs capitalize text-[#4B5563] hover:bg-white",
                             vectorCurveMode === mode &&
-                              "bg-white text-[#1D6FE8] shadow-sm",
+                              "bg-white text-[var(--gslide-accent)] shadow-sm",
                           )}
                         >
                           {mode === "none" ? "Straight" : mode}
@@ -597,7 +597,7 @@ export function ToggleRow({
       className="flex w-full items-center justify-between rounded-md border border-[#EDEEEF] px-3 py-2 text-left text-xs text-[#4B5563] hover:bg-[#F8F8FA]"
     >
       <span className="font-medium text-[#191919]">{label}</span>
-      <span className="flex items-center gap-1 text-[#1D6FE8]">
+      <span className="flex items-center gap-1 text-[var(--gslide-accent)]">
         {enabled ? (
           <ToggleRight size={17} aria-hidden="true" />
         ) : (
@@ -765,7 +765,7 @@ export function NumberField({
   return (
     <label className="flex min-w-0 flex-1 items-center gap-2 text-xs text-[#4B5563]">
       <span className="font-semibold">{label}</span>
-      <span className="flex min-w-0 flex-1 items-center rounded-md border border-[#EDEEEF] bg-white px-2 focus-within:border-[#1D6FE8]">
+      <span className="flex min-w-0 flex-1 items-center rounded-md border border-[#EDEEEF] bg-white px-2 focus-within:border-[var(--gslide-accent)]">
         <input
           aria-label={label}
           type="text"

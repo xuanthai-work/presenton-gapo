@@ -125,7 +125,7 @@ export function ChartEditorContent({
             <button
               type="button"
               className={`h-12 border-b-2 text-[13px] font-medium transition ${tab === "data"
-                ? "border-[#1D6FE8] text-[#191919]"
+                ? "border-[var(--gslide-accent)] text-[#191919]"
                 : "border-transparent text-[#191919]"
                 }`}
               onClick={() => setTab("data")}
@@ -135,7 +135,7 @@ export function ChartEditorContent({
             <button
               type="button"
               className={`h-12 border-b-2 text-[13px] font-medium transition ${tab === "customize"
-                ? "border-[#1D6FE8] text-[#191919]"
+                ? "border-[var(--gslide-accent)] text-[#191919]"
                 : "border-transparent text-[#191919]"
                 }`}
               onClick={() => setTab("customize")}
@@ -181,7 +181,7 @@ function ChartTypeSelect({
       <BarChart3 className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#191919]" />
       <select
         aria-label="Chart type"
-        className={`${compact ? "h-9 rounded-lg pl-10 pr-9 text-[12px]" : "h-12 rounded-xl pl-11 pr-10 text-[13px]"} w-full appearance-none border border-[#E6E6EA] bg-white font-medium text-[#191919] outline-none transition focus:border-[#1D6FE8]`}
+        className={`${compact ? "h-9 rounded-lg pl-10 pr-9 text-[12px]" : "h-12 rounded-xl pl-11 pr-10 text-[13px]"} w-full appearance-none border border-[#E6E6EA] bg-white font-medium text-[#191919] outline-none transition focus:border-[var(--gslide-accent)]`}
         value={value}
         onChange={(event) => onChange(event.target.value as ChartType)}
       >
@@ -251,8 +251,8 @@ function DataLabelsControl({
               disabled={!enabled}
               className={`h-8 rounded-md px-1 text-[12px] font-semibold transition ${active && enabled
                 ? "bg-white text-[#191919] shadow-sm"
-                : "text-[#686873] hover:text-[#191919]"
-                } disabled:cursor-not-allowed disabled:hover:text-[#686873]`}
+                : "text-[var(--gslide-muted)] hover:text-[#191919]"
+                } disabled:cursor-not-allowed disabled:hover:text-[var(--gslide-muted)]`}
               onClick={() => selectPosition(item.value)}
             >
               {item.label}
@@ -788,7 +788,7 @@ function CompactSwitch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[#1D6FE8]" : "bg-[#D8D8DE]"
+      className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[var(--gslide-accent)]" : "bg-[#D8D8DE]"
         }`}
       onClick={() => onChange(!checked)}
     >
@@ -1391,7 +1391,7 @@ function EditableDataTable({
                     <GripVertical size={13} strokeWidth={2.1} />
                   </span>
                   <input
-                    className="h-7 w-full truncate rounded-md border border-transparent bg-transparent px-0 text-[12px] font-medium outline-none focus:border-[#1D6FE8] focus:bg-white focus:px-2"
+                    className="h-7 w-full truncate rounded-md border border-transparent bg-transparent px-0 text-[12px] font-medium outline-none focus:border-[var(--gslide-accent)] focus:bg-white focus:px-2"
                     maxLength={CHART_TEXT_MAX_LENGTH}
                     spellCheck={false}
                     value={category}
@@ -1418,7 +1418,7 @@ function EditableDataTable({
                       className="border-b border-r border-[#E8E8EC] bg-white px-3 py-1.5"
                     >
                       <input
-                        className="h-7 w-full rounded-md border border-transparent bg-transparent px-0 text-[12px] outline-none focus:border-[#1D6FE8] focus:bg-[#EFF6FF] focus:px-2"
+                        className="h-7 w-full rounded-md border border-transparent bg-transparent px-0 text-[12px] outline-none focus:border-[var(--gslide-accent)] focus:bg-[#EFF6FF] focus:px-2"
                         type="text"
                         inputMode={numericInputMode(chartValueInputOptions)}
                         value={displayValue}
