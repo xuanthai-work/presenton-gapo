@@ -105,3 +105,17 @@ test("GSlide sidebar and header use tokens and wordmark, not purple chrome", asy
   assert.match(header, /--gslide-border/);
   assert.match(header, /font-unbounded|--gslide-ink/);
 });
+
+test("shared Skeleton delegates to GSlideSkeleton", async () => {
+  const skeleton = await readNext("components/ui/skeleton.tsx");
+  assert.match(skeleton, /GSlideSkeleton/);
+});
+
+test("global loading copy is GSlide not Presenton", async () => {
+  const appLoading = await readNext("app/loading.tsx");
+  assert.match(appLoading, /GSlideSplashLoader|PresentonSplashLoader/);
+
+  const config = await readNext("app/ConfigurationInitializer.tsx");
+  assert.match(config, /Loading GSlide/);
+  assert.doesNotMatch(config, /Loading Presenton/);
+});

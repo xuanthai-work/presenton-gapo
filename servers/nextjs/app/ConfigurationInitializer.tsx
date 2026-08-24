@@ -8,37 +8,11 @@ import { useDispatch } from 'react-redux';
 import { LLMConfig } from '@/types/llm_config';
 import { getApiUrl } from '@/utils/api';
 import { notify } from '@/components/ui/sonner';
+import { GSlideSplashLoader } from '@/components/gslide';
 import { PRESENTON_SPLASH_MIN_DURATION_MS } from '@/components/ui/presenton-splash-loader';
 
 function ConfigurationLoadingScreen() {
-  return (
-    <main
-      aria-busy="true"
-      className="fixed inset-0 z-[2147483000] flex items-center justify-center overflow-hidden bg-white"
-      role="status"
-    >
-      <div className="flex flex-col items-center gap-7 whitespace-nowrap text-center">
-        <div aria-hidden="true" className="configuration-loader" />
-        <p className="font-syne text-[18px] font-normal leading-normal tracking-[-0.54px] text-[#191919]">
-          Loading Presenton...
-        </p>
-      </div>
-
-      {/* <div className="absolute left-1/2 top-[calc(50%+123.47px)] flex h-[42px] w-[352px] max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-1 rounded-md bg-[#F5F8FF] px-[14px]">
-        <Image
-          alt=""
-          aria-hidden="true"
-          className="h-[14px] w-[14px] shrink-0"
-          height={14}
-          src="/figma-assets/configuration-status-icon.svg"
-          width={14}
-        />
-        <p className="whitespace-nowrap font-manrope text-[14px] font-medium leading-normal tracking-[0.3px] text-[#6172F3]">
-          Checking &amp; configuring application assets.
-        </p>
-      </div> */}
-    </main>
-  );
+  return <GSlideSplashLoader message="Loading GSlide..." />;
 }
 
 export function ConfigurationInitializer({ children }: { children: React.ReactNode }) {
@@ -48,6 +22,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
   const shouldShowStartupSplash = !route?.startsWith("/pdf-maker");
   const isSettingsRoute =
     route === "/settings" || route?.startsWith("/settings/");
+  const isAuthRoute = route === "/" || route === "/auth";
   const [isLoading, setIsLoading] = useState(
     () => shouldShowStartupSplash
   );
@@ -66,7 +41,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
   useEffect(() => {
     if (
-      route === '/' ||
+      isAuthRoute ||
       isSettingsRoute ||
       route.startsWith('/pdf-maker')
     ) {
@@ -95,12 +70,12 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
           : null;
 
         if (!cancelled && !status?.linked) {
-          router.push('/');
+          router.push('/settings');
         }
       } catch (error) {
         console.error('Failed to revalidate Presenton connection:', error);
         if (!cancelled && presentonSelected) {
-          router.push('/');
+          router.push('/settings');
         }
       }
     };
@@ -168,10 +143,24 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
         console.error('Failed to fetch user config:', e);
         llmConfig = {};
       }
-      if (!llmConfig.LLM) {
-        llmConfig.LLM = 'openai';
-      }
       llmConfig = normalizeLLMConfig(llmConfig);
+
+      if (!hasValidLLMConfig(llmConfig)) {
+        try {
+          const runtimeRes = await fetch('/api/runtime-config', { cache: 'no-store' });
+          if (runtimeRes.ok) {
+            const runtime = await runtimeRes.json();
+            const runtimeConfig = normalizeLLMConfig(
+              (runtime.config || {}) as LLMConfig
+            );
+            if (runtime.configured || hasValidLLMConfig(runtimeConfig)) {
+              llmConfig = runtimeConfig;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fall back to runtime configuration:', error);
+        }
+      }
 
       dispatch(setLLMConfig(llmConfig));
 
@@ -195,26 +184,26 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
         return;
       }
       if (isValid) {
-        if (llmConfig.LLM === 'custom') {
-          const isAvailable = await checkIfSelectedCustomModelIsAvailable(llmConfig);
-          if (!isAvailable) {
-            router.push('/');
-            setLoadingToFalseAfterNavigatingTo('/');
-            return;
-          }
-        }
-        if (route === '/') {
-          router.push('/upload');
-          setLoadingToFalseAfterNavigatingTo('/upload');
+        if (isAuthRoute) {
+          router.push('/dashboard');
+          setLoadingToFalseAfterNavigatingTo('/dashboard');
         } else {
           setIsLoading(false);
         }
       } else if (
-        route !== '/' &&
+        !isAuthRoute &&
         !(isSettingsRoute && llmConfig.LLM === 'presenton')
       ) {
-        router.push('/');
-        setLoadingToFalseAfterNavigatingTo('/');
+        notify.warning(
+          "AI provider not configured",
+          "Open Settings to configure your text, image, and web search providers.",
+          { id: "llm-config-required" }
+        );
+        router.push('/settings');
+        setLoadingToFalseAfterNavigatingTo('/settings');
+      } else if (isAuthRoute) {
+        router.push('/dashboard');
+        setLoadingToFalseAfterNavigatingTo('/dashboard');
       } else {
         setIsLoading(false);
       }
@@ -232,7 +221,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
           if (!runtime.configured) {
             notify.error(
               "Instance not configured",
-              "Ask the administrator to configure the AI providers in Settings.",
+              "Ask the administrator to configure the AI providers in the deployment environment.",
               { id: "instance-not-configured" }
             );
             setIsLoading(false);
@@ -242,33 +231,12 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
       } catch (error) {
         console.error("Failed to fetch runtime configuration:", error);
       }
-      if (route === '/') {
+      if (route === '/auth' || isAuthRoute) {
         router.push('/dashboard');
         setLoadingToFalseAfterNavigatingTo('/dashboard');
       } else {
         setIsLoading(false);
       }
-    }
-  }
-
-
-  const checkIfSelectedCustomModelIsAvailable = async (llmConfig: LLMConfig) => {
-    try {
-      const response = await fetch(getApiUrl('/api/v1/ppt/openai/models/available'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: llmConfig.CUSTOM_LLM_URL,
-          api_key: llmConfig.CUSTOM_LLM_API_KEY,
-        }),
-      });
-      const data = await response.json();
-      return data.includes(llmConfig.CUSTOM_MODEL);
-    } catch (error) {
-      console.error('Error fetching custom models:', error);
-      return false;
     }
   }
 

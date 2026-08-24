@@ -1,15 +1,10 @@
-import { cn } from "@/lib/utils"
+import { GSlideSkeleton } from "@/components/gslide";
 
 function Skeleton({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("animate-pulse rounded-md bg-primary/10", className)}
-      {...props}
-    />
-  )
+  return <GSlideSkeleton className={className} {...props} />;
 }
 
-export { Skeleton }
+export { Skeleton };
