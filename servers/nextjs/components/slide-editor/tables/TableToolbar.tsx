@@ -512,7 +512,7 @@ const iconButtonStyle: CSSProperties = {
 };
 
 const activeButtonStyle: CSSProperties = {
-  background: "#F6F3FF",
+  background: "var(--gslide-accent-soft)",
 };
 
 const dividerStyle: CSSProperties = {
@@ -582,7 +582,7 @@ const menuShortcutStyle: CSSProperties = {
   marginLeft: "auto",
   padding: "4px 6px",
   borderRadius: 6,
-  background: "#F6F6F9",
+  background: "var(--gslide-accent-soft)",
   color: "#808080",
   fontSize: 12,
   lineHeight: 1,
