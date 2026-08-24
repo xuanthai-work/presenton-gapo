@@ -2499,9 +2499,9 @@ function TemplateV2KonvaSlideComponent({
 
   if (!uiDraft) {
     return (
-      <div className="flex h-full aspect-video flex-col items-center justify-center rounded-lg bg-gray-100">
-        <Loader2 className="mb-2 h-4 w-4 animate-spin" />
-        <p className="text-center text-sm text-gray-600">Loading slide layout...</p>
+      <div className="flex h-full aspect-video flex-col items-center justify-center rounded-lg bg-[var(--gslide-accent-soft)]">
+        <Loader2 className="mb-2 h-4 w-4 animate-spin text-[var(--gslide-accent)]" />
+        <p className="text-center text-sm text-[var(--gslide-muted)]">Loading slide layout...</p>
       </div>
     );
   }

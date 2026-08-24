@@ -236,7 +236,7 @@ function ItemsControl({
         onClick={() => onToggle("items")}
         className={cn(
           "grid h-7 w-7 place-items-center rounded-md border-0 bg-transparent text-[#05070A] hover:bg-[#F8F8FA]",
-          open && "bg-[#F4F1FF] text-[#7C3AED]",
+          open && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
         )}
       >
         <PlusCircle size={16} strokeWidth={1} aria-hidden />
@@ -358,7 +358,7 @@ export function TemplateV2LayoutToolbar({
         {ungroupAction ? (
           <>
             <div
-              className="inline-flex h-7 items-center gap-1 rounded-[6px] px-2 hover:bg-[#F6F6F9] cursor-pointer text-[14px] font-manrope font-medium leading-4 text-[#191919]"
+              className="inline-flex h-7 items-center gap-1 rounded-[6px] px-2 hover:bg-[var(--gslide-accent-soft)] cursor-pointer text-[14px] font-manrope font-medium leading-4 text-[#191919]"
               title="Ungroup"
               onClick={ungroupAction.onUngroup}
             >
