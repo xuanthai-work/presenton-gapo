@@ -27,6 +27,7 @@ import {
   appendChartColorTarget,
   chartColorTargetMode,
   chartDataFromSeriesWithColors,
+  chartPreviewSourceSize,
   chartSupportsMultipleSeries,
   ellipsizeChartText,
   extendChartColors,
@@ -37,8 +38,6 @@ import {
   updateChartColorTarget,
 } from "@/components/slide-editor/charts/chart-data";
 import {
-  EDITOR_STAGE_HEIGHT,
-  EDITOR_STAGE_WIDTH,
   type ChartElement,
   type ChartSeries,
   type ChartType,
@@ -1696,20 +1695,5 @@ function chartPreviewElement(chart: ChartElement): ChartElement {
     ...sanitizeChartTextFields(chart),
     opacity: 1,
     rotation: 0,
-  };
-}
-
-function chartPreviewSourceSize(chart: ChartElement) {
-  const width = chart.size?.width;
-  const height = chart.size?.height;
-  return {
-    width:
-      typeof width === "number" && Number.isFinite(width) && width > 0
-        ? width
-        : EDITOR_STAGE_WIDTH - 90,
-    height:
-      typeof height === "number" && Number.isFinite(height) && height > 0
-        ? height
-        : EDITOR_STAGE_HEIGHT - 90,
   };
 }

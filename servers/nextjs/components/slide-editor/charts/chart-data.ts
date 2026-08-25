@@ -1,8 +1,10 @@
-import type {
-  ChartDatum,
-  ChartElement,
-  ChartSeries,
-  ChartType,
+import {
+  EDITOR_STAGE_HEIGHT,
+  EDITOR_STAGE_WIDTH,
+  type ChartDatum,
+  type ChartElement,
+  type ChartSeries,
+  type ChartType,
 } from "@/components/slide-editor/types";
 
 export type ResolvedChartDataset = {
@@ -378,6 +380,21 @@ export function removeChartColorTarget(
     color: primaryColor,
     colors,
     data: nextData,
+  };
+}
+
+export function chartPreviewSourceSize(chart: ChartElement) {
+  const width = chart.size?.width;
+  const height = chart.size?.height;
+  return {
+    width:
+      typeof width === "number" && Number.isFinite(width) && width > 0
+        ? width
+        : EDITOR_STAGE_WIDTH - 90,
+    height:
+      typeof height === "number" && Number.isFinite(height) && height > 0
+        ? height
+        : EDITOR_STAGE_HEIGHT - 90,
   };
 }
 

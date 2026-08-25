@@ -442,3 +442,13 @@ test("PresentonMode filename is gone", async () => {
   assert.match(home, /OnboardingMode/);
   assert.doesNotMatch(home, /PresentonMode/);
 });
+
+test("chart preview size helper lives in chart-data", async () => {
+  const data = await readNext("components/slide-editor/charts/chart-data.ts");
+  assert.match(data, /export function chartPreviewSourceSize/);
+  const editor = await readNext(
+    "components/slide-editor/charts/ChartEditorContent.tsx",
+  );
+  assert.match(editor, /chartPreviewSourceSize/);
+  assert.doesNotMatch(editor, /function chartPreviewSourceSize/);
+});
