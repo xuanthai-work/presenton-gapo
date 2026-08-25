@@ -1,629 +1,91 @@
-<p align="center">
-  <img src="./readme_assets/images/logo.png" alt="GSlide" />
-</p>
+# GSlide
 
-<p align="center">
-  <a href="https://presenton.ai/download"><strong>Quickstart</strong></a> &middot;
-  <a href="https://presenton.ai/explore"><strong>Templates</strong></a> &middot;
-  <a href="https://docs.presenton.ai/"><strong>Docs</strong></a> &middot;
-  <a href="https://www.youtube.com/@presentonai"><strong>Youtube</strong></a> &middot;
-  <a href="https://discord.gg/9ZsKKxudNE"><strong>Discord</strong></a>
-</p>
+AI presentation generator, self-hosted. Tạo slide từ prompt hoặc tài liệu, chỉnh sửa trên web, xuất PPTX/PDF.
 
-<p align="center">
-  <a href="https://github.com/presenton/presenton/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=flat" alt="Apache2.0" /></a>
-  <a href="https://github.com/presenton/presenton"><img src="https://img.shields.io/github/stars/presenton/presenton?style=flat" alt="Stars" /></a>
-  <a href="https://presenton.ai/"><img src="https://img.shields.io/badge/Platform-Docker-lightgrey?style=flat" alt="Platform" /></a>
-</p>
+Chạy **web-only** qua Docker Compose. LLM và image generation gọi HTTP API bên ngoài (OpenAI, Gemini, hoặc endpoint OpenAI-compatible) — container không cần GPU.
 
-<p align="center">
-  <a href="https://trendshift.io/repositories/18582?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-18582" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/18582" alt="presenton%2Fpresenton | Trendshift" width="250" height="55" /></a>
-</p>
+## Chạy
 
-# Open-Source AI Presentation Generator and API (Gamma, Canva, Beautiful AI, Decktopus, Presentations AI Alternative)
+Yêu cầu: Docker Desktop.
 
-Discover what Presenton can do from AI-powered presentation generation to editing, exporting, and flexible model providers.
+```powershell
+copy .env.example .env
+```
 
-[▶ Watch Presenton in Action](https://github.com/user-attachments/assets/93e541dc-8487-4dcf-a9a0-95ad5ca94453)
+Điền một LLM provider và tài khoản admin trong `.env`, rồi:
 
-### ✨ Why Presenton
-
-No SaaS lock-in · No forced subscriptions · Full control over models and data
-
-What makes Presenton different?
-
-- Use Fully **self-hosted** in Web through Docker Compose (`production` / `development`)
-- Works with OpenAI, Google Gemini, or any OpenAI-compatible endpoint (vLLM, LiteLLM proxy, Ollama, …)
-- Comes with AI Presentation Generation API
-- Fully open-source (Apache 2.0)
-- Works with your own design/templates
-- **Fully editable PPTX export**
-
-> [!TIP]
-> **Star us!** A ⭐ shows your support and encourages us to keep building! 😇
-
-<p align="center">
-  <img src="./readme_assets/images/banner_bg.gif" alt="Presenton" />
-</p>
-
-#
-
-### 🎛 Features
-
-Create presentations from a prompt, an uploaded document, or your own PowerPoint design. Choose from built-in templates, bring your preferred AI provider and API key, polish manually with drag-edit interface and export a fully editable deck.
-
-<p align="center">
-  <img src="./readme_assets/images/drag-and-edit.gif" alt="Drag-and-drop editing in the Presenton slide editor" />
-</p>
-
-<p align="center">
-  <img src="./readme_assets/images/features.png" alt="Presenton features: custom designs, AI generation, bring your own API key, and built-in templates" />
-</p>
-
-
-#
-
-### 🎨 In-Built AI Presentation Templates for PowerPoint
-
-Browse in-built AI presentation templates for pitch decks, business reports, executive updates, educational presentations, and more. Preview each editable slide layout, choose a design, and use Presenton to generate fully editable PowerPoint (`.pptx`) or PDF presentations from a prompt or document.
-
-<table border="1" cellpadding="16" cellspacing="0" width="100%">
-<tr>
-<td align="center" width="33%">
-  <a href="https://presenton.ai/explore/momentum">
-    <img src="./readme_assets/templates/Momentum.png" alt="Momentum AI presentation template with sales report, KPI, chart, and executive summary slide layouts" />
-  </a>
-  <br />
-  <sub>
-    <b>Momentum Business Presentation Template</b> — sales reports, strategy decks, and data storytelling
-    <br />
-    <a href="https://presenton.ai/explore/momentum">Preview Momentum business template ↗</a>
-  </sub>
-</td>
-<td align="center" width="33%">
-  <a href="https://presenton.ai/explore/dynamic">
-    <img src="./readme_assets/templates/Dynamic.png" alt="Dynamic AI presentation template with high-contrast creative and visual storytelling slide layouts" />
-  </a>
-  <br />
-  <sub>
-    <b>Dynamic Creative Presentation Template</b> — proposals, visual stories, and high-impact decks
-    <br />
-    <a href="https://presenton.ai/explore/dynamic">Preview Dynamic presentation template ↗</a>
-  </sub>
-</td>
-<td align="center" width="33%">
-  <a href="https://presenton.ai/explore/executive">
-    <img src="./readme_assets/templates/Executive.png" alt="Executive PowerPoint template with leadership, strategy, and decision-making slide layouts" />
-  </a>
-  <br />
-  <sub>
-    <b>Executive PowerPoint Template</b> — leadership updates, strategic plans, and decision-ready reports
-    <br />
-    <a href="https://presenton.ai/explore/executive">Preview Executive PowerPoint template ↗</a>
-  </sub>
-</td>
-</tr>
-<tr>
-<td align="center" width="33%">
-  <a href="https://presenton.ai/explore/general">
-    <img src="./readme_assets/templates/General.png" alt="General presentation template with flexible business and educational slide layouts" />
-  </a>
-  <br />
-  <sub>
-    <b>General Presentation Template</b> — adaptable layouts for business, education, and everyday topics
-    <br />
-    <a href="https://presenton.ai/explore/general">Preview General presentation template ↗</a>
-  </sub>
-</td>
-<td align="center" width="33%">
-  <a href="https://presenton.ai/explore/modern">
-    <img src="./readme_assets/templates/Modern.png" alt="Modern pitch deck template with contemporary product, startup, and portfolio slide layouts" />
-  </a>
-  <br />
-  <sub>
-    <b>Modern Pitch Deck Template</b> — contemporary slides for startups, products, and portfolios
-    <br />
-    <a href="https://presenton.ai/explore/modern">Preview Modern pitch deck template ↗</a>
-  </sub>
-</td>
-<td align="center" width="33%">
-  <a href="https://presenton.ai/explore/standard">
-    <img src="./readme_assets/templates/Standard.png" alt="Standard business presentation template with report, proposal, and company slide layouts" />
-  </a>
-  <br />
-  <sub>
-    <b>Standard Business Presentation Template</b> — professional reports, proposals, and company decks
-    <br />
-    <a href="https://presenton.ai/explore/standard">Preview Standard business template ↗</a>
-  </sub>
-</td>
-</tr>
-</table>
-
-<p align="center">
-  <a href="https://presenton.ai/explore"><strong>Browse all free AI presentation templates →</strong></a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://presenton.ai/custom-template"><strong>Create an AI-ready PowerPoint template from your PPTX →</strong></a>
-</p>
-
-#
-
-
-**Deploy to Cloud Providers**
-
-<div style="display:flex; gap:12px; align-items:center;">
-  <a href="https://railway.com/deploy/presenton-ai-presentations">
-    <img
-      src="https://railway.com/button.svg"
-      alt="Deploy on Railway"
-      style="height:38px;"
-    />
-  </a>
-  <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/presenton/presenton/tree/main">
-    <img
-      src="https://www.deploytodo.com/do-btn-blue.svg"
-      alt="Deploy to DigitalOcean"
-      style="height:36px;"
-    />
-  </a>
-</div>
-
-#
-
-Presenton gives you complete control over your AI presentation workflow. Choose your models, customize your experience, and keep your data private.
-
-- Custom Templates & Themes — Create unlimited presentation designs with HTML and Tailwind CSS
-- AI Template Generation — Create presentation templates from existing Powerpoint documents.
-- Flexible Generation — Build presentations from prompts or uploaded documents
-- Export Ready — Save as PowerPoint (PPTX) and PDF with professional formatting
-- Bring Your Own Key — Use your own API keys for OpenAI, Google Gemini, or any compatible provider. Only pay for what you use, no hidden fees or subscriptions.
-- OpenAI API Compatible — Connect to any OpenAI-compatible endpoint with your own models
-- Multi-Provider Support — Mix and match text and image generation providers
-- Versatile Image Generation — Choose from Gemini Flash, NanoBanana Pro, or GPT Image
-- Rich Media Support — Icons, charts, and custom graphics for professional presentations
-- Runs as a web app — slide generation, edit, and export run in Docker; LLM/image calls go to the configured HTTP APIs (cloud or a separate self-hosted AI server). No GPU is reserved for the Presenton container.
-- API Deployment — Host as your own API service for your team
-- Multi-User Workspaces — Give each user a private workspace and manage accounts from a built-in admin panel
-- Fully Open-Source — Apache 2.0 licensed, inspect, modify, and contribute
-- Docker Ready — One-command deployment
-
-#
-
-### ☁️ Presenton Cloud
-
-Run Presenton directly in your browser — no installation, no setup required. Start creating presentations instantly from anywhere.
-
-<p align="center">
-  <a href="https://presenton.ai">
-    <img src="./readme_assets/images/cloud-banner.png" alt="Presenton Cloud" />
-  </a>
-</p>
-
-#
-
-### 🏢 Presenton Enterprise
-
-Deploy and manage Presenton across your organization with versioned Helm charts for Kubernetes, detailed audit logs, and a centralized admin console. Enterprise authentication supports SSO and automated user provisioning through OAuth, OIDC, and SCIM.
-
-<p align="center">
-  <a href="https://presenton.ai/enterprise">
-    <img src="./readme_assets/images/readme_Enterprise.png" alt="Presenton Enterprise features: Helm chart deployment, audit logs, centralized administration, and enterprise SSO and provisioning" />
-  </a>
-</p>
-
-#
-
-### ⚡ Running Presenton
-
-  <p>
-    This fork is <strong>web-only</strong> (no desktop app, no MCP server).
-    Run it with <strong>Docker Compose</strong>: <code>production</code> (built image)
-    or <code>development</code> (hot-reload). The Presenton container does not use a
-    GPU; point <code>CUSTOM_LLM_URL</code> at a remote OpenAI-compatible LLM if you self-host models.
-  </p>
-
-**Docker Compose (this fork)**
-
-```bash
+```powershell
 docker compose up production --build
 ```
 
-Windows (PowerShell): `docker compose up production --build`
+Mở [http://localhost:5001](http://localhost:5001). Lần đầu sẽ tạo tài khoản admin nếu chưa set `AUTH_USERNAME` / `AUTH_PASSWORD`.
 
-The official `ghcr.io/presenton/presenton:latest` image is **not** what this fork deploys. Compose builds from the repo `Dockerfile`.
+Dev (hot-reload):
 
-**Docker (upstream image, for reference)**
-
-- Start Presenton
-  Linux/MacOS (Bash/Zsh Shell):
-  <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-  Windows (PowerShell):
-  <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -v "${PWD}\app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Open Presenton
-  <p>
-  Open <a href="http://localhost:5001">http://localhost:5001</a> in the browser
-  of your choice to use Presenton.
-  </p>
-
-  <blockquote>
-  <p>
-    <strong>Note:</strong> You can replace <code>5001</code> with any other port
-    number of your choice to run Presenton on a different port number. If you use
-    Docker Compose, set <code>PRESENTON_HTTP_HOST_PORT</code>, for example
-    <code>PRESENTON_HTTP_HOST_PORT=8080 docker compose up production</code>.
-  </p>
-  </blockquote>
-
-#
-
-### ⚙️ Deployment Configurations
-
-The lists below match the environment variables forwarded in this repository’s **`docker-compose.yml`** (`production` and `development`). Put values in a `.env` file next to the compose file, or export them before `docker compose up`.
-
-Other optional variables exist in code (for example advanced Mem0 paths, LiteParse runners, or `FAST_API_INTERNAL_URL` when Next.js and FastAPI are not same-origin); they are **not** wired in `docker-compose.yml`. Supported names are discoverable from `servers/fastapi/utils/get_env.py` and the Next.js server utilities under `servers/nextjs/`.
-
-#### LLM and API keys
-
-- **CAN_CHANGE_KEYS**=[true/false]: Set to **false** if you want to keep API keys hidden and make them unmodifiable.
-- **LLM**=[openai/google/custom]: Select the text **LLM**.
-- **OPENAI_API_KEY**: Required if **LLM** is **openai**.
-- **OPENAI_MODEL**: Required if **LLM** is **openai** (default: `gpt-4.1`).
-- **GOOGLE_API_KEY**: Required if **LLM** is **google**.
-- **GOOGLE_MODEL**: Required if **LLM** is **google** (default: `models/gemini-2.0-flash`).
-- **CUSTOM_LLM_URL**: OpenAI-compatible base URL if **LLM** is **custom**.
-- **CUSTOM_LLM_API_KEY**: API key if **LLM** is **custom**.
-- **CUSTOM_MODEL**: Model id if **LLM** is **custom**.
-- **DISABLE_THINKING**=[true/false]: If **true**, disables “thinking” for providers that support it.
-- **WEB_GROUNDING**=[true/false]: If **true**, enables web search by default.
-- **WEB_SEARCH_PROVIDER**=auto (default): OpenAI/Google use native web search; custom LLMs (Gemma) use the SearXNG sidecar. Tavily/Exa/Brave are removed.
-- **WEB_SEARCH_MAX_RESULTS**: Maximum external search results to add to model context (default `5`, maximum `10`).
-- **SEARXNG_BASE_URL**: Defaults to `http://searxng:8080` in Compose. Override only if SearXNG runs outside this stack. Do not use `localhost` from inside the Presenton container.
-- **EXTENDED_REASONING**=[true/false]: Enables extended reasoning where supported by the configured stack.
-
-#### Presentation memory (Mem0 OSS)
-
-Mem0 uses local Qdrant + SQLite (OSS); memory is scoped per presentation.
-
-By default the Docker runtime points Mem0 at the configured OpenAI-compatible LLM endpoint. Set `MEM0_LLM_BASE_URL`/`MEM0_LLM_API_KEY` to your OpenAI-compatible endpoint and key.
-Docker images install the default spaCy model (`en_core_web_sm`) during build so Mem0 can start without extra setup on each run.
-
-| Variable                     | Purpose                                                                                                          |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **MEM0_ENABLED**             | **true**/false (compose default **false**).                                                                      |
-| **MEM0_LLM_MODEL**           | Mem0 LLM model name (compose default **`OPENAI_MODEL`**).                                                        |
-| **MEM0_LLM_API_KEY**         | Mem0 LLM API key placeholder for OpenAI-compatible clients (compose default **`OPENAI_API_KEY`**).              |
-| **MEM0_LLM_BASE_URL**        | Mem0 LLM base URL (compose default OpenAI-compatible endpoint).                                                  |
-| **MEM0_DIR**                 | Root directory (compose default **`/app_data/mem0`**).                                                           |
-| **MEM0_EMBEDDER_PROVIDER**   | Embedder backend (compose default **`fastembed`**).                                                              |
-| **MEM0_EMBEDDER_MODEL**      | Model id (compose default **`BAAI/bge-small-en-v1.5`**).                                                         |
-| **MEM0_EMBEDDING_DIMS**      | Vector size (compose default **384**).                                                                           |
-| **MEM0_SPACY_MODEL**         | Optional spaCy model override (default **`en_core_web_sm`**).                                                    |
-| **MEM0_REQUIRE_SPACY_MODEL** | Keep as **true** (default). Set to false only if you intentionally want Mem0 to run without spaCy lemmatization. |
-
-#### Document parsing (LiteParse)
-
-| Variable                  | Purpose                                   |
-| ------------------------- | ----------------------------------------- |
-| **LITEPARSE_DPI**         | OCR render DPI (compose default **120**). |
-| **LITEPARSE_NUM_WORKERS** | Worker count (compose default **1**).     |
-
-#### Database
-
-- **DATABASE_URL**: SQLAlchemy URL; if unset, the app falls back to SQLite under app data.
-- **MIGRATE_DATABASE_ON_STARTUP**: Compose sets **`true`** for all services so migrations run on startup.
-
-#### Image generation
-
-These variables match `docker-compose.yml`. **`IMAGE_PROVIDER`** selects the backend (`gpt-image-1.5`, `gemini_flash`, `nanobanana_pro`, `openai_compatible`). Use **OPENAI_API_KEY** for OpenAI image modes and **GOOGLE_API_KEY** for Gemini image modes (same keys as the LLM section).
-
-- **DISABLE_IMAGE_GENERATION**=[true/false]: Disable slide image generation.
-- **ENABLE_PARALLEL_IMAGE_GENERATION**=[true/false]: Allow concurrent image provider requests (default `true`). Set to `false` to generate images one at a time when the provider has strict rate limits.
-- **IMAGE_PROVIDER**: Provider id (see enum above).
-- **GPT_IMAGE_1_5_QUALITY**=[low/medium/high]: Optional for **gpt-image-1.5** (default `medium`).
-- **OPENAI_COMPAT_IMAGE_BASE_URL** / **OPENAI_COMPAT_IMAGE_API_KEY** / **OPENAI_COMPAT_IMAGE_MODEL**: Required if using **openai_compatible** to send image requests to any OpenAI-compatible `/v1/images/*` endpoint.
-
-The parallel image generation option applies everywhere images are generated: initial presentation generation, slide editing and regeneration, direct image requests, and assistant image tools.
-
-#### Telemetry
-
-- **DISABLE_ANONYMOUS_TRACKING**=[true/false]: Set to **true** to disable anonymous telemetry.
-
-#### Multi-user authentication
-
-Presenton supports multiple accounts with a private workspace for each user. The
-first account becomes the primary administrator and can create, reset, or remove
-other accounts from **Admin → Users**.
-
-Existing single-user installations are upgraded automatically: the current account
-becomes the primary administrator, while its presentations, templates, tasks, and
-other owned data stay attached to the same account.
-
-##### Set up the primary administrator
-
-On a new installation, open Presenton and follow the account setup screen. For an
-unattended Docker deployment, you can create the primary administrator on first boot
-with environment variables:
-
-```bash
-docker run -it --name presenton \
-  -p 5001:80 \
-  -e AUTH_USERNAME=admin \
-  -e AUTH_PASSWORD=change-this-password \
-  -v "./app_data:/app_data" \
-  ghcr.io/presenton/presenton:latest
+```powershell
+docker compose up development --build
 ```
 
-Usernames must contain at least 3 characters, and new passwords must contain at least
-8 characters. Older six- or seven-character passwords remain valid after an upgrade.
+Đổi port host bằng `PRESENTON_HTTP_HOST_PORT`. Dữ liệu (deck, upload, SQLite, memory) nằm trong `./app_data`.
 
-##### Authentication environment variables
+Compose **build từ Dockerfile trong repo**. Sau khi sửa `.env`, recreate container:
 
-| Variable | Purpose |
+```powershell
+docker compose up production --force-recreate
+```
+
+## Cấu hình
+
+Biến môi trường nằm trong `.env` cạnh `docker-compose.yml`. Chỉ cần **một** LLM provider.
+
+| Biến | Mô tả |
 | --- | --- |
-| **AUTH_USERNAME** | Username used to create the primary administrator on first boot. It can also change the username during a rotation or recovery. |
-| **AUTH_PASSWORD** | Password used for first-time setup, rotation, or recovery. Required when using either flag below. |
-| **AUTH_OVERRIDE_FROM_ENV**=[true/false] | Replace the primary administrator's credentials from the environment on the next startup. Use this for a deployment-managed credential rotation. |
-| **RESET_AUTH**=[true/false] | Recover access to the existing primary administrator without replacing the account or its data. |
+| `LLM` | `openai` / `google` / `custom` |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | Khi `LLM=openai` |
+| `GOOGLE_API_KEY`, `GOOGLE_MODEL` | Khi `LLM=google` |
+| `CUSTOM_LLM_URL`, `CUSTOM_LLM_API_KEY`, `CUSTOM_MODEL` | Khi `LLM=custom` |
+| `IMAGE_PROVIDER` | `gpt-image-1.5` / `gemini_flash` / `nanobanana_pro` / `openai_compatible` |
+| `DISABLE_IMAGE_GENERATION` | `true` để tắt ảnh trên slide |
+| `AUTH_USERNAME`, `AUTH_PASSWORD` | Tạo admin lúc boot (password ≥ 8 ký tự) |
+| `CAN_CHANGE_KEYS` | `false` để khóa API key trên UI |
+| `MEM0_ENABLED` | Memory theo presentation (mặc định `false`) |
+| `WEB_GROUNDING` | Web search. `auto`: native OpenAI/Google; custom LLM dùng SearXNG sidecar |
+| `DISABLE_ANONYMOUS_TRACKING` | `true` để tắt telemetry |
+| `DATABASE_URL` | Để trống = SQLite trong `app_data` |
 
-##### Rotating the primary administrator credentials
+Khi bật Mem0, phải trỏ `MEM0_LLM_*` tới endpoint OpenAI-compatible. Chi tiết và ví dụ `.env`: [setup-presonton.md](./setup-presonton.md).
 
-To rotate credentials from the environment:
+## API
+
+`POST /api/v1/ppt/presentation/generate`
+
+Mọi route `/api/v1/` (trừ auth public) cần `Authorization: Bearer …`. Admin tạo key tại **Admin → API keys** (prefix `sk-gslide-`).
 
 ```bash
-docker stop presenton
-docker rm presenton
-docker run -it --name presenton \
-  -p 5001:80 \
-  -e AUTH_USERNAME=admin \
-  -e AUTH_PASSWORD=new-secure-password \
-  -e AUTH_OVERRIDE_FROM_ENV=true \
-  -v "./app_data:/app_data" \
-  ghcr.io/presenton/presenton:latest
+curl -X POST http://localhost:5001/api/v1/ppt/presentation/generate \
+  -H "Authorization: Bearer sk-gslide-YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Introduction to Machine Learning","n_slides":5,"language":"English","export_as":"pptx"}'
 ```
 
-For account recovery, use the same command with `RESET_AUTH=true` instead of
-`AUTH_OVERRIDE_FROM_ENV=true`. Both operations preserve the administrator's user ID
-and owned data, and invalidate existing browser sessions and API keys. Remove the
-one-time flag after the successful startup.
+Response:
 
-> [!IMPORTANT]
-> Do not remove authentication fields from `app_data/userConfig.json` to reset
-> access. Presenton stores a hashed recovery copy of the primary administrator
-> credentials and the session-signing secret there. Use the recovery variables above
-> to preserve the database account and its ownership links.
+```json
+{
+  "presentation_id": "…",
+  "path": "/app_data/…/Introduction_to_Machine_Learning.pptx",
+  "edit_path": "/presentation?id=…"
+}
+```
 
-To sign out, open **Settings → Other → Sign out**.
+Ghép host vào `path` / `edit_path` để thành URL đầy đủ.
 
-> Note: LLM and image variables above are forwarded from **`docker-compose.yml`** when set in `.env`.
+## Docs
 
-<br>
-<br>
+- [Setup](./setup-presonton.md) — env, Mem0, ảnh, auth, lỗi thường gặp
+- [Architecture](./docs/architecture/README.md)
+- [Contributing](./CONTRIBUTING.md)
 
-**Docker Run Examples by Provider**
+## License
 
-Same variables as compose; use `-e` instead of `.env` when running `docker run` directly.
-
-- Using OpenAI
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="openai" -e OPENAI_API_KEY="******" -e IMAGE_PROVIDER="gpt-image-1.5" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using Google
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e LLM="google" -e GOOGLE_API_KEY="******" -e IMAGE_PROVIDER="gemini_flash" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using OpenAI Compatible LLM API
-    <pre><code class="language-bash">docker run -it -p 5001:80 -e CAN_CHANGE_KEYS="false"  -e LLM="custom" -e CUSTOM_LLM_URL="http://*****" -e CUSTOM_LLM_API_KEY="*****" -e CUSTOM_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="openai_compatible" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-- Using an OpenAI-Compatible Image Provider
-
-  This routes all slide image requests through your OpenAI-compatible gateway while keeping the text LLM configuration independent:
-    <pre><code class="language-bash">docker run -it --name presenton -p 5001:80 -e IMAGE_PROVIDER="openai_compatible" -e OPENAI_COMPAT_IMAGE_BASE_URL="https://proxy.example.com/v1" -e OPENAI_COMPAT_IMAGE_API_KEY="******" -e OPENAI_COMPAT_IMAGE_MODEL="gpt-image-1" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
-
-#
-
-### ✨ Generate Presentation via API
-
-**Generate Presentation**
-
-<p>
-<strong>Endpoint:</strong> <code>/api/v1/ppt/presentation/generate</code><br>
-<strong>Method:</strong> <code>POST</code><br>
-<strong>Content-Type:</strong> <code>application/json</code>
-</p>
-
-<p>
-<strong>Authentication (API key):</strong><br>
-All <code>/api/v1/</code> routes except the public authentication endpoints require authentication. An administrator creates an access key under <strong>Admin → API keys</strong>. Send that <code>sk-presenton-...</code> key as <code>Authorization: Bearer YOUR_KEY</code>. API keys act as their owning user and cannot call browser-session-only administrator endpoints.
-</p>
-
-**Request Body**
-
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Required</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-
-<tr>
-<td><code>content</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>Main content used to generate the presentation.</td>
-</tr>
-
-<tr>
-<td><code>slides_markdown</code></td>
-<td>string[] | null</td>
-<td>No</td>
-<td>Provide custom slide markdown instead of auto-generation.</td>
-</tr>
-
-<tr>
-<td><code>instructions</code></td>
-<td>string | null</td>
-<td>No</td>
-<td>Additional generation instructions.</td>
-</tr>
-
-<tr>
-<td><code>tone</code></td>
-<td>string</td>
-<td>No</td>
-<td>
-Text tone (default: <code>"default"</code>).  
-Options: <code>default</code>, <code>casual</code>, <code>professional</code>, 
-<code>funny</code>, <code>educational</code>, <code>sales_pitch</code>
-</td>
-</tr>
-
-<tr>
-<td><code>verbosity</code></td>
-<td>string</td>
-<td>No</td>
-<td>
-Content density (default: <code>"standard"</code>).  
-Options: <code>concise</code>, <code>standard</code>, <code>text-heavy</code>
-</td>
-</tr>
-
-<tr>
-<td><code>web_search</code></td>
-<td>boolean</td>
-<td>No</td>
-<td>Enable web search grounding (default: <code>false</code>).</td>
-</tr>
-
-<tr>
-<td><code>n_slides</code></td>
-<td>integer</td>
-<td>No</td>
-<td>Number of slides to generate (default: <code>8</code>).</td>
-</tr>
-
-<tr>
-<td><code>language</code></td>
-<td>string</td>
-<td>No</td>
-<td>Presentation language (default: <code>"English"</code>).</td>
-</tr>
-
-<tr>
-<td><code>template</code></td>
-<td>string</td>
-<td>No</td>
-<td>Template name (default: <code>"general"</code>).</td>
-</tr>
-
-<tr>
-<td><code>include_table_of_contents</code></td>
-<td>boolean</td>
-<td>No</td>
-<td>Include table of contents slide (default: <code>false</code>).</td>
-</tr>
-
-<tr>
-<td><code>include_title_slide</code></td>
-<td>boolean</td>
-<td>No</td>
-<td>Include title slide (default: <code>true</code>).</td>
-</tr>
-
-<tr>
-<td><code>files</code></td>
-<td>string[] | null</td>
-<td>No</td>
-<td>
-Files to use in generation.  
-Upload first via <code>/api/v1/ppt/files/upload</code>.
-</td>
-</tr>
-
-<tr>
-<td><code>export_as</code></td>
-<td>string</td>
-<td>No</td>
-<td>
-Export format (default: <code>"pptx"</code>).  
-Options: <code>pptx</code>, <code>pdf</code>
-</td>
-</tr>
-
-</tbody>
-</table>
-
-**Response**
-
-<pre><code class="language-json">{
-  "presentation_id": "string",
-  "path": "string",
-  "edit_path": "string"
-}</code></pre>
-
-**Example (curl + API key)**
-
-<pre><code class="language-bash">curl \
-  -X POST http://localhost:5001/api/v1/ppt/presentation/generate \
-  -H "Authorization: Bearer sk-presenton-YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-   "content": "Introduction to Machine Learning",
-    "n_slides": 5,
-    "language": "English",
-    "template": "general",
-    "export_as": "pptx"
-  }'</code></pre>
-
-**Example Response**
-
-<pre><code class="language-json">{
-  "presentation_id": "d3000f96-096c-4768-b67b-e99aed029b57",
-  "path": "/app_data/d3000f96-096c-4768-b67b-e99aed029b57/Introduction_to_Machine_Learning.pptx",
-  "edit_path": "/presentation?id=d3000f96-096c-4768-b67b-e99aed029b57"
-}</code></pre>
-
-<blockquote>
-<strong>Note:</strong>  
-Prepend your server’s root URL to <code>path</code> and 
-<code>edit_path</code> to construct valid links.
-</blockquote>
-
-**Documentation & Tutorials**
-
-<ul>
-  <li>
-    <a href="https://docs.presenton.ai/v3/get-started/quickstart">
-      Deploy Presenton
-    </a>
-  </li>
-  <li>
-    <a href="https://docs.presenton.ai/v3/get-started/api-introduction">
-      Full API Documentation
-    </a>
-  </li>
-  <li>
-    <a href="https://docs.presenton.ai/v3/guide/using-presenton-api">
-      Generate Presentations via API in 5 Minutes
-    </a>
-  </li>
-  <li>
-    <a href="https://docs.presenton.ai/tutorial/generate-presentation-from-csv">
-      Create Presentations from CSV using AI
-    </a>
-  </li>
-  <li>
-    <a href="https://docs.presenton.ai/tutorial/create-data-reports-using-ai">
-      Create Data Reports Using AI
-    </a>
-  </li>
-</ul>
-
-#
-
-### 🚀 Roadmap
-
-Track the public roadmap on GitHub Projects: [https://github.com/orgs/presenton/projects/2](https://github.com/orgs/presenton/projects/2)
+[Apache 2.0](./LICENSE)
