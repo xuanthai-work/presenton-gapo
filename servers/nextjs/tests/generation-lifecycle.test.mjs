@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   STALL_MS,
   isUsefulStreamEvent,
@@ -38,4 +39,18 @@ test("stalls after 45s without useful events while generating", () => {
   assert.equal(isStalled({ now: 40_000, lastUsefulEventAt: 0, state: "generating" }), false);
   assert.equal(isStalled({ now: 80_000, lastUsefulEventAt: 0, state: "connecting" }), true);
   assert.equal(isStalled({ now: 80_000, lastUsefulEventAt: 0, state: "complete" }), false);
+});
+
+test("outline stream hook imports lifecycle helpers", async () => {
+  const source = await readFile(
+    new URL(
+      "../app/(presentation-generator)/outline/hooks/useOutlineStreaming.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  assert.match(source, /from "@\/lib\/generation-lifecycle"/);
+  assert.match(source, /shouldSilentRetry/);
+  assert.match(source, /isUsefulStreamEvent/);
+  assert.match(source, /heartbeat/);
 });

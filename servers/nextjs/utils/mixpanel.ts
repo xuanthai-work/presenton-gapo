@@ -202,6 +202,11 @@ export enum MixpanelEvent {
   CustomTemplate_Save_Started = 'Custom Template Save Started',
   CustomTemplate_Saved = 'Custom Template Saved',
   CustomTemplate_Save_Modal_Opened = 'Custom Template Save Modal Opened',
+
+  Generation_Cancelled = 'Generation Cancelled',
+  Generation_Stalled = 'Generation Stalled',
+  Generation_Keep_Waiting = 'Generation Keep Waiting',
+  Generation_Retry_Clicked = 'Generation Retry Clicked',
 }
 
 export type MixpanelProps = Record<string, unknown>;

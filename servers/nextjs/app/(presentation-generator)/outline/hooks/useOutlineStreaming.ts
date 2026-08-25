@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { notify } from "@/components/ui/sonner";
 import { setOutlines } from "@/store/slices/presentationGeneration";
@@ -6,10 +6,24 @@ import { jsonrepair } from "jsonrepair";
 import { RootState } from "@/store/store";
 import { getApiUrl } from "@/utils/api";
 import { limitOutlines } from "@/utils/presentationLimits";
+import {
+  isStalled,
+  isUsefulStreamEvent,
+  shouldSilentRetry,
+  silentRetryDelayMs,
+  type GenerationLifecycleState,
+} from "@/lib/generation-lifecycle";
+import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
-const MAX_STREAM_RETRIES = 3;
-const STREAM_RETRY_DELAY_MS = 1_000;
 const DEFAULT_STATUS_MESSAGE = "Preparing your presentation outline";
+const STALL_INTERVAL_MS = 1_000;
+
+const STREAMING_STATES: ReadonlySet<GenerationLifecycleState> = new Set([
+  "connecting",
+  "generating",
+  "stalled",
+  "cancelling",
+]);
 
 export const useOutlineStreaming = (
   presentationId: string | null,
@@ -19,23 +33,68 @@ export const useOutlineStreaming = (
   const { outlines } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
-  const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number | null>(null);
   const [highestActiveIndex, setHighestActiveIndex] = useState<number>(-1);
   const [statusMessage, setStatusMessage] = useState(DEFAULT_STATUS_MESSAGE);
+  const [lifecycle, setLifecycle] =
+    useState<GenerationLifecycleState>("idle");
+
   const outlinesRef = useRef<{ content: string }[]>(outlines);
   const prevSlidesRef = useRef<{ content: string }[]>([]);
   const activeIndexRef = useRef<number>(-1);
   const highestIndexRef = useRef<number>(-1);
 
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const isClosedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const hasUsefulEventRef = useRef(false);
+  const lastUsefulEventAtRef = useRef<number | null>(null);
+  const streamStartedAtRef = useRef<number | null>(null);
+  const lifecycleRef = useRef<GenerationLifecycleState>("idle");
+
+  const accumulatedChunksRef = useRef<string>("");
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stallIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Keep outlines ref in sync for use inside effect callbacks.
   useEffect(() => {
     outlinesRef.current = outlines;
   }, [outlines]);
 
+  // Keep lifecycle ref in sync so the stall watcher can read the latest state.
+  useEffect(() => {
+    lifecycleRef.current = lifecycle;
+  }, [lifecycle]);
+
+  const closeEventSource = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+  }, []);
+
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, []);
+
+  const clearStallInterval = useCallback(() => {
+    if (stallIntervalRef.current) {
+      clearInterval(stallIntervalRef.current);
+      stallIntervalRef.current = null;
+    }
+  }, []);
+
+  // openStream is defined inside the effect below because it captures
+  // accumulatedChunksRef/prevSlidesRef and status setters; the effect re-runs
+  // only on presentationId/enabled dispatch.
+  const openStreamRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     const resetStreamingState = (message = DEFAULT_STATUS_MESSAGE) => {
-      setIsStreaming(false);
       setIsLoading(false);
       setActiveSlideIndex(null);
       setHighestActiveIndex(-1);
@@ -47,50 +106,61 @@ export const useOutlineStreaming = (
 
     if (!enabled || !presentationId || outlinesRef.current.length > 0) {
       resetStreamingState();
+      setLifecycle("idle");
       return;
     }
 
-    let eventSource: EventSource | null = null;
     let accumulatedChunks = "";
-    let retryCount = 0;
-    let isClosed = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const closeEventSource = () => {
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
+    const closeEventSourceLocal = () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
     };
 
-    const clearRetryTimer = () => {
-      if (retryTimer) {
-        clearTimeout(retryTimer);
-        retryTimer = null;
+    const clearRetryTimerLocal = () => {
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+
+    const clearStallIntervalLocal = () => {
+      if (stallIntervalRef.current) {
+        clearInterval(stallIntervalRef.current);
+        stallIntervalRef.current = null;
       }
     };
 
     const scheduleRetry = (reason: string): boolean => {
-      if (retryCount >= MAX_STREAM_RETRIES || isClosed) {
+      const shouldRetry = shouldSilentRetry({
+        retryCount: retryCountRef.current,
+        hasUsefulEvent: hasUsefulEventRef.current,
+        closed: isClosedRef.current,
+      });
+      if (!shouldRetry) {
         return false;
       }
 
-      retryCount += 1;
-      const retryDelay = STREAM_RETRY_DELAY_MS * retryCount;
+      const retryCount = (retryCountRef.current += 1);
+      const retryDelay = silentRetryDelayMs(retryCount);
       console.warn(
-        `Outline stream retry ${retryCount}/${MAX_STREAM_RETRIES}: ${reason}`
+        `Outline stream retry ${retryCount}: ${reason}`
       );
 
-      closeEventSource();
-      clearRetryTimer();
+      closeEventSourceLocal();
+      clearRetryTimerLocal();
       accumulatedChunks = "";
+      accumulatedChunksRef.current = "";
       prevSlidesRef.current = [];
       activeIndexRef.current = -1;
       highestIndexRef.current = -1;
       setStatusMessage("Reconnecting to outline stream");
+      setLifecycle("connecting");
 
-      retryTimer = setTimeout(() => {
-        if (!isClosed) {
+      retryTimerRef.current = setTimeout(() => {
+        if (!isClosedRef.current) {
           openStream();
         }
       }, retryDelay);
@@ -99,10 +169,22 @@ export const useOutlineStreaming = (
     };
 
     const openStream = () => {
-      closeEventSource();
-      eventSource = new EventSource(
+      closeEventSourceLocal();
+      clearStallIntervalLocal();
+
+      // Stream just (re)opened: reset stall clock so a hung CONNECT also stalls
+      // after STALL_MS. Heartbeat is NOT useful, so it must not refresh this.
+      const now = Date.now();
+      lastUsefulEventAtRef.current = now;
+      if (streamStartedAtRef.current == null) {
+        streamStartedAtRef.current = now;
+      }
+      setLifecycle("connecting");
+
+      const eventSource = new EventSource(
         getApiUrl(`/api/v1/ppt/outlines/stream/${presentationId}`)
       );
+      eventSourceRef.current = eventSource;
 
       eventSource.addEventListener("response", (event) => {
         let data: any;
@@ -111,6 +193,7 @@ export const useOutlineStreaming = (
         } catch {
           if (!scheduleRetry("invalid SSE payload")) {
             resetStreamingState();
+            setLifecycle("failed");
             notify.error(
               "Stream parse failed",
               "Failed to parse outline stream response."
@@ -119,15 +202,26 @@ export const useOutlineStreaming = (
           return;
         }
 
+        if (isUsefulStreamEvent(data.type)) {
+          if (!hasUsefulEventRef.current) {
+            hasUsefulEventRef.current = true;
+          }
+          lastUsefulEventAtRef.current = Date.now();
+        }
+
         switch (data.type) {
           case "status":
             if (data.status) {
               setStatusMessage(data.status);
             }
+            if (lifecycleRef.current !== "stalled") {
+              setLifecycle("generating");
+            }
             break;
 
           case "chunk":
             accumulatedChunks += data.chunk;
+            accumulatedChunksRef.current = accumulatedChunks;
             try {
               const repairedJson = jsonrepair(accumulatedChunks);
               const partialData = JSON.parse(repairedJson);
@@ -163,10 +257,18 @@ export const useOutlineStreaming = (
                 prevSlidesRef.current = nextSlides;
                 dispatch(setOutlines(nextSlides));
                 setIsLoading(false);
+                if (lifecycleRef.current !== "stalled") {
+                  setLifecycle("generating");
+                }
               }
             } catch {
               // JSON is not complete yet, so keep accumulating chunks.
             }
+            break;
+
+          case "heartbeat":
+            // Socket is alive. NOT a useful event: do NOT refresh
+            // lastUsefulEventAt. No-op so the stall watcher keeps running.
             break;
 
           case "complete":
@@ -174,7 +276,6 @@ export const useOutlineStreaming = (
               const outlinesData: { content: string }[] =
                 limitOutlines(data.presentation.outlines.slides);
               dispatch(setOutlines(outlinesData));
-              setIsStreaming(false);
               setIsLoading(false);
               setActiveSlideIndex(null);
               setHighestActiveIndex(-1);
@@ -182,64 +283,185 @@ export const useOutlineStreaming = (
               prevSlidesRef.current = outlinesData;
               activeIndexRef.current = -1;
               highestIndexRef.current = -1;
-              isClosed = true;
-              closeEventSource();
-              clearRetryTimer();
-              retryCount = 0;
+              isClosedRef.current = true;
+              closeEventSourceLocal();
+              clearRetryTimerLocal();
+              clearStallIntervalLocal();
+              setLifecycle("complete");
             } catch {
               if (!scheduleRetry("failed to parse complete payload")) {
                 resetStreamingState();
+                setLifecycle("failed");
                 notify.error("Parse failed", "Failed to parse presentation data.");
               }
             }
             accumulatedChunks = "";
+            accumulatedChunksRef.current = "";
             break;
 
           case "closing":
             resetStreamingState("Outline ready");
-            isClosed = true;
-            closeEventSource();
-            clearRetryTimer();
-            retryCount = 0;
+            isClosedRef.current = true;
+            closeEventSourceLocal();
+            clearRetryTimerLocal();
+            clearStallIntervalLocal();
+            setLifecycle("complete");
             break;
 
           case "error":
-            if (!scheduleRetry(data.detail || "server returned stream error")) {
-              resetStreamingState();
-              closeEventSource();
-              notify.error(
-                "Outline streaming failed",
-                data.detail ||
-                  "Failed to connect to the server. Please try again."
-              );
-            }
+            // Server already failed the job: do NOT silent-retry.
+            isClosedRef.current = true;
+            closeEventSourceLocal();
+            clearRetryTimerLocal();
+            clearStallIntervalLocal();
+            resetStreamingState();
+            setLifecycle("failed");
+            notify.error(
+              "Outline streaming failed",
+              data.detail ||
+                "Failed to connect to the server. Please try again."
+            );
             break;
         }
       });
 
       eventSource.onerror = () => {
-        if (!scheduleRetry("connection lost")) {
-          resetStreamingState();
-          closeEventSource();
-          notify.error(
-            "Connection failed",
-            "Failed to connect to the server. Please try again."
-          );
+        if (isClosedRef.current) {
+          return;
         }
+        if (!hasUsefulEventRef.current) {
+          // Connection lost before any useful event: silent retry allowed.
+          if (!scheduleRetry("connection lost")) {
+            resetStreamingState();
+            closeEventSourceLocal();
+            clearStallIntervalLocal();
+            setLifecycle("failed");
+            notify.error(
+              "Connection failed",
+              "Failed to connect to the server. Please try again."
+            );
+          }
+          return;
+        }
+        // After a useful event, a dead socket is a stall — do NOT reopen.
+        closeEventSourceLocal();
+        clearStallIntervalLocal();
+        setLifecycle("stalled");
+        setStatusMessage("Outline stream stalled — waiting for the server.");
+        trackEvent(MixpanelEvent.Generation_Stalled, {
+          surface: "outline",
+          last_status: statusMessage,
+          duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
+        });
       };
+
+      // Stall watcher: ticks every 1s and flips to "stalled" when no useful
+      // event has arrived for STALL_MS. Reads lifecycleRef to avoid stale state.
+      clearStallIntervalLocal();
+      stallIntervalRef.current = setInterval(() => {
+        const now = Date.now();
+        if (
+          isStalled({
+            now,
+            lastUsefulEventAt: lastUsefulEventAtRef.current,
+            state: lifecycleRef.current,
+          })
+        ) {
+          setLifecycle("stalled");
+          setStatusMessage(
+            "Outline stream stalled — waiting for the server."
+          );
+          trackEvent(MixpanelEvent.Generation_Stalled, {
+            surface: "outline",
+            last_status: statusMessage,
+            duration_ms: now - (streamStartedAtRef.current ?? now),
+          });
+        }
+      }, STALL_INTERVAL_MS);
     };
 
+    openStreamRef.current = openStream;
+
     setStatusMessage(DEFAULT_STATUS_MESSAGE);
-    setIsStreaming(true);
     setIsLoading(true);
+    isClosedRef.current = false;
+    hasUsefulEventRef.current = false;
+    retryCountRef.current = 0;
+    accumulatedChunksRef.current = "";
+    lastUsefulEventAtRef.current = null;
+    streamStartedAtRef.current = null;
     openStream();
 
     return () => {
-      isClosed = true;
-      closeEventSource();
-      clearRetryTimer();
+      isClosedRef.current = true;
+      closeEventSourceLocal();
+      clearRetryTimerLocal();
+      clearStallIntervalLocal();
     };
   }, [presentationId, dispatch, enabled]);
+
+  // isStreaming is derived from lifecycle so it always agrees.
+  const isStreaming = STREAMING_STATES.has(lifecycle);
+
+  const cancel = useCallback(() => {
+    const previousLifecycle = lifecycleRef.current;
+    setLifecycle("cancelling");
+    isClosedRef.current = true;
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (stallIntervalRef.current) {
+      clearInterval(stallIntervalRef.current);
+      stallIntervalRef.current = null;
+    }
+    setIsLoading(false);
+    setLifecycle("cancelled");
+    trackEvent(MixpanelEvent.Generation_Cancelled, {
+      surface: "outline",
+      reason:
+        previousLifecycle === "stalled" ? "user_stop_stalled" : "user_stop",
+      draft_count: outlinesRef.current.length,
+      duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
+    });
+    // Persist of the draft is Task 7 — not here. Do NOT clear Redux outlines.
+  }, []);
+
+  const keepWaiting = useCallback(() => {
+    const stalledForMs =
+      Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
+    lastUsefulEventAtRef.current = Date.now();
+    setLifecycle("generating");
+    trackEvent(MixpanelEvent.Generation_Keep_Waiting, {
+      surface: "outline",
+      stalled_for_ms: stalledForMs,
+    });
+  }, []);
+
+  const retry = useCallback(() => {
+    const fromState = lifecycleRef.current;
+    if (fromState !== "stalled" && fromState !== "failed") {
+      return;
+    }
+    hasUsefulEventRef.current = false;
+    retryCountRef.current = 0;
+    isClosedRef.current = false;
+    accumulatedChunksRef.current = "";
+    lastUsefulEventAtRef.current = null;
+    streamStartedAtRef.current = null;
+    setLifecycle("connecting");
+    setIsLoading(true);
+    setStatusMessage(DEFAULT_STATUS_MESSAGE);
+    trackEvent(MixpanelEvent.Generation_Retry_Clicked, {
+      surface: "outline",
+      from_state: fromState,
+    });
+    openStreamRef.current();
+  }, []);
 
   return {
     isStreaming,
@@ -247,5 +469,10 @@ export const useOutlineStreaming = (
     activeSlideIndex,
     highestActiveIndex,
     statusMessage,
+    lifecycle,
+    draftCount: outlines.length,
+    cancel,
+    keepWaiting,
+    retry,
   };
 };
