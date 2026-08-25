@@ -375,7 +375,7 @@ function UploadPanel({
             i
           </span>
           <p>
-            Presenton sends each slide as a screenshot and HTML reference. Use a
+            GSlide sends each slide as a screenshot and HTML reference. Use a
             vision-enabled model for accurate layouts. Text-only models may produce
             poor results or fail.
           </p>

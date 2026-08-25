@@ -393,3 +393,38 @@ test("session cookie and API key identity are GSlide with Presenton fallback", a
   assert.match(exporter, /gslide_session/);
   assert.match(exporter, /presenton_session/);
 });
+
+test("app metadata does not use presenton.ai", async () => {
+  const layout = await readNext("app/layout.tsx");
+  assert.doesNotMatch(layout, /presenton\.ai/);
+  assert.match(layout, /NEXT_PUBLIC_SITE_URL/);
+  assert.match(layout, /\/apple-icon\.png/);
+
+  const upload = await readNext(
+    "app/(presentation-generator)/upload/page.tsx",
+  );
+  assert.doesNotMatch(upload, /presenton\.ai/);
+  assert.doesNotMatch(upload, /PresentOn/);
+  assert.doesNotMatch(upload, /@presenton_ai/);
+
+  const outline = await readNext(
+    "app/(presentation-generator)/outline/page.tsx",
+  );
+  assert.doesNotMatch(outline, /presenton\.ai/);
+});
+
+test("onboarding and community copy are GSlide not Presenton product", async () => {
+  const mode = await readNext("components/OnBoarding/PresentonMode.tsx");
+  assert.doesNotMatch(mode, /Presenton account/);
+  assert.doesNotMatch(mode, /how Presenton creates/);
+
+  const picker = await readNext(
+    "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
+  );
+  assert.doesNotMatch(picker, /\|\| "Presenton"/);
+
+  const preview = await readNext(
+    "app/(presentation-generator)/(dashboard)/community/components/CommunityDesignPreviewDialog.tsx",
+  );
+  assert.doesNotMatch(preview, /Presenton managed/);
+});

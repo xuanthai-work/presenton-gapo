@@ -38,8 +38,10 @@ const unbounded = Unbounded({
   variable: "--font-unbounded",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://presenton.ai"),
+  metadataBase: new URL(siteUrl),
   title: "GSlide - AI presentation generator",
   description:
     "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
@@ -57,11 +59,11 @@ export const metadata: Metadata = {
     title: "GSlide - AI presentation generator",
     description:
       "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
-    url: "https://presenton.ai",
+    url: siteUrl,
     siteName: "GSlide",
     images: [
       {
-        url: "https://presenton.ai/presenton-feature-graphics.png",
+        url: "/apple-icon.png",
         width: 1200,
         height: 630,
         alt: "GSlide Logo",
@@ -71,14 +73,14 @@ export const metadata: Metadata = {
     locale: "en_US",
   },
   alternates: {
-    canonical: "https://presenton.ai",
+    canonical: "/",
   },
   twitter: {
     card: "summary_large_image",
     title: "GSlide - AI presentation generator",
     description:
       "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
-    images: ["https://presenton.ai/presenton-feature-graphics.png"],
+    images: ["/apple-icon.png"],
   },
 };
 

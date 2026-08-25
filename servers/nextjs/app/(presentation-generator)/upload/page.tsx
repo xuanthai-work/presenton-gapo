@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
   alternates: {
-    canonical: "https://presenton.ai/create",
+    canonical: "/create",
   },
   keywords: [
     "presentation generator",
@@ -24,20 +24,18 @@ export const metadata: Metadata = {
     "business presentations",
   ],
   openGraph: {
-    title: "Create Data Presentation | PresentOn",
+    title: "Create Data Presentation | GSlide",
     description:
       "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
     type: "website",
-    url: "https://presenton.ai/create",
-    siteName: "PresentOn",
+    url: "/create",
+    siteName: "GSlide",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Create Data Presentation | PresentOn",
+    title: "Create Data Presentation | GSlide",
     description:
       "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
-    site: "@presenton_ai",
-    creator: "@presenton_ai",
   },
 };
 

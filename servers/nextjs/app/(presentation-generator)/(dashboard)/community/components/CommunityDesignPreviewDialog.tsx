@@ -263,7 +263,7 @@ export default function CommunityDesignPreviewDialog({
                     <dl className="mt-2.5 space-y-2.5">
                       <SetupRow label="Text">
                         <SetupChip>
-                          {textProvider ? getProviderVisual(textProvider).label : "Presenton managed"}
+                          {textProvider ? getProviderVisual(textProvider).label : "GSlide"}
                         </SetupChip>
                         {setup?.text_model?.trim() && (
                           <SetupChip>{setup.text_model}</SetupChip>
@@ -271,12 +271,12 @@ export default function CommunityDesignPreviewDialog({
                       </SetupRow>
                       <SetupRow label="Images">
                         <SetupChip>
-                          {imageProvider ? getProviderVisual(imageProvider).label : "Presenton managed"}
+                          {imageProvider ? getProviderVisual(imageProvider).label : "GSlide"}
                         </SetupChip>
                       </SetupRow>
                       <SetupRow label="Web Search">
                         <SetupChip>
-                          {webSearchProvider ? getProviderVisual(webSearchProvider).label : "Presenton managed"}
+                          {webSearchProvider ? getProviderVisual(webSearchProvider).label : "GSlide"}
                         </SetupChip>
                       </SetupRow>
                       {referencePresentationIds.length > 0 && (
@@ -483,7 +483,7 @@ function getProviderVisual(provider: string) {
       .filter(Boolean)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ") ??
-    "Presenton";
+    "GSlide";
   const initials =
     label
       .split(/\s+/)
@@ -491,7 +491,7 @@ function getProviderVisual(provider: string) {
       .slice(0, 2)
       .map((word) => word[0])
       .join("")
-      .toUpperCase() || "P";
+      .toUpperCase() || "G";
 
   return { label, src: option?.icon, initials };
 }

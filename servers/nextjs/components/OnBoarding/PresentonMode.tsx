@@ -530,9 +530,9 @@ const PresentonMode = ({
                 </h2>
                 <p className='text-[#000000CC] text-xl font-normal font-syne'>
                     {providerStep === 1
-                        ? "Use your Presenton account, or configure your own AI providers."
+                        ? "Use your GSlide account, or configure your own AI providers."
                         : providerStep === 2
-                            ? "Choose how Presenton creates visuals, or continue without image generation."
+                            ? "Choose how GSlide creates visuals, or continue without image generation."
                             : "Add current web context to presentations, or continue with web search disabled."}
                 </p>
             </div>
