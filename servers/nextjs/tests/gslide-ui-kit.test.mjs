@@ -379,3 +379,17 @@ test("app metadata titles use GSlide", async () => {
   assert.match(notFound, /GSlide/);
   assert.doesNotMatch(notFound, /Presenton/);
 });
+
+test("session cookie and API key identity are GSlide with Presenton fallback", async () => {
+  const proxy = await readNext("proxy.ts");
+  assert.match(proxy, /gslide_session/);
+  assert.match(proxy, /presenton_session/);
+  assert.match(proxy, /sk-gslide-/);
+  assert.match(proxy, /sk-presenton-/);
+  assert.match(proxy, /GSlide API/);
+  assert.doesNotMatch(proxy, /Presenton API/);
+
+  const exporter = await readNext("lib/run-bundled-presentation-export.ts");
+  assert.match(exporter, /gslide_session/);
+  assert.match(exporter, /presenton_session/);
+});

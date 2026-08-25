@@ -28,12 +28,14 @@ function extractSessionTokenFromCookieHeader(cookieHeader?: string): string | un
     return undefined;
   }
 
-  const match = cookieHeader.match(/(?:^|;\s*)presenton_session=([^;]+)/);
-  if (!match?.[1]) {
+  const gslide = cookieHeader.match(/(?:^|;\s*)gslide_session=([^;]+)/);
+  const presenton = cookieHeader.match(/(?:^|;\s*)presenton_session=([^;]+)/);
+  const value = gslide?.[1] || presenton?.[1];
+  if (!value) {
     return undefined;
   }
 
-  return decodeURIComponent(match[1]);
+  return decodeURIComponent(value);
 }
 
 async function resolveExportEntrypoint(exportRoot: string): Promise<string> {

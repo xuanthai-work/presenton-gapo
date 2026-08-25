@@ -58,7 +58,8 @@ type AuthStatus = {
   authenticated: boolean;
 };
 
-const SESSION_COOKIE_NAME = "presenton_session";
+const SESSION_COOKIE_NAME = "gslide_session";
+const LEGACY_SESSION_COOKIE_NAME = "presenton_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {
@@ -136,13 +137,19 @@ export async function proxy(request: NextRequest) {
   }
 
   const authorization = request.headers.get("authorization") || "";
-  if (authorization.toLowerCase().startsWith("bearer sk-presenton-")) {
+  const bearer = authorization.toLowerCase().startsWith("bearer ")
+    ? authorization.slice(7).trim()
+    : "";
+  if (
+    bearer.startsWith("sk-gslide-") ||
+    bearer.startsWith("sk-presenton-")
+  ) {
     // FastAPI validates admin-owned API keys. Do not treat them as browser
     // sessions or expose them to local Next.js configuration routes.
     return isFastApiApiPath(pathname)
       ? rewriteToFastApi(request)
       : NextResponse.json(
-          { detail: "API keys are only accepted by the Presenton API" },
+          { detail: "API keys are only accepted by the GSlide API" },
           { status: 403 }
         );
   }
