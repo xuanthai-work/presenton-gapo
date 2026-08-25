@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status (2026-08-24):** Complete on `main`. Tasks 1–11 shipped as `4f3de04d`…`c57e45e9`, then residual chrome + Presenton Cloud isolation. Original constraint “Do not change FastAPI Presenton Cloud modules / Backend OAuth stays” is **superseded**: OAuth router, cloud proxy, `presenton_cloud_provider` table, and leftover `LLM === "presenton"` UI are removed. Community catalog (`api.presenton.ai`) is unchanged. Internal names (`presenton_session`, `sk-presenton-`) stay.
+**Status (2026-08-24):** Tasks 1–11 complete on `main`. **Follow-on Task 12** (slide-editor floating toolbars / picker chrome) is in `docs/superpowers/plans/2026-08-24-gslide-slide-editor-chrome.md` — not started. Original constraint “Do not change FastAPI Presenton Cloud modules / Backend OAuth stays” is **superseded**: OAuth router, cloud proxy, `presenton_cloud_provider` table, and leftover `LLM === "presenton"` UI are removed. Community catalog (`api.presenton.ai`) is unchanged. Internal names (`presenton_session`, `sk-presenton-`) stay.
 
 **Goal:** Restyle all Next.js product chrome to the Auth blue palette under the GSlide brand, via a reusable kit, including splash/skeleton/loader states.
 
@@ -1245,9 +1245,10 @@ git commit -m "feat(ui): sweep leftover Presenton chrome colors and titles"
 - Auth + landing -> Task 6
 - Dashboard/settings/community/admin + hide Cloud -> Tasks 7-8
 - Wizards -> Task 9
-- Editor chrome, not slide HTML -> Task 10
+- Editor chrome, not slide HTML -> Task 10 (headers/overlay); Task 12 follow-on for slide-editor toolbars
 - Residual purple / Presenton titles -> Task 11
 - Non-goals (backend, logo PNG, dark mode, routes) stated in constraints
+- Slide-editor floating chrome (`#7C3AED` / `#F6F6F9`) -> `docs/superpowers/plans/2026-08-24-gslide-slide-editor-chrome.md`
 
 **Placeholder scan:** none
 
