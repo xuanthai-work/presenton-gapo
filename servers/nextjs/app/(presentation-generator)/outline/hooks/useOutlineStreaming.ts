@@ -52,6 +52,7 @@ export const useOutlineStreaming = (
   const lastUsefulEventAtRef = useRef<number | null>(null);
   const streamStartedAtRef = useRef<number | null>(null);
   const lifecycleRef = useRef<GenerationLifecycleState>("idle");
+  const statusMessageRef = useRef<string>(DEFAULT_STATUS_MESSAGE);
 
   const accumulatedChunksRef = useRef<string>("");
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,25 +68,38 @@ export const useOutlineStreaming = (
     lifecycleRef.current = lifecycle;
   }, [lifecycle]);
 
-  const closeEventSource = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-  }, []);
+  // Keep statusMessage ref in sync so stall analytics read the latest value.
+  useEffect(() => {
+    statusMessageRef.current = statusMessage;
+  }, [statusMessage]);
 
-  const clearRetryTimer = useCallback(() => {
-    if (retryTimerRef.current) {
-      clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = null;
-    }
-  }, []);
-
-  const clearStallInterval = useCallback(() => {
+  // Stall watcher: ticks every STALL_INTERVAL_MS and flips lifecycle to
+  // "stalled" when no useful event has arrived for STALL_MS. Defined in the
+  // hook body (not the effect) so both openStream and keepWaiting can (re)start
+  // it — important because an onerror-stall clears the interval, and
+  // keepWaiting must be able to resume stall detection afterwards.
+  const startStallWatcher = useCallback(() => {
     if (stallIntervalRef.current) {
-      clearInterval(stallIntervalRef.current);
-      stallIntervalRef.current = null;
+      return;
     }
+    stallIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      if (
+        isStalled({
+          now,
+          lastUsefulEventAt: lastUsefulEventAtRef.current,
+          state: lifecycleRef.current,
+        })
+      ) {
+        setLifecycle("stalled");
+        setStatusMessage("Outline stream stalled — waiting for the server.");
+        trackEvent(MixpanelEvent.Generation_Stalled, {
+          surface: "outline",
+          last_status: statusMessageRef.current,
+          duration_ms: now - (streamStartedAtRef.current ?? now),
+        });
+      }
+    }, STALL_INTERVAL_MS);
   }, []);
 
   // openStream is defined inside the effect below because it captures
@@ -172,6 +186,17 @@ export const useOutlineStreaming = (
       closeEventSourceLocal();
       clearStallIntervalLocal();
 
+      // Start each (re)open from a clean buffer so a new job (e.g. after retry)
+      // does not append to stale partial JSON. Also reset the slide-diff refs
+      // so the new job's slides are not diffed against the previous job's.
+      accumulatedChunks = "";
+      accumulatedChunksRef.current = "";
+      prevSlidesRef.current = [];
+      activeIndexRef.current = -1;
+      highestIndexRef.current = -1;
+      setActiveSlideIndex(null);
+      setHighestActiveIndex(-1);
+
       // Stream just (re)opened: reset stall clock so a hung CONNECT also stalls
       // after STALL_MS. Heartbeat is NOT useful, so it must not refresh this.
       const now = Date.now();
@@ -214,9 +239,7 @@ export const useOutlineStreaming = (
             if (data.status) {
               setStatusMessage(data.status);
             }
-            if (lifecycleRef.current !== "stalled") {
-              setLifecycle("generating");
-            }
+            setLifecycle("generating");
             break;
 
           case "chunk":
@@ -257,9 +280,7 @@ export const useOutlineStreaming = (
                 prevSlidesRef.current = nextSlides;
                 dispatch(setOutlines(nextSlides));
                 setIsLoading(false);
-                if (lifecycleRef.current !== "stalled") {
-                  setLifecycle("generating");
-                }
+                setLifecycle("generating");
               }
             } catch {
               // JSON is not complete yet, so keep accumulating chunks.
@@ -350,34 +371,17 @@ export const useOutlineStreaming = (
         setStatusMessage("Outline stream stalled — waiting for the server.");
         trackEvent(MixpanelEvent.Generation_Stalled, {
           surface: "outline",
-          last_status: statusMessage,
+          last_status: statusMessageRef.current,
           duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
         });
       };
 
-      // Stall watcher: ticks every 1s and flips to "stalled" when no useful
-      // event has arrived for STALL_MS. Reads lifecycleRef to avoid stale state.
+      // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"
+      // when no useful event has arrived for STALL_MS. Uses the shared
+      // startStallWatcher so keepWaiting can resume detection after an
+      // onerror-stall cleared the interval.
       clearStallIntervalLocal();
-      stallIntervalRef.current = setInterval(() => {
-        const now = Date.now();
-        if (
-          isStalled({
-            now,
-            lastUsefulEventAt: lastUsefulEventAtRef.current,
-            state: lifecycleRef.current,
-          })
-        ) {
-          setLifecycle("stalled");
-          setStatusMessage(
-            "Outline stream stalled — waiting for the server."
-          );
-          trackEvent(MixpanelEvent.Generation_Stalled, {
-            surface: "outline",
-            last_status: statusMessage,
-            duration_ms: now - (streamStartedAtRef.current ?? now),
-          });
-        }
-      }, STALL_INTERVAL_MS);
+      startStallWatcher();
     };
 
     openStreamRef.current = openStream;
@@ -436,11 +440,18 @@ export const useOutlineStreaming = (
       Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
     lastUsefulEventAtRef.current = Date.now();
     setLifecycle("generating");
+    // An onerror-stall clears the stall interval. Restart it here so stall
+    // detection continues if the user opts to keep waiting after a socket
+    // death (intended recovery after socket death is retry, but keepWaiting
+    // must not leave the watcher dead).
+    if (!stallIntervalRef.current) {
+      startStallWatcher();
+    }
     trackEvent(MixpanelEvent.Generation_Keep_Waiting, {
       surface: "outline",
       stalled_for_ms: stalledForMs,
     });
-  }, []);
+  }, [startStallWatcher]);
 
   const retry = useCallback(() => {
     const fromState = lifecycleRef.current;
