@@ -6,6 +6,7 @@ import math
 import re
 from typing import Any
 
+from templates.v2.content import template_asset_prompt
 from utils.latex_text import replace_text_runs, text_runs_to_tagged_text
 
 _PATH_SEGMENT_RE = re.compile(r"^(?P<key>components|elements|children)\[(?P<index>\d+)\]$")
@@ -374,7 +375,7 @@ def _normalize_image_element(element: dict[str, Any]) -> None:
     if asset_url and _looks_like_asset_reference(asset_url):
         element["data"] = asset_url
     element.setdefault("is_icon", False)
-    prompt = _template_asset_prompt(
+    prompt = template_asset_prompt(
         element,
         is_icon=element.get("is_icon") is True,
     )
@@ -1708,22 +1709,6 @@ def _template_asset_url(value: Any) -> str | None:
     return fallback_url
 
 
-def _template_asset_prompt(value: Any, *, is_icon: bool) -> str | None:
-    if not isinstance(value, dict):
-        return None
-
-    prompt_keys = (
-        ("icon_query", "__icon_query__", "query", "prompt")
-        if is_icon
-        else ("image_prompt", "__image_prompt__", "prompt", "query")
-    )
-    for key in prompt_keys:
-        prompt = value.get(key)
-        if isinstance(prompt, str) and prompt.strip():
-            return prompt
-    return None
-
-
 def _apply_image_element_value(element: dict[str, Any], value: Any) -> None:
     asset_url = _template_asset_url(value)
     if not asset_url:
@@ -1732,7 +1717,7 @@ def _apply_image_element_value(element: dict[str, Any], value: Any) -> None:
         )
     element["data"] = asset_url
     _normalize_generated_image_fit(element, asset_url)
-    prompt = _template_asset_prompt(
+    prompt = template_asset_prompt(
         value,
         is_icon=element.get("is_icon") is True,
     )

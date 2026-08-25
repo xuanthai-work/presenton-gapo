@@ -25,7 +25,13 @@ from services.mem0_presentation_memory_service import MEM0_PRESENTATION_MEMORY_S
 from services.temp_file_service import TEMP_FILE_SERVICE
 from templates.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from templates.v2.schema import get_template_schema
-from templates.v2.content import hydrate_repeated_top_level_groups
+from templates.v2.content import (
+    hydrate_repeated_top_level_groups,
+    lookup_template_content,
+    read_template_text,
+    repeated_content_keys_for_name,
+    template_asset_prompt,
+)
 from utils.asset_directory_utils import (
     filesystem_image_path_to_app_data_url,
     get_images_directory,
@@ -3817,12 +3823,12 @@ class PresentationChatMemoryLayer:
         value = None
         if isinstance(name, str):
             if preferred_content_keys is None and name_occurrences is not None:
-                preferred_content_keys = cls._template_repeated_content_keys_for_name(
+                preferred_content_keys = repeated_content_keys_for_name(
                     name,
                     content_values,
                     name_occurrences,
                 )
-            has_value, value = cls._template_content_value(
+            has_value, value = lookup_template_content(
                 content_values,
                 name,
                 preferred_keys=preferred_content_keys,
@@ -3920,55 +3926,6 @@ class PresentationChatMemoryLayer:
                 name_occurrences=scoped_name_occurrences,
             )
 
-    @staticmethod
-    def _template_repeated_content_keys_for_name(
-        name: str,
-        content: dict[str, Any],
-        name_occurrences: dict[str, int],
-    ) -> list[str] | None:
-        occurrence_index = name_occurrences.get(name, 0)
-        name_occurrences[name] = occurrence_index + 1
-        if occurrence_index == 0:
-            return None
-
-        suffixed_key = f"{name}_{occurrence_index + 1}"
-        return [suffixed_key] if suffixed_key in content else None
-
-    @staticmethod
-    def _template_content_value(
-        content: dict[str, Any],
-        name: str,
-        *,
-        preferred_keys: list[str] | None = None,
-    ) -> tuple[bool, Any]:
-        candidates: list[str] = []
-        for candidate in [
-            *(preferred_keys or []),
-            *PresentationChatMemoryLayer._template_content_name_candidates(name),
-        ]:
-            if candidate and candidate not in candidates:
-                candidates.append(candidate)
-
-        for candidate in candidates:
-            if candidate in content:
-                return True, content[candidate]
-        return False, None
-
-    @staticmethod
-    def _template_content_name_candidates(name: str) -> list[str]:
-        without_numeric_token = re.sub(r"_\d+(?=_|$)", "", name)
-        without_prefix = (
-            without_numeric_token.split("_", 1)[1]
-            if "_" in without_numeric_token
-            else without_numeric_token
-        )
-
-        candidates: list[str] = []
-        for candidate in (name, without_numeric_token, without_prefix):
-            if candidate and candidate not in candidates:
-                candidates.append(candidate)
-        return candidates
-
     @classmethod
     def _set_template_element_value(
         cls,
@@ -3979,7 +3936,7 @@ class PresentationChatMemoryLayer:
     ) -> None:
         element_type = element.get("type")
         if element_type == "text":
-            text = cls._template_text_value(value)
+            text = read_template_text(value)
             if text is None or text == "":
                 return
             cls._set_template_runs_text(element, text)
@@ -3990,7 +3947,7 @@ class PresentationChatMemoryLayer:
             return
 
         if element_type == "math":
-            latex = cls._template_text_value(value)
+            latex = read_template_text(value)
             if latex is None or not latex.strip():
                 return
             normalized = latex.strip()
@@ -4008,7 +3965,7 @@ class PresentationChatMemoryLayer:
             element["items"] = [
                 cls._replacement_runs_from_existing(
                     source_items[index] if index < len(source_items) else None,
-                    cls._template_text_value(item) or "",
+                    read_template_text(item) or "",
                     element.get("font"),
                 )
                 for index, item in enumerate(value)
@@ -4024,9 +3981,9 @@ class PresentationChatMemoryLayer:
 
                 element["data"] = asset_url
                 _normalize_generated_image_fit(element, asset_url)
-                prompt = cls._template_asset_prompt(
+                prompt = template_asset_prompt(
                     value,
-                    element.get("is_icon") is True,
+                    is_icon=element.get("is_icon") is True,
                 )
                 if prompt:
                     element["prompt"] = prompt
@@ -4080,20 +4037,6 @@ class PresentationChatMemoryLayer:
         )
 
     @staticmethod
-    def _template_text_value(value: Any) -> str | None:
-        if isinstance(value, str):
-            return value
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            return str(value)
-        if isinstance(value, dict):
-            text = value.get("text")
-            if isinstance(text, str):
-                return text
-            if isinstance(text, (int, float)) and not isinstance(text, bool):
-                return str(text)
-        return None
-
-    @staticmethod
     def _replacement_runs_from_existing(
         existing_runs: Any,
         text: str,
@@ -4127,22 +4070,6 @@ class PresentationChatMemoryLayer:
                 if fallback_url is None:
                     fallback_url = normalized_url
         return fallback_url
-
-    @staticmethod
-    def _template_asset_prompt(value: Any, is_icon: bool) -> str | None:
-        if not isinstance(value, dict):
-            return None
-
-        prompt_keys = (
-            ("icon_query", "__icon_query__", "query", "prompt")
-            if is_icon
-            else ("image_prompt", "__image_prompt__", "prompt", "query")
-        )
-        for key in prompt_keys:
-            prompt = value.get(key)
-            if isinstance(prompt, str) and prompt.strip():
-                return prompt
-        return None
 
     @classmethod
     def _set_template_table_content(

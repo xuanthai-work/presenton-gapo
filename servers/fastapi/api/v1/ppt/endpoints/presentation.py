@@ -4,7 +4,6 @@ from datetime import datetime
 import json
 import logging
 import random
-import re
 import traceback
 from typing import Annotated, Any, List, Literal, Optional, Tuple
 import dirtyjson
@@ -100,7 +99,13 @@ from utils.web_search import build_web_search_query, get_web_search_context
 from api.v1.auth.context import get_current_owner_id
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from templates.v2.schema import get_template_schema
-from templates.v2.content import hydrate_repeated_top_level_groups
+from templates.v2.content import (
+    hydrate_repeated_top_level_groups,
+    lookup_template_content,
+    read_template_text,
+    repeated_content_keys_for_name,
+    template_asset_prompt,
+)
 from templates.default_templates import resolve_default_template_id
 from services.community_presentations import (
     build_community_design_context,
@@ -571,12 +576,12 @@ def _apply_template_content_to_element(
     value = None
     if name:
         if preferred_content_keys is None and name_occurrences is not None:
-            preferred_content_keys = _template_repeated_content_keys_for_name(
+            preferred_content_keys = repeated_content_keys_for_name(
                 name,
                 content_values,
                 name_occurrences,
             )
-        has_value, value = _template_content_value(
+        has_value, value = lookup_template_content(
             content_values,
             name,
             preferred_keys=preferred_content_keys,
@@ -638,41 +643,6 @@ def _apply_template_content_to_element(
     return copy.deepcopy(element)
 
 
-def _template_content_value(
-    content: dict[str, Any],
-    name: str,
-    *,
-    preferred_keys: list[str] | None = None,
-) -> tuple[bool, Any]:
-    candidates: list[str] = []
-    for candidate in [
-        *(preferred_keys or []),
-        *_template_content_name_candidates(name),
-    ]:
-        if candidate and candidate not in candidates:
-            candidates.append(candidate)
-
-    for candidate in candidates:
-        if candidate in content:
-            return True, content[candidate]
-    return False, None
-
-
-def _template_content_name_candidates(name: str) -> list[str]:
-    without_numeric_token = re.sub(r"_\d+(?=_|$)", "", name)
-    without_prefix = (
-        without_numeric_token.split("_", 1)[1]
-        if "_" in without_numeric_token
-        else without_numeric_token
-    )
-
-    candidates = []
-    for candidate in (name, without_numeric_token, without_prefix):
-        if candidate and candidate not in candidates:
-            candidates.append(candidate)
-    return candidates
-
-
 def _apply_template_content_to_children(
     children: list[Any],
     value: Any,
@@ -720,20 +690,6 @@ def _apply_template_content_to_element_list(
     return hydrated_elements
 
 
-def _template_repeated_content_keys_for_name(
-    name: str,
-    content: dict[str, Any],
-    name_occurrences: dict[str, int],
-) -> list[str] | None:
-    occurrence_index = name_occurrences.get(name, 0)
-    name_occurrences[name] = occurrence_index + 1
-    if occurrence_index == 0:
-        return None
-
-    suffixed_key = f"{name}_{occurrence_index + 1}"
-    return [suffixed_key] if suffixed_key in content else None
-
-
 def _apply_template_content_value(element: dict[str, Any], value: Any) -> dict[str, Any]:
     element_type = element.get("type")
     if element_type == "text":
@@ -755,7 +711,7 @@ def _apply_template_math_content(
     element: dict[str, Any],
     value: Any,
 ) -> dict[str, Any]:
-    latex = _read_template_text(value)
+    latex = read_template_text(value)
     if latex is None or latex.strip() == "":
         return copy.deepcopy(element)
 
@@ -770,25 +726,11 @@ def _apply_template_math_content(
     return updated
 
 
-def _read_template_text(value: Any) -> Optional[str]:
-    if isinstance(value, str):
-        return value
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return str(value)
-    if isinstance(value, dict):
-        text = value.get("text")
-        if isinstance(text, str):
-            return text
-        if isinstance(text, (int, float)) and not isinstance(text, bool):
-            return str(text)
-    return None
-
-
 def _apply_template_text_content(
     element: dict[str, Any],
     value: Any,
 ) -> dict[str, Any]:
-    text = _read_template_text(value)
+    text = read_template_text(value)
     if text is None or text == "":
         return copy.deepcopy(element)
 
@@ -823,26 +765,10 @@ def _apply_template_image_content(
     updated = copy.deepcopy(element)
     updated["data"] = url
     _normalize_generated_image_fit(updated, url)
-    prompt = _template_asset_prompt(value, element.get("is_icon") is True)
+    prompt = template_asset_prompt(value, is_icon=element.get("is_icon") is True)
     if prompt:
         updated["prompt"] = prompt
     return updated
-
-
-def _template_asset_prompt(value: Any, is_icon: bool) -> Optional[str]:
-    if not isinstance(value, dict):
-        return None
-
-    prompt_keys = (
-        ("icon_query", "__icon_query__", "query", "prompt")
-        if is_icon
-        else ("image_prompt", "__image_prompt__", "prompt", "query")
-    )
-    for key in prompt_keys:
-        prompt = value.get(key)
-        if isinstance(prompt, str) and prompt.strip():
-            return prompt
-    return None
 
 
 def _apply_template_text_list_content(
@@ -858,7 +784,7 @@ def _apply_template_text_list_content(
 
     items = []
     for index, item in enumerate(value):
-        text = _read_template_text(item)
+        text = read_template_text(item)
         if text is not None and text != "":
             existing_runs = (
                 existing_items[index]
