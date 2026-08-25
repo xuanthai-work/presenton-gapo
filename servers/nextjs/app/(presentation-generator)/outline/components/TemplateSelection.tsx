@@ -40,7 +40,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
     onSelectTemplate,
     onCreateTemplate,
   }) {
-    const { defaultTemplates, customTemplates, loading } =
+    const { defaultTemplates, customTemplates, loading, error } =
       useTemplateSummaries();
 
     useEffect(() => {
@@ -84,6 +84,14 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
 
     if (loading) {
       return <TemplateListLoadingState />;
+    }
+
+    if (error) {
+      return (
+        <TemplateListEmptyState
+          message={`Templates could not be loaded: ${error}`}
+        />
+      );
     }
 
     const renderTemplateCard = (
