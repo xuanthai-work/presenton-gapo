@@ -47,3 +47,11 @@ class SSECompleteResponse(BaseModel):
             event="response",
             data=json.dumps({"type": "complete", self.key: self.value}),
         ).to_string()
+
+
+class SSEHeartbeatResponse(BaseModel):
+    def to_string(self):
+        return SSEResponse(
+            event="response",
+            data=json.dumps({"type": "heartbeat"}),
+        ).to_string()
