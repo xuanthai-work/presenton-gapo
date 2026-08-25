@@ -14,6 +14,7 @@ import {
   type GenerationLifecycleState,
 } from "@/lib/generation-lifecycle";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
+import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
 const DEFAULT_STATUS_MESSAGE = "Preparing your presentation outline";
 const STALL_INTERVAL_MS = 1_000;
@@ -407,7 +408,7 @@ export const useOutlineStreaming = (
   // isStreaming is derived from lifecycle so it always agrees.
   const isStreaming = STREAMING_STATES.has(lifecycle);
 
-  const cancel = useCallback(() => {
+  const cancel = useCallback(async () => {
     const previousLifecycle = lifecycleRef.current;
     setLifecycle("cancelling");
     isClosedRef.current = true;
@@ -432,8 +433,19 @@ export const useOutlineStreaming = (
       draft_count: outlinesRef.current.length,
       duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
     });
-    // Persist of the draft is Task 7 — not here. Do NOT clear Redux outlines.
-  }, []);
+    // Best-effort persist of the stopped outline draft. Set lifecycle to
+    // "cancelled" BEFORE the await so the UI dismisses the bar immediately;
+    // the UI fire-and-forgets this with `void cancel()` (Task 8).
+    const slides = outlinesRef.current;
+    if (slides.length > 0 && presentationId) {
+      try {
+        await PresentationGenerationApi.updateOutlines(presentationId, slides);
+      } catch {
+        notify.error("Draft not saved", "Refresh may lose the stopped outline.");
+      }
+    }
+    // Do NOT clear Redux outlines. Do NOT mark the outline as fully ready.
+  }, [presentationId]);
 
   const keepWaiting = useCallback(() => {
     const stalledForMs =

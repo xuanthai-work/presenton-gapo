@@ -17,6 +17,7 @@ import {
   mergeSlidesPreservingResolvedAssets,
 } from "../utils/streamAssetMerge";
 import { isTemplateV2Slide } from "../../_shared/blank-slide";
+import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import {
   isStalled,
   isUsefulStreamEvent,
@@ -786,7 +787,7 @@ export const usePresentationStreaming = (
   // draftCount read from the store reactively (slides length).
   const draftCount = presentationData?.slides?.length ?? 0;
 
-  const cancel = useCallback(() => {
+  const cancel = useCallback(async () => {
     const previousLifecycle = lifecycleRef.current;
     setLifecycle("cancelling");
     isClosedRef.current = true;
@@ -821,8 +822,21 @@ export const usePresentationStreaming = (
       draft_count: draftSlides,
       duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
     });
-    // Persist of the draft is Task 7 — not here. Do NOT clearPresentationData:
-    // cancel keeps the current Redux slides as the draft.
+    // Best-effort persist of the stopped slide draft. Set lifecycle to
+    // "cancelled" BEFORE the await so the UI dismisses the bar immediately;
+    // the UI fire-and-forgets this with `void cancel()` (Task 8). Do NOT
+    // clearPresentationData: cancel keeps the current Redux slides as the draft.
+    const presentationData = store.getState().presentationGeneration.presentationData;
+    const slides = presentationData?.slides;
+    if (Array.isArray(slides) && slides.length > 0) {
+      try {
+        await PresentationGenerationApi.updatePresentationContent(
+          JSON.stringify(presentationData)
+        );
+      } catch {
+        notify.error("Draft not saved", "Refresh may lose the stopped slides.");
+      }
+    }
   }, [dispatch, setLoading]);
 
   const keepWaiting = useCallback(() => {
