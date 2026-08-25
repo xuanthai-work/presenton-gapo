@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useDispatch } from "react-redux";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   clearPresentationData,
   setPresentationData,
@@ -11,15 +11,29 @@ import { notify } from "@/components/ui/sonner";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { getApiUrl, normalizeBackendAssetUrls } from "@/utils/api";
-import { store } from "@/store/store";
+import { store, type RootState } from "@/store/store";
 import {
   mergeSingleSlidePreservingResolvedAssets,
   mergeSlidesPreservingResolvedAssets,
 } from "../utils/streamAssetMerge";
 import { isTemplateV2Slide } from "../../_shared/blank-slide";
+import {
+  isStalled,
+  isUsefulStreamEvent,
+  shouldSilentRetry,
+  silentRetryDelayMs,
+  type GenerationLifecycleState,
+} from "@/lib/generation-lifecycle";
 
 const MAX_STREAM_RETRIES = 3;
-const STREAM_RETRY_DELAY_MS = 1_000;
+const STALL_INTERVAL_MS = 1_000;
+
+const STREAMING_STATES: ReadonlySet<GenerationLifecycleState> = new Set([
+  "connecting",
+  "generating",
+  "stalled",
+  "cancelling",
+]);
 
 function mergePresentationPreservingTemplateData(
   incoming: PresentationData
@@ -99,21 +113,85 @@ export const usePresentationStreaming = (
   } = {}
 ) => {
   const dispatch = useDispatch();
+  const presentationData = useSelector(
+    (state: RootState) => state.presentationGeneration.presentationData
+  );
   const previousSlidesLength = useRef(0);
   const preloadPresentationData = Boolean(options.preloadPresentationData);
   const isSmartMode = options.generationMode === "smart";
 
+  const defaultStatusMessage = isSmartMode
+    ? "Preparing Smart presentation"
+    : "Creating your presentation";
+
+  const [lifecycle, setLifecycle] =
+    useState<GenerationLifecycleState>("idle");
+  const [statusMessage, setStatusMessage] = useState<string>(
+    defaultStatusMessage
+  );
+
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const isClosedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const hasUsefulEventRef = useRef(false);
+  const lastUsefulEventAtRef = useRef<number | null>(null);
+  const streamStartedAtRef = useRef<number | null>(null);
+  const lifecycleRef = useRef<GenerationLifecycleState>("idle");
+  const statusMessageRef = useRef<string>(defaultStatusMessage);
+  const accumulatedChunksRef = useRef<string>("");
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stallIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const openStreamRef = useRef<() => void>(() => {});
+
+  // Keep lifecycle ref in sync so the stall watcher can read the latest state.
+  useEffect(() => {
+    lifecycleRef.current = lifecycle;
+  }, [lifecycle]);
+
+  // Keep statusMessage ref in sync so stall analytics read the latest value.
+  useEffect(() => {
+    statusMessageRef.current = statusMessage;
+  }, [statusMessage]);
+
+  // Stall watcher: ticks every STALL_INTERVAL_MS and flips lifecycle to
+  // "stalled" when no useful event has arrived for STALL_MS. Defined in the
+  // hook body (not the effect) so both openStream and keepWaiting can (re)start
+  // it — important because an onerror-stall clears the interval, and
+  // keepWaiting must be able to resume stall detection afterwards.
+  const startStallWatcher = useCallback(() => {
+    if (stallIntervalRef.current) {
+      return;
+    }
+    stallIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      if (
+        isStalled({
+          now,
+          lastUsefulEventAt: lastUsefulEventAtRef.current,
+          state: lifecycleRef.current,
+        })
+      ) {
+        setLifecycle("stalled");
+        setStatusMessage(
+          "Presentation stream stalled — waiting for the server."
+        );
+        trackEvent(MixpanelEvent.Generation_Stalled, {
+          surface: "presentation",
+          last_status: statusMessageRef.current,
+          duration_ms: now - (streamStartedAtRef.current ?? now),
+        });
+      }
+    }, STALL_INTERVAL_MS);
+  }, []);
+
   useEffect(() => {
     if (!stream) {
+      setLifecycle("idle");
       fetchUserSlides();
       return;
     }
 
-    let eventSource: EventSource | null = null;
     let accumulatedChunks = "";
-    let retryCount = 0;
-    let isClosed = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const shownAssetWarnings = new Set<string>();
     let preloadAttempted = false;
     let preloadRequest: Promise<void> | null = null;
@@ -121,30 +199,44 @@ export const usePresentationStreaming = (
     let streamIsTemplateV2 = preloadPresentationData;
     let smartGenerationOutcomeTracked = false;
 
+    streamStartedAtRef.current = streamStartedAt;
+    isClosedRef.current = false;
+    hasUsefulEventRef.current = false;
+    retryCountRef.current = 0;
+    accumulatedChunksRef.current = "";
+    lastUsefulEventAtRef.current = null;
+
     const closeEventSource = () => {
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
     };
 
     const clearRetryTimer = () => {
-      if (retryTimer) {
-        clearTimeout(retryTimer);
-        retryTimer = null;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+
+    const clearStallInterval = () => {
+      if (stallIntervalRef.current) {
+        clearInterval(stallIntervalRef.current);
+        stallIntervalRef.current = null;
       }
     };
 
     const finalizeFailure = (
       description: string,
-      options: { showToast?: boolean } = {}
+      opts: { showToast?: boolean } = {}
     ) => {
       if (isSmartMode && !smartGenerationOutcomeTracked) {
         smartGenerationOutcomeTracked = true;
         trackEvent(MixpanelEvent.Smart_Mode_Generation_Failed, {
           presentation_id: presentationId,
           stage: "presentation_stream",
-          retry_count: retryCount,
+          retry_count: retryCountRef.current,
           duration_ms: Date.now() - streamStartedAt,
           error_message: sanitizeAnalyticsError(description, "Stream failed"),
         });
@@ -152,39 +244,50 @@ export const usePresentationStreaming = (
       if (streamIsTemplateV2) {
         trackEvent(MixpanelEvent.TemplateV2_Stream_Failed, {
           presentation_id: presentationId,
-          retry_count: retryCount,
+          retry_count: retryCountRef.current,
           duration_ms: Date.now() - streamStartedAt,
           error_message: sanitizeAnalyticsError(description, "Stream failed"),
         });
       }
       closeEventSource();
       clearRetryTimer();
+      clearStallInterval();
       setLoading(false);
       dispatch(setStreaming(false));
       setError(true);
-      if (options.showToast !== false) {
+      setLifecycle("failed");
+      if (opts.showToast !== false) {
         notify.error("Presentation streaming failed", description);
       }
     };
 
     const scheduleRetry = (reason: string): boolean => {
-      if (retryCount >= MAX_STREAM_RETRIES || isClosed) {
+      const shouldRetry = shouldSilentRetry({
+        retryCount: retryCountRef.current,
+        hasUsefulEvent: hasUsefulEventRef.current,
+        closed: isClosedRef.current,
+      });
+      if (!shouldRetry) {
         return false;
       }
 
-      retryCount += 1;
-      const retryDelay = STREAM_RETRY_DELAY_MS * retryCount;
+      const retryCount = (retryCountRef.current += 1);
+      const retryDelay = silentRetryDelayMs(retryCount);
       console.warn(
         `Presentation stream retry ${retryCount}/${MAX_STREAM_RETRIES}: ${reason}`
       );
 
       closeEventSource();
       clearRetryTimer();
+      clearStallInterval();
       accumulatedChunks = "";
+      accumulatedChunksRef.current = "";
       previousSlidesLength.current = 0;
+      setStatusMessage("Reconnecting to presentation stream");
+      setLifecycle("connecting");
 
-      retryTimer = setTimeout(() => {
-        if (!isClosed) {
+      retryTimerRef.current = setTimeout(() => {
+        if (!isClosedRef.current) {
           openStream();
         }
       }, retryDelay);
@@ -211,7 +314,7 @@ export const usePresentationStreaming = (
           const preparedPresentation = normalizeBackendAssetUrls(
             await response.json()
           );
-          if (!isClosed) {
+          if (!isClosedRef.current) {
             const prev = store.getState().presentationGeneration.presentationData;
             streamIsTemplateV2 =
               streamIsTemplateV2 ||
@@ -245,7 +348,7 @@ export const usePresentationStreaming = (
       trackEvent(MixpanelEvent.TemplateV2_Stream_Completed, {
         presentation_id: presentationId,
         slide_count: Array.isArray(slides) ? slides.length : 0,
-        retry_count: retryCount,
+        retry_count: retryCountRef.current,
         duration_ms: Date.now() - streamStartedAt,
       });
     };
@@ -262,16 +365,52 @@ export const usePresentationStreaming = (
       trackEvent(MixpanelEvent.Smart_Mode_Generation_Completed, {
         presentation_id: presentationId,
         slide_count: Array.isArray(slides) ? slides.length : 0,
-        retry_count: retryCount,
+        retry_count: retryCountRef.current,
         duration_ms: Date.now() - streamStartedAt,
       });
     };
 
+    const updateGeneratingStatus = (slidesLength: number) => {
+      const total =
+        store.getState().presentationGeneration.presentationData?.structure
+          ?.slides?.length ?? 0;
+      setStatusMessage(
+        total
+          ? `Creating slide ${slidesLength} of ${total}…`
+          : `Creating slide ${slidesLength}…`
+      );
+    };
+
+    const removeStreamParamFromUrl = () => {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("stream");
+      window.history.replaceState({}, "", newUrl.toString());
+    };
+
     const openStream = () => {
       closeEventSource();
-      eventSource = new EventSource(
+      clearStallInterval();
+
+      // Start each (re)open from a clean buffer so a new job (e.g. after retry)
+      // does not append to stale partial JSON. Also reset the slide-diff ref
+      // so the new job's slides are not diffed against the previous job's.
+      accumulatedChunks = "";
+      accumulatedChunksRef.current = "";
+      previousSlidesLength.current = 0;
+
+      // Stream just (re)opened: reset stall clock so a hung CONNECT also stalls
+      // after STALL_MS. Heartbeat is NOT useful, so it must not refresh this.
+      const now = Date.now();
+      lastUsefulEventAtRef.current = now;
+      if (streamStartedAtRef.current == null) {
+        streamStartedAtRef.current = now;
+      }
+      setLifecycle("connecting");
+
+      const eventSource = new EventSource(
         getApiUrl(`/api/v1/ppt/presentation/stream/${presentationId}`)
       );
+      eventSourceRef.current = eventSource;
 
       eventSource.addEventListener("response", async (event) => {
         let data: any;
@@ -282,6 +421,23 @@ export const usePresentationStreaming = (
             finalizeFailure("Failed to parse stream response.");
           }
           return;
+        }
+
+        if (isUsefulStreamEvent(data.type)) {
+          if (!hasUsefulEventRef.current) {
+            hasUsefulEventRef.current = true;
+          }
+          lastUsefulEventAtRef.current = Date.now();
+          // A useful event recovers stalled → generating. Do NOT guard with
+          // !== "stalled": isStalled already returns false for stalled state,
+          // so this organic recovery matches the Task 5 fix.
+          if (
+            data.type !== "complete" &&
+            data.type !== "closing" &&
+            data.type !== "error"
+          ) {
+            setLifecycle("generating");
+          }
         }
 
         switch (data.type) {
@@ -328,12 +484,14 @@ export const usePresentationStreaming = (
               } as PresentationData)
             );
             previousSlidesLength.current = mergedSlides.length;
+            updateGeneratingStatus(mergedSlides.length);
             setLoading(false);
             break;
           }
 
           case "chunk":
             accumulatedChunks += data.chunk;
+            accumulatedChunksRef.current = accumulatedChunks;
             const streamedSlide = parseStreamedSlideChunk(data.chunk);
             if (streamedSlide) {
               const prev = store.getState().presentationGeneration.presentationData;
@@ -349,6 +507,7 @@ export const usePresentationStreaming = (
                 } as PresentationData)
               );
               previousSlidesLength.current = mergedSlides.length;
+              updateGeneratingStatus(mergedSlides.length);
               setLoading(false);
               if (
                 isTemplateV2SlidePayload(normalizedSlide) &&
@@ -383,6 +542,7 @@ export const usePresentationStreaming = (
                 );
                 previousSlidesLength.current =
                   normalizedPartialData.slides.length;
+                updateGeneratingStatus(mergedSlides.length);
                 setLoading(false);
               }
             } catch {
@@ -482,15 +642,16 @@ export const usePresentationStreaming = (
               trackSmartModeGenerationCompleted(completedPresentation);
               dispatch(setStreaming(false));
               setLoading(false);
-              isClosed = true;
+              isClosedRef.current = true;
               closeEventSource();
               clearRetryTimer();
-              retryCount = 0;
+              clearStallInterval();
+              retryCountRef.current = 0;
+              setStatusMessage("Presentation ready");
+              setLifecycle("complete");
 
               // Remove stream parameter from URL
-              const newUrl = new URL(window.location.href);
-              newUrl.searchParams.delete("stream");
-              window.history.replaceState({}, "", newUrl.toString());
+              removeStreamParamFromUrl();
             } catch (error) {
               console.error("Could not finalize presentation stream:", error);
               if (!scheduleRetry("failed to parse complete payload")) {
@@ -498,6 +659,7 @@ export const usePresentationStreaming = (
               }
             }
             accumulatedChunks = "";
+            accumulatedChunksRef.current = "";
             break;
 
           case "closing":
@@ -512,38 +674,75 @@ export const usePresentationStreaming = (
             trackSmartModeGenerationCompleted(data.presentation);
             setLoading(false);
             dispatch(setStreaming(false));
-            isClosed = true;
+            isClosedRef.current = true;
             closeEventSource();
             clearRetryTimer();
-            retryCount = 0;
+            clearStallInterval();
+            retryCountRef.current = 0;
+            setStatusMessage("Presentation ready");
+            setLifecycle("complete");
 
             // Remove stream parameter from URL
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.delete("stream");
-            window.history.replaceState({}, "", newUrl.toString());
+            removeStreamParamFromUrl();
             break;
+
           case "error":
-            if (
-              !scheduleRetry(
-                data.detail || "server returned stream error response"
-              )
-            ) {
-              finalizeFailure(
-                data.detail ||
-                  "Failed to connect to the server. Please try again."
-              );
+            // Server already failed the job: do NOT silent-retry.
+            finalizeFailure(
+              data.detail ||
+                "Failed to connect to the server. Please try again."
+            );
+            break;
+
+          case "status":
+            if (data.status) {
+              setStatusMessage(data.status);
             }
+            break;
+
+          case "heartbeat":
+            // Socket is alive. NOT a useful event: do NOT refresh
+            // lastUsefulEventAt. No-op so the stall watcher keeps running.
             break;
         }
       });
 
-      eventSource.onerror = (error) => {
-        console.error("EventSource failed:", error);
-        if (!scheduleRetry("connection lost")) {
-          finalizeFailure("Failed to connect to the server. Please try again.");
+      eventSource.onerror = () => {
+        if (isClosedRef.current) {
+          return;
         }
+        if (!hasUsefulEventRef.current) {
+          // Connection lost before any useful event: silent retry allowed.
+          if (!scheduleRetry("connection lost")) {
+            finalizeFailure(
+              "Failed to connect to the server. Please try again."
+            );
+          }
+          return;
+        }
+        // After a useful event, a dead socket is a stall — do NOT reopen.
+        closeEventSource();
+        clearStallInterval();
+        setLifecycle("stalled");
+        setStatusMessage(
+          "Presentation stream stalled — waiting for the server."
+        );
+        trackEvent(MixpanelEvent.Generation_Stalled, {
+          surface: "presentation",
+          last_status: statusMessageRef.current,
+          duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
+        });
       };
+
+      // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"
+      // when no useful event has arrived for STALL_MS. Uses the shared
+      // startStallWatcher so keepWaiting can resume detection after an
+      // onerror-stall cleared the interval.
+      clearStallInterval();
+      startStallWatcher();
     };
+
+    openStreamRef.current = openStream;
 
     const startStream = async () => {
       dispatch(setStreaming(true));
@@ -552,8 +751,10 @@ export const usePresentationStreaming = (
         presentation_id: presentationId,
         generation_mode: options.generationMode ?? "standard",
       });
+      setStatusMessage(defaultStatusMessage);
+      setLifecycle("connecting");
       await preloadPreparedPresentation();
-      if (!isClosed) {
+      if (!isClosedRef.current) {
         openStream();
       }
     };
@@ -561,9 +762,10 @@ export const usePresentationStreaming = (
     void startStream();
 
     return () => {
-      isClosed = true;
+      isClosedRef.current = true;
       closeEventSource();
       clearRetryTimer();
+      clearStallInterval();
     };
   }, [
     presentationId,
@@ -575,5 +777,100 @@ export const usePresentationStreaming = (
     preloadPresentationData,
     isSmartMode,
     options.generationMode,
+    defaultStatusMessage,
   ]);
+
+  // isStreaming is derived from lifecycle so it always agrees.
+  const isStreaming = STREAMING_STATES.has(lifecycle);
+
+  // draftCount read from the store reactively (slides length).
+  const draftCount = presentationData?.slides?.length ?? 0;
+
+  const cancel = useCallback(() => {
+    const previousLifecycle = lifecycleRef.current;
+    setLifecycle("cancelling");
+    isClosedRef.current = true;
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (stallIntervalRef.current) {
+      clearInterval(stallIntervalRef.current);
+      stallIntervalRef.current = null;
+    }
+    dispatch(setStreaming(false));
+    setLoading(false);
+    // Remove the stream search param so a refresh/reload does not resume.
+    if (typeof window !== "undefined") {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("stream");
+      window.history.replaceState({}, "", newUrl.toString());
+    }
+    setLifecycle("cancelled");
+    const draftSlides =
+      store.getState().presentationGeneration.presentationData?.slides?.length ??
+      0;
+    trackEvent(MixpanelEvent.Generation_Cancelled, {
+      surface: "presentation",
+      reason:
+        previousLifecycle === "stalled" ? "user_stop_stalled" : "user_stop",
+      draft_count: draftSlides,
+      duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
+    });
+    // Persist of the draft is Task 7 — not here. Do NOT clearPresentationData:
+    // cancel keeps the current Redux slides as the draft.
+  }, [dispatch, setLoading]);
+
+  const keepWaiting = useCallback(() => {
+    const stalledForMs =
+      Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
+    lastUsefulEventAtRef.current = Date.now();
+    setLifecycle("generating");
+    // An onerror-stall clears the stall interval. Restart it here so stall
+    // detection continues if the user opts to keep waiting after a socket
+    // death (intended recovery after socket death is retry, but keepWaiting
+    // must not leave the watcher dead).
+    if (!stallIntervalRef.current) {
+      startStallWatcher();
+    }
+    trackEvent(MixpanelEvent.Generation_Keep_Waiting, {
+      surface: "presentation",
+      stalled_for_ms: stalledForMs,
+    });
+  }, [startStallWatcher]);
+
+  const retry = useCallback(() => {
+    const fromState = lifecycleRef.current;
+    if (fromState !== "stalled" && fromState !== "failed") {
+      return;
+    }
+    hasUsefulEventRef.current = false;
+    retryCountRef.current = 0;
+    isClosedRef.current = false;
+    accumulatedChunksRef.current = "";
+    previousSlidesLength.current = 0;
+    lastUsefulEventAtRef.current = null;
+    streamStartedAtRef.current = null;
+    setLifecycle("connecting");
+    setStatusMessage(defaultStatusMessage);
+    trackEvent(MixpanelEvent.Generation_Retry_Clicked, {
+      surface: "presentation",
+      from_state: fromState,
+    });
+    openStreamRef.current();
+  }, [defaultStatusMessage]);
+
+  return {
+    lifecycle,
+    isStreaming,
+    statusMessage,
+    draftCount,
+    cancel,
+    keepWaiting,
+    retry,
+  };
 };

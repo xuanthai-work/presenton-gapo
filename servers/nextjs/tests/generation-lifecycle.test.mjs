@@ -54,3 +54,17 @@ test("outline stream hook imports lifecycle helpers", async () => {
   assert.match(source, /isUsefulStreamEvent/);
   assert.match(source, /heartbeat/);
 });
+
+test("presentation stream hook imports lifecycle helpers", async () => {
+  const source = await readFile(
+    new URL(
+      "../app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  assert.match(source, /from "@\/lib\/generation-lifecycle"/);
+  assert.match(source, /shouldSilentRetry/);
+  assert.match(source, /isUsefulStreamEvent/);
+  assert.match(source, /heartbeat/);
+});
