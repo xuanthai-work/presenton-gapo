@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.v1.auth.users import UsernameUserDatabase, UserManager, get_jwt_strategy
 from models.sql.access_token import AccessToken
 from models.sql.user import User
-from api.v1.auth.config import read_session_token
+from api.v1.auth.config import is_accepted_api_key, read_session_token
 
 
 @dataclass(frozen=True)
@@ -41,7 +41,7 @@ async def resolve_request_principal(
     authorization = request.headers.get("Authorization", "")
     if authorization.lower().startswith("bearer "):
         token = authorization.split(" ", 1)[1].strip()
-        if not token.startswith("sk-presenton-"):
+        if not is_accepted_api_key(token):
             return None, None
         access_token = await session.get(AccessToken, token)
         if access_token is None:

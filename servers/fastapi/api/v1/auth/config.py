@@ -24,6 +24,18 @@ def read_session_token(cookies: Mapping[str, str] | None) -> str | None:
     if legacy:
         return legacy
     return None
+
+
+API_KEY_PREFIX = "sk-gslide-"
+LEGACY_API_KEY_PREFIX = "sk-presenton-"
+
+
+def is_accepted_api_key(token: str) -> bool:
+    return token.startswith(API_KEY_PREFIX) or token.startswith(
+        LEGACY_API_KEY_PREFIX
+    )
+
+
 AUTH_CONFIG_FIELDS = ("AUTH_USERNAME", "AUTH_PASSWORD_HASH", "AUTH_SECRET_KEY")
 
 

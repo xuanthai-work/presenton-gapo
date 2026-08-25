@@ -84,6 +84,7 @@ def test_admin_access_key_passes_internal_auth_check(monkeypatch, tmp_path):
     )
     token_response = client.post("/api/v1/auth/token/create")
     token = token_response.json()["token"]
+    assert token.startswith("sk-gslide-")
     client.cookies.clear()
 
     response = client.get(
@@ -96,6 +97,44 @@ def test_admin_access_key_passes_internal_auth_check(monkeypatch, tmp_path):
     assert response.json()["method"] == "api_key"
     assert response.json()["role"] == "admin"
 
+    asyncio.run(engine.dispose())
+
+
+def test_legacy_presenton_api_key_still_verifies(monkeypatch, tmp_path):
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
+    monkeypatch.delenv("DISABLE_AUTH", raising=False)
+    client, engine = _build_client(tmp_path)
+    client.post(
+        "/api/v1/auth/setup",
+        json={"username": "admin", "password": "secret123"},
+    )
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "admin", "password": "secret123"},
+    )
+    assert login.status_code == 200
+
+    from sqlalchemy import select
+
+    async def seed_legacy_key():
+        session_maker = async_sessionmaker(engine, expire_on_commit=False)
+        async with session_maker() as session:
+            admin = (
+                await session.execute(select(User).where(User.username == "admin"))
+            ).scalar_one()
+            session.add(
+                AccessToken(token="sk-presenton-legacyfixture", user_id=admin.id)
+            )
+            await session.commit()
+
+    asyncio.run(seed_legacy_key())
+    client.cookies.clear()
+    response = client.get(
+        "/api/v1/auth/verify",
+        headers={"Authorization": "Bearer sk-presenton-legacyfixture"},
+    )
+    assert response.status_code == 200
+    assert response.json()["method"] == "api_key"
     asyncio.run(engine.dispose())
 
 

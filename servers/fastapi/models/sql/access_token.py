@@ -12,7 +12,7 @@ class AccessToken(SQLModel, table=True):
     __tablename__ = "access_tokens"
 
     token: str = Field(
-        default_factory=lambda: f"sk-presenton-{secrets.token_hex(20)}",
+        default_factory=lambda: f"sk-gslide-{secrets.token_hex(20)}",
         index=True,
         primary_key=True,
     )

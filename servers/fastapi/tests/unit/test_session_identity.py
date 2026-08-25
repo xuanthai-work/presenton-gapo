@@ -31,3 +31,26 @@ def test_read_session_token_ignores_empty_new_cookie():
         read_session_token({"gslide_session": "", "presenton_session": "old-jwt"})
         == "old-jwt"
     )
+
+
+import uuid
+
+from models.sql.access_token import AccessToken
+from api.v1.auth.config import (
+    API_KEY_PREFIX,
+    LEGACY_API_KEY_PREFIX,
+    is_accepted_api_key,
+)
+
+
+def test_api_key_prefixes():
+    assert API_KEY_PREFIX == "sk-gslide-"
+    assert LEGACY_API_KEY_PREFIX == "sk-presenton-"
+    assert is_accepted_api_key("sk-gslide-abc")
+    assert is_accepted_api_key("sk-presenton-abc")
+    assert not is_accepted_api_key("sk-other-abc")
+
+
+def test_new_access_token_uses_gslide_prefix():
+    token = AccessToken(user_id=uuid.uuid4())
+    assert token.token.startswith("sk-gslide-")
