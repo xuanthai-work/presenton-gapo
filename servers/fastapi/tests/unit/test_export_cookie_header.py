@@ -41,3 +41,9 @@ def test_browser_cookie_wins_over_internal_and_bearer_tokens():
     request.state.internal_session_token = "middleware-generated-jwt"
 
     assert _build_export_cookie_header(request) == cookie_header
+
+
+def test_legacy_presenton_session_cookie_header_is_forwarded():
+    cookie_header = "presenton_session=legacy-jwt; theme=dark"
+    request = _request(headers={"Cookie": cookie_header})
+    assert _build_export_cookie_header(request) == cookie_header

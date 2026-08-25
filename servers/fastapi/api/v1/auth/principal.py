@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.v1.auth.users import UsernameUserDatabase, UserManager, get_jwt_strategy
 from models.sql.access_token import AccessToken
 from models.sql.user import User
-from api.v1.auth.config import SESSION_COOKIE_NAME
+from api.v1.auth.config import read_session_token
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class AuthPrincipal:
 async def resolve_request_principal(
     request: Request, session: AsyncSession
 ) -> tuple[AuthPrincipal | None, User | None]:
-    cookie_token = request.cookies.get(SESSION_COOKIE_NAME)
+    cookie_token = read_session_token(request.cookies)
     if cookie_token:
         user_db = UsernameUserDatabase(session)
         user = await get_jwt_strategy().read_token(cookie_token, UserManager(user_db))

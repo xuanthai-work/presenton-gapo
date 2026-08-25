@@ -20,6 +20,7 @@ from api.v1.auth.config import (
     SESSION_COOKIE_NAME,
     SESSION_TTL_SECONDS,
     get_or_create_auth_secret,
+    read_session_token,
     verify_legacy_password_hash,
 )
 
@@ -202,7 +203,7 @@ async def read_user_from_cookie(
     user_manager: UserManager = Depends(get_user_manager),
 ) -> User | None:
     return await get_jwt_strategy().read_token(
-        request.cookies.get(SESSION_COOKIE_NAME), user_manager
+        read_session_token(request.cookies), user_manager
     )
 
 

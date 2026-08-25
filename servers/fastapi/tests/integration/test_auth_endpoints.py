@@ -63,6 +63,8 @@ def test_login_sets_http_only_jwt_cookie_for_username_only_account(
     assert payload["username"] == "admin"
     assert "access_token" not in payload
     assert SESSION_COOKIE_NAME in response.cookies
+    assert SESSION_COOKIE_NAME == "gslide_session"
+    assert response.cookies[SESSION_COOKIE_NAME]
     assert "HttpOnly" in response.headers["set-cookie"]
 
     asyncio.run(engine.dispose())
@@ -273,4 +275,25 @@ def test_register_conflict_on_duplicate_username(monkeypatch, tmp_path):
     )
     assert first.status_code == 201
     assert second.status_code == 409
+    asyncio.run(engine.dispose())
+
+
+def test_logout_deletes_gslide_and_legacy_session_cookies(monkeypatch, tmp_path):
+    monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
+    monkeypatch.delenv("DISABLE_AUTH", raising=False)
+    client, engine = _build_client(tmp_path)
+    client.post(
+        "/api/v1/auth/setup",
+        json={"username": "admin", "password": "secret123"},
+    )
+    client.post(
+        "/api/v1/auth/login",
+        json={"username": "admin", "password": "secret123"},
+    )
+    response = client.post("/api/v1/auth/logout")
+    set_cookies = response.headers.get_list("set-cookie")
+    joined = "\n".join(set_cookies)
+    assert response.status_code == 200
+    assert "gslide_session=" in joined
+    assert "presenton_session=" in joined
     asyncio.run(engine.dispose())

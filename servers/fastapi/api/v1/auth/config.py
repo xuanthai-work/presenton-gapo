@@ -2,14 +2,28 @@ import base64
 import hashlib
 import hmac
 import secrets
+from collections.abc import Mapping
 from typing import Optional
 
 from utils.get_env import get_user_config_path_env
 from utils.user_config_store import read_user_config_file, update_user_config_file
 
 
-SESSION_COOKIE_NAME = "presenton_session"
+SESSION_COOKIE_NAME = "gslide_session"
+LEGACY_SESSION_COOKIE_NAME = "presenton_session"
 SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
+
+
+def read_session_token(cookies: Mapping[str, str] | None) -> str | None:
+    if not cookies:
+        return None
+    current = cookies.get(SESSION_COOKIE_NAME)
+    if current:
+        return current
+    legacy = cookies.get(LEGACY_SESSION_COOKIE_NAME)
+    if legacy:
+        return legacy
+    return None
 AUTH_CONFIG_FIELDS = ("AUTH_USERNAME", "AUTH_PASSWORD_HASH", "AUTH_SECRET_KEY")
 
 

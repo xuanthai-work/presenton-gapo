@@ -24,6 +24,7 @@ from models.sql.user import User
 from services.database import get_async_session
 from utils.get_env import is_disable_auth_enabled
 from api.v1.auth.config import (
+    LEGACY_SESSION_COOKIE_NAME,
     SESSION_COOKIE_NAME,
     SESSION_TTL_SECONDS,
     persist_admin_credentials,
@@ -73,6 +74,13 @@ def _set_login_cookie(response: JSONResponse, token: str, request: Request) -> N
         SESSION_COOKIE_NAME,
         token,
         max_age=SESSION_TTL_SECONDS,
+        httponly=True,
+        secure=_secure_request(request),
+        samesite="lax",
+        path="/",
+    )
+    response.delete_cookie(
+        LEGACY_SESSION_COOKIE_NAME,
         httponly=True,
         secure=_secure_request(request),
         samesite="lax",
@@ -291,6 +299,13 @@ async def logout(request: Request):
     response = JSONResponse({"success": True})
     response.delete_cookie(
         SESSION_COOKIE_NAME,
+        httponly=True,
+        secure=_secure_request(request),
+        samesite="lax",
+        path="/",
+    )
+    response.delete_cookie(
+        LEGACY_SESSION_COOKIE_NAME,
         httponly=True,
         secure=_secure_request(request),
         samesite="lax",
