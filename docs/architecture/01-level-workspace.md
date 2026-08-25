@@ -35,7 +35,7 @@ graph TD
 
     Scripts --> Conv["convert-template.mjs"]
     Scripts --> Sync["sync-presentation-export.cjs"]
-    Scripts --> Banner["presenton-terminal-banner.mjs"]
+    Scripts --> Banner["gslide-ascii.txt + presenton-terminal-banner.mjs"]
     Scripts --> Tests["*.test.mjs"]
 
     Infra --> Dockerfile["Dockerfile + Dockerfile.dev"]

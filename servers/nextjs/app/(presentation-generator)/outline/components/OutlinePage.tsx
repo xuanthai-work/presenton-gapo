@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -436,30 +436,6 @@ const OutlinePage: React.FC = () => {
 
           {isOutlineAssistantVisible && (
             <aside className="mx-auto mb-28 mt-8 flex h-[600px] w-[calc(100%-2.5rem)] overflow-hidden border border-[#EDEEEF] bg-[#FEFEFF] sm:w-[calc(100%-5rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[68px] lg:z-40 lg:mx-0 lg:mb-0 lg:mt-0 lg:h-auto lg:w-[369px] lg:border-0">
-              <nav
-                className="flex w-[70px] shrink-0 flex-col items-center gap-5 px-1.5 py-2"
-                aria-label="Outline tools"
-              >
-                <div className="flex w-full flex-col items-center rounded-[10px] bg-[#DBEAFE]/60 py-7">
-                  <div className="flex rounded-[10px] border border-[#EDEEEF] bg-white p-1.5 shadow-[0_6.6px_6.6px_rgba(29,111,232,0.14)]">
-                    <Image
-                      src="/ai-star.svg"
-                      alt=""
-                      width={19}
-                      height={18}
-                      className="h-[18px] w-[19px]"
-                    />
-                  </div>
-                  <span className="mt-1 text-xs font-normal text-[#1D6FE8]">
-                    AI
-                  </span>
-                </div>
-                <span
-                  className="h-px w-[30px] bg-[#EDEEEF]"
-                  aria-hidden="true"
-                />
-              </nav>
-
               <div className="min-w-0 flex-1">
                 <Chat
                   key={presentation_id}

@@ -19,7 +19,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "fs";
-import { printPresentonStartupBanner } from "./scripts/presenton-terminal-banner.mjs";
+import { printGSlideStartupBanner } from "./scripts/presenton-terminal-banner.mjs";
 import userConfigEnv from "./scripts/user-config-env.cjs";
 
 const { buildUserConfigFromEnv, readUserConfigEnv } = userConfigEnv;
@@ -628,7 +628,7 @@ const startServers = async (nginxReadyPromise) => {
 
   try {
     await Promise.all([fastApiReadyPromise, nextjsReadyPromise, nginxReadyPromise]);
-    printPresentonStartupBanner({
+    printGSlideStartupBanner({
       mode: isDev ? "development" : "production",
       nextPort: nextjsPort,
       fastapiPort,

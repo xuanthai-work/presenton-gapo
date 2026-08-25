@@ -5,8 +5,10 @@ import { LayoutDashboard, Settings, HelpCircle, UsersRound } from "lucide-react"
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-import LogoutButton from "@/components/Auth/LogoutButton";
 import { GSlideSidebar, gslideNavActiveClass, gslideNavIdleClass } from "@/components/gslide";
+
+/** Replace with the real support address. */
+const GSLIDE_HELP_MAILTO = "mailto:help@placeholder.example";
 
 const DashboardSidebar = () => {
     const pathname = usePathname();
@@ -23,19 +25,14 @@ const DashboardSidebar = () => {
                         <span className={["text-[11px]", pathname === "/settings" ? gslideNavActiveClass : gslideNavIdleClass].join(" ")}>Settings</span>
                     </Link>
                     <div className="py-2" />
-                    <Link
-                        href=""
-                        target="_blank"
+                    <a
+                        href={GSLIDE_HELP_MAILTO}
                         className="flex flex-col items-center gap-2 transition-colors"
+                        aria-label="Email GSlide help"
                     >
                         <HelpCircle className={["h-4 w-4", gslideNavIdleClass].join(" ")} />
                         <span className={["text-[11px]", gslideNavIdleClass].join(" ")}>Help</span>
-                    </Link>
-                    <div className="py-2" />
-                    <LogoutButton
-                        label="Log out"
-                        className="flex w-full flex-col items-center gap-2 text-[11px] text-[var(--gslide-muted)] transition-colors hover:text-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-60"
-                    />
+                    </a>
                 </div>
             }
         >

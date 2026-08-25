@@ -171,6 +171,26 @@ test("dashboard sidebar uses GSlideSidebar and accent active states", async () =
   assert.match(sidebar, /GSlideSidebar/);
   assert.doesNotMatch(sidebar, /#7C51F8/);
   assert.doesNotMatch(sidebar, /#5146E5/);
+  assert.doesNotMatch(sidebar, /LogoutButton/);
+  assert.match(sidebar, /mailto:help@placeholder\.example/);
+});
+
+test("settings chrome has no filter rail", async () => {
+  const settings = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+  );
+  const tabs = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
+  );
+  const account = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/UserAccountSettings.tsx",
+  );
+  assert.match(settings, /GSlideHeader/);
+  assert.doesNotMatch(settings, /FILTER BY/);
+  assert.doesNotMatch(tabs, /FILTER BY/);
+  assert.doesNotMatch(account, /FILTER BY/);
+  assert.match(tabs, /role="tablist"/);
+  assert.doesNotMatch(tabs, /session/);
 });
 
 test("dashboard and community chrome use GSlide surfaces", async () => {
@@ -278,6 +298,8 @@ const CHROME_FILES = [
   "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
   "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
   "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+  "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
+  "app/(presentation-generator)/(dashboard)/settings/UserAccountSettings.tsx",
   "app/(presentation-generator)/(dashboard)/admin/AdminPanel.tsx",
   "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
   "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",

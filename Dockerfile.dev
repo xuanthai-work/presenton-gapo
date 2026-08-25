@@ -62,6 +62,7 @@ COPY scripts/liteparse_runner.mjs /app/document-extraction-liteparse/liteparse_r
 
 COPY scripts/sync-presentation-export.cjs /app/scripts/sync-presentation-export.cjs
 COPY scripts/presenton-terminal-banner.mjs /app/scripts/presenton-terminal-banner.mjs
+COPY scripts/gslide-ascii.txt /app/scripts/gslide-ascii.txt
 COPY scripts/user-config-env.cjs /app/scripts/user-config-env.cjs
 RUN rm -rf /app/presentation-export \
     && EXPORT_RUNTIME_ARCH="${TARGETARCH}" node /app/scripts/sync-presentation-export.cjs --force \

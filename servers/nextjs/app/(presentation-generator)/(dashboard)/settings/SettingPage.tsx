@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, ChevronRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { notify } from "@/components/ui/sonner";
+import { GSlideButton, GSlideHeader } from "@/components/gslide";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
 import {
@@ -46,7 +47,7 @@ const SettingsPage = () => {
   const [buttonState, setButtonState] = useState<ButtonState>({
     isLoading: false,
     isDisabled: false,
-    text: "Save Configuration",
+    text: "Save",
     showProgress: false,
   });
 
@@ -102,7 +103,7 @@ const SettingsPage = () => {
         ...prev,
         isLoading: true,
         isDisabled: true,
-        text: "Saving Configuration...",
+        text: "Saving...",
       }));
       trackEvent(MixpanelEvent.Settings_SaveConfiguration_API_Call);
       await handleSaveLLMConfig(llmConfig);
@@ -114,7 +115,7 @@ const SettingsPage = () => {
         ...prev,
         isLoading: false,
         isDisabled: false,
-        text: "Save Configuration",
+        text: "Save",
       }));
     } catch (error) {
       const message =
@@ -126,7 +127,7 @@ const SettingsPage = () => {
         ...prev,
         isLoading: false,
         isDisabled: false,
-        text: "Save Configuration",
+        text: "Save",
       }));
     }
   };
@@ -230,75 +231,68 @@ const SettingsPage = () => {
 
 
 
+  const showSave = selectedProvider !== "admin";
+
   return (
-    <div className="h-screen font-syne flex flex-col overflow-hidden relative">
-      <main className="w-full mx-auto gap-6   overflow-hidden flex ">
+    <div className="flex min-h-[100dvh] flex-col font-syne">
+      <GSlideHeader
+        title="Settings"
+        className="ml-7 mr-[9px] px-1"
+        actions={
+          <div className="flex items-center gap-2">
+            <LogoutButton
+              label="Sign out"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--gslide-border)] bg-[var(--gslide-card)] px-5 py-3 text-xs font-semibold text-[var(--gslide-ink)] transition hover:bg-[var(--gslide-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
+            />
+            {showSave ? (
+              <GSlideButton
+                className="inline-flex items-center"
+                onClick={handleSaveConfig}
+                disabled={buttonState.isDisabled}
+              >
+                {buttonState.isLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {buttonState.text}
+                  </span>
+                ) : (
+                  buttonState.text
+                )}
+              </GSlideButton>
+            ) : null}
+          </div>
+        }
+      />
+
+      <div className="mx-7 pb-16">
         <SettingSideBar
           selectedProvider={selectedProvider}
           setSelectedProvider={selectSettingsSection}
         />
-        <div className="w-full">
-          <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
-            <div className="flex  gap-3 items-center ">
-              <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-black flex items-center gap-2">
-                Settings
-              </h3>
-              <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-[var(--gslide-accent)] border border-[var(--gslide-border)]  font-medium ">
-                {textSummary} · {imageSummary} · {webSearchSummary}
-              </p>
-            </div>
-          </div>
+        <p className="mt-4 text-xs text-[var(--gslide-muted)]">
+          {textSummary}, {imageSummary}, {webSearchSummary}
+        </p>
 
-          {selectedProvider === 'text-provider' && <TextProvider
-            onInputChange={handleTextProviderInputChange}
-            llmConfig={llmConfig}
-          />}
-          {selectedProvider === 'image-provider' && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
-          {selectedProvider === 'web-search-provider' && <WebSearchProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
-          {selectedProvider === 'privacy' && <PrivacySettings />}
-          {selectedProvider === "admin" && <AdminPanel embedded />}
-          {selectedProvider === "session" && (
-            <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-[#EDEEEF] bg-white p-7">
-              <div>
-                <h4 className="font-unbounded text-lg font-normal text-black">Sign out</h4>
-                <p className="mt-2 font-syne text-sm leading-relaxed text-[#494A4D]">
-                  End your session on this deployment. You will need to sign in again to use the app and access the API.
-                </p>
-              </div>
-              <LogoutButton
-                label="Sign out"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-[58px] border border-[#EDEEEF] bg-[var(--gslide-accent)] px-5 py-3 font-syne text-xs font-semibold text-white transition hover:bg-[var(--gslide-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-              />
-            </div>
+        <div className={selectedProvider === "admin" ? "mt-8 w-full" : "mt-8 max-w-3xl"}>
+          {selectedProvider === "text-provider" && (
+            <TextProvider
+              onInputChange={handleTextProviderInputChange}
+              llmConfig={llmConfig}
+            />
           )}
-
+          {selectedProvider === "image-provider" && (
+            <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />
+          )}
+          {selectedProvider === "web-search-provider" && (
+            <WebSearchProvider
+              llmConfig={llmConfig}
+              setLlmConfig={setLlmConfig}
+            />
+          )}
+          {selectedProvider === "privacy" && <PrivacySettings />}
+          {selectedProvider === "admin" && <AdminPanel embedded />}
         </div>
-      </main>
-
-      {/* Fixed Bottom Button — hidden on Sign out; nothing to save there */}
-      {!["session", "admin"].includes(selectedProvider) ? (
-        <div className=" mx-auto fixed bottom-20 right-5 ">
-          <button
-            onClick={handleSaveConfig}
-            disabled={buttonState.isDisabled}
-            className={`w-full font-syne font-semibold flex items-center justify-center gap-2 py-3 px-5 rounded-[58px] transition-all duration-300 ${buttonState.isDisabled
-              ? "bg-[var(--gslide-muted)] cursor-not-allowed"
-              : "bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]"
-              } text-white`}
-          >
-            {buttonState.isLoading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {buttonState.text}
-              </div>
-            ) : (
-              buttonState.text
-            )}
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      ) : null}
-
+      </div>
     </div>
   );
 };

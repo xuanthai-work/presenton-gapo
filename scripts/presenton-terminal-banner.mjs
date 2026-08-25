@@ -1,5 +1,5 @@
 /**
- * Docker / startup terminal banner for Presenton.
+ * Docker / startup terminal banner for GSlide.
  * Renders a compact brand logo + startup status.
  */
 
@@ -16,25 +16,25 @@ function fgRgb(r, g, b, text) {
 }
 
 function brand(text) {
-  return BOLD + fgRgb(138, 99, 255, text);
+  return BOLD + fgRgb(29, 111, 232, text);
 }
 
 function accent(text) {
-  return fgRgb(184, 176, 255, text);
+  return fgRgb(75, 122, 181, text);
 }
 
 function muted(text) {
-  return DIM + fgRgb(160, 150, 210, text);
+  return DIM + fgRgb(75, 122, 181, text);
 }
 
 function styleAsciiArt(rawAscii) {
   const lines = rawAscii.replace(/\r/g, "").split("\n");
   const palette = [
-    [153, 108, 255],
-    [145, 103, 250],
-    [136, 98, 245],
-    [127, 92, 239],
-    [118, 86, 233],
+    [29, 111, 232],
+    [26, 100, 212],
+    [21, 88, 192],
+    [30, 70, 150],
+    [30, 58, 95],
   ];
 
   return lines
@@ -47,7 +47,7 @@ function styleAsciiArt(rawAscii) {
 
 function loadAsciiBanner() {
   const thisDir = path.dirname(fileURLToPath(import.meta.url));
-  const asciiPath = path.join(thisDir, "presenton-ascii.txt");
+  const asciiPath = path.join(thisDir, "gslide-ascii.txt");
 
   try {
     const raw = fs.readFileSync(asciiPath, "utf8").trimEnd();
@@ -87,7 +87,7 @@ function padVis(styled, width) {
  * @param {number} [opts.fastapiPort]
  * @param {string} [opts.hostHttpPort] — host-published HTTP port (docker -p HOST:80). Default from env or "5001".
  */
-export function printPresentonStartupBanner(opts = {}) {
+export function printGSlideStartupBanner(opts = {}) {
   const mode = opts.mode === "development" ? "development" : "production";
   const nextPort = opts.nextPort ?? 3000;
   const fastapiPort = opts.fastapiPort ?? 8000;
@@ -110,14 +110,12 @@ export function printPresentonStartupBanner(opts = {}) {
 
   const title = [
     "",
-    BOLD + fgRgb(138, 99, 255, "   Open Source AI Presentation Generator"),
+    BOLD + fgRgb(29, 111, 232, "   AI Presentation Generator"),
     ...(mode === "development"
       ? [
           "   " +
-            accent("Love the Project?  ") +
-            brand("Star us on github: ") +
-            BOLD +
-            fgRgb(224, 218, 255, "https://github.com/presenton/presenton"),
+            accent("Self-hosted by Gapo  ·  ") +
+            brand("GSlide"),
         ]
       : []),
     muted("   ─────────────────────────────────────────────────────────"),
@@ -170,7 +168,7 @@ export function printPresentonStartupBanner(opts = {}) {
           pipe(
             padVis(
               "  " +
-                muted("Open Presenton:     ") +
+                muted("Open GSlide:        ") +
                 BOLD +
                 fgRgb(255, 255, 255, publicUrl),
               W,
@@ -183,7 +181,7 @@ export function printPresentonStartupBanner(opts = {}) {
     ...summaryLines,
     boxBottom,
     "",
-    "   " + muted("Made with ❤️  by the Presenton team"),
+    "   " + muted("Made with ❤️  by Gapo"),
   ].join("\n");
 
   const bannerHeader = iconBlock ? `${iconBlock}\n` : "";

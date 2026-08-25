@@ -1753,11 +1753,11 @@ const Chat = ({
             onClick={() => void resetChat()}
             disabled={isSending || isHistoryLoading}
             className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E5E5E8] bg-white px-3 font-manrope text-xs font-medium text-[#55555F] shadow-sm transition-colors hover:border-[#D7D7DC] hover:bg-[#F7F7F8] hover:text-[#252529] disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Start a new chat"
-            title="Start a new chat"
+            aria-label="Clear chat"
+            title="Clear chat"
           >
             <Plus className="h-3.5 w-3.5" />
-            New chat
+            Clear chat
           </button>
         </div>
 
@@ -1830,9 +1830,9 @@ const Chat = ({
                     <div className="flex min-h-[17px] items-center">
                       <p
                         className="min-w-0 max-w-full truncate text-xs font-bold leading-[normal] text-[#333333]"
-                        title={selectedTextModel}
+                        title="Assistant"
                       >
-                        {selectedTextModel}
+                        Assistant
                       </p>
                     </div>
 
