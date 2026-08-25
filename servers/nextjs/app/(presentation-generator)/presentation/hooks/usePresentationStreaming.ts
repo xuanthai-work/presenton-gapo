@@ -257,6 +257,9 @@ export const usePresentationStreaming = (
       dispatch(setStreaming(false));
       setError(true);
       setLifecycle("failed");
+      // Spec: remove `stream` on cancel/complete/fail so a refresh does not
+      // reopen /presentation/stream/{id} and start a second generation job.
+      removeStreamParamFromUrl();
       if (opts.showToast !== false) {
         notify.error("Presentation streaming failed", description);
       }
