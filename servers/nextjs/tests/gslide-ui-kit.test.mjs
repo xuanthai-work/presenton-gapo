@@ -105,11 +105,11 @@ test("GSlide splash uses Auth background, wordmark, and accent spinner", async (
   assert.doesNotMatch(splash, /Presenton_Splash\.png/);
 });
 
-test("legacy splash module re-exports GSlide splash", async () => {
-  const legacy = await readNext("components/ui/presenton-splash-loader.tsx");
-  assert.match(legacy, /GSlideSplashLoader/);
-  assert.match(legacy, /PresentonSplashLoader/);
-  assert.match(legacy, /PRESENTON_SPLASH_MIN_DURATION_MS/);
+test("legacy Presenton splash alias file is removed", async () => {
+  await assert.rejects(
+    () => readNext("components/ui/presenton-splash-loader.tsx"),
+    (error) => error && error.code === "ENOENT",
+  );
 });
 
 test("GSlide sidebar and header use tokens and wordmark, not purple chrome", async () => {
@@ -135,7 +135,9 @@ test("shared Skeleton delegates to GSlideSkeleton", async () => {
 
 test("global loading copy is GSlide not Presenton", async () => {
   const appLoading = await readNext("app/loading.tsx");
-  assert.match(appLoading, /GSlideSplashLoader|PresentonSplashLoader/);
+  assert.match(appLoading, /GSlideSplashLoader/);
+  assert.doesNotMatch(appLoading, /PresentonSplashLoader/);
+  assert.doesNotMatch(appLoading, /presenton-splash-loader/);
 
   const config = await readNext("app/ConfigurationInitializer.tsx");
   assert.match(config, /Loading GSlide/);
@@ -149,6 +151,8 @@ test("AuthGate uses GSlide tokens/kit instead of AUTH_THEME", async () => {
   const auth = await readNext("components/Auth/AuthGate.tsx");
   assert.doesNotMatch(auth, /const AUTH_THEME/);
   assert.match(auth, /GSlideWordmark|GSlideCard|var\(--gslide-/);
+  assert.doesNotMatch(auth, /PresentonSplashLoader/);
+  assert.doesNotMatch(auth, /PRESENTON_SPLASH_MIN_DURATION_MS/);
 });
 
 test("landing and metadata say GSlide", async () => {

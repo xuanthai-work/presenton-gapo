@@ -7,8 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { LLMConfig } from '@/types/llm_config';
 import { notify } from '@/components/ui/sonner';
-import { GSlideSplashLoader } from '@/components/gslide';
-import { PRESENTON_SPLASH_MIN_DURATION_MS } from '@/components/ui/presenton-splash-loader';
+import { GSlideSplashLoader, GSLIDE_SPLASH_MIN_DURATION_MS } from '@/components/gslide';
 
 function ConfigurationLoadingScreen() {
   return <GSlideSplashLoader message="Loading GSlide..." />;
@@ -43,7 +42,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
     const timeout = window.setTimeout(() => {
       setHasMetSplashDuration(true);
-    }, PRESENTON_SPLASH_MIN_DURATION_MS);
+    }, GSLIDE_SPLASH_MIN_DURATION_MS);
 
     return () => window.clearTimeout(timeout);
   }, [shouldShowStartupSplash]);

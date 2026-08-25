@@ -1,5 +1,5 @@
-import { PresentonSplashLoader } from "@/components/ui/presenton-splash-loader";
+import { GSlideSplashLoader } from "@/components/gslide";
 
 export default function Loading() {
-  return <PresentonSplashLoader message="Preparing your workspace..." />;
+  return <GSlideSplashLoader message="Preparing your workspace..." />;
 }
