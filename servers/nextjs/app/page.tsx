@@ -14,7 +14,7 @@ export default function LandingPage() {
       />
 
       <div className="relative z-10 flex flex-col items-center gap-8 px-6 text-center">
-        <GSlideWordmark className="text-5xl sm:text-6xl" />
+        <GSlideWordmark className="flex-col gap-4 text-5xl sm:text-6xl" />
 
         <div className="space-y-3">
           <p className="max-w-md text-base text-[var(--gslide-muted)]">

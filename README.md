@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./readme_assets/images/logo.png" alt="Presenton" />
+  <img src="./readme_assets/images/logo.png" alt="GSlide" />
 </p>
 
 <p align="center">

@@ -22,7 +22,7 @@ export function GSlideSidebar({
           href="/dashboard"
           className="flex items-center border-b border-[var(--gslide-border)] pb-6"
         >
-          <GSlideWordmark className="mx-auto text-sm" />
+          <GSlideWordmark markOnly className="mx-auto text-5xl" />
         </Link>
         <nav className="pt-6 font-syne" aria-label="Dashboard sections">
           {children}

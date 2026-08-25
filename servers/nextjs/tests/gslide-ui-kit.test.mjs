@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -42,11 +43,31 @@ test("tokens.ts matches CSS hex values", async () => {
   assert.match(source, /export const GSLIDE_TOKENS/);
 });
 
+test("GSlide logo asset is in public/", async () => {
+  await access(path.join(nextRoot, "public/gslide-logo.png"));
+});
+
+test("browser tab icon is GSlide, not Presenton icon1.svg", async () => {
+  await access(path.join(nextRoot, "app/icon.png"));
+  await access(path.join(nextRoot, "app/favicon.ico"));
+  await access(path.join(nextRoot, "app/apple-icon.png"));
+  await assert.rejects(
+    () => access(path.join(nextRoot, "app/icon1.svg")),
+    (error) => error && error.code === "ENOENT",
+  );
+  await assert.rejects(
+    () => access(path.join(nextRoot, "app/icon2.png")),
+    (error) => error && error.code === "ENOENT",
+  );
+});
+
 test("GSlide primitives use tokens and GSlide wordmark", async () => {
   const wordmark = await readNext("components/gslide/GSlideWordmark.tsx");
   assert.match(wordmark, />GSlide</);
   assert.match(wordmark, /font-unbounded/);
   assert.match(wordmark, /--gslide-ink/);
+  assert.match(wordmark, /gslide-logo\.png/);
+  assert.match(wordmark, /markOnly/);
 
   const button = await readNext("components/gslide/GSlideButton.tsx");
   assert.match(button, /--gslide-accent/);
@@ -94,6 +115,7 @@ test("legacy splash module re-exports GSlide splash", async () => {
 test("GSlide sidebar and header use tokens and wordmark, not purple chrome", async () => {
   const sidebar = await readNext("components/gslide/GSlideSidebar.tsx");
   assert.match(sidebar, /GSlideWordmark/);
+  assert.match(sidebar, /markOnly/);
   assert.match(sidebar, /--gslide-bg/);
   assert.match(sidebar, /--gslide-border/);
   assert.match(sidebar, /href="\/dashboard"|href=\{`\/dashboard`\}/);
