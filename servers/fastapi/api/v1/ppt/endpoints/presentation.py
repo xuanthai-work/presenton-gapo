@@ -1610,6 +1610,7 @@ async def prepare_presentation(
 async def _stream_smart_presentation(
     presentation: PresentationModel,
     sql_session: AsyncSession,
+    request: Optional[Request] = None,
 ) -> StreamingResponse:
     presentation_id = presentation.id
 
@@ -1742,6 +1743,13 @@ async def _stream_smart_presentation(
 
         try:
             while not generation_task.done() or not generation_events.empty():
+                if request is not None and await request.is_disconnected():
+                    logger.info(
+                        "[presentation.stream.smart] client disconnected "
+                        "presentation_id=%s",
+                        presentation_id,
+                    )
+                    raise asyncio.CancelledError
                 try:
                     event_type, event_value = await asyncio.wait_for(
                         generation_events.get(), timeout=0.1
@@ -1847,13 +1855,15 @@ async def _stream_smart_presentation(
 
 @PRESENTATION_ROUTER.get("/stream/{id}", response_model=PresentationWithSlides)
 async def stream_presentation(
-    id: uuid.UUID, sql_session: AsyncSession = Depends(get_async_session)
+    id: uuid.UUID,
+    request: Request = None,
+    sql_session: AsyncSession = Depends(get_async_session),
 ):
     presentation = await sql_session.get(PresentationModel, id)
     if not presentation:
         raise HTTPException(status_code=404, detail="Presentation not found")
     if presentation.generation_mode == "smart":
-        return await _stream_smart_presentation(presentation, sql_session)
+        return await _stream_smart_presentation(presentation, sql_session, request)
     if not presentation.structure:
         raise HTTPException(
             status_code=400,
@@ -1932,6 +1942,14 @@ async def stream_presentation(
         yielded_slide_asset_sse_count = 0
 
         for i, slide_layout_index in enumerate(structure.slides):
+            if request is not None and await request.is_disconnected():
+                logger.info(
+                    "[presentation.stream.standard] client disconnected "
+                    "presentation_id=%s slide_index=%s",
+                    id,
+                    i,
+                )
+                raise asyncio.CancelledError
             slide_layout = layout.slides[slide_layout_index]
 
             try:
@@ -1943,6 +1961,9 @@ async def stream_presentation(
                     presentation.verbosity,
                     presentation.instructions,
                     slide_number=i + 1,
+                    disconnect_checker=(
+                        request.is_disconnected if request is not None else None
+                    ),
                 )
             except HTTPException as e:
                 yield SSEErrorResponse(detail=e.detail).to_string()
