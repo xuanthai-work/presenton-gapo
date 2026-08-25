@@ -45,6 +45,7 @@ import {
 } from "../../_shared/blank-slide";
 import PresentationHeader from "./PresentationHeader";
 import PresentationActions from "./PresentationActions";
+import GenerationStatusBar from "../../components/GenerationStatusBar";
 import {
   TEMPLATE_V2_ACTIVATE_SURFACE_EVENT,
   TEMPLATE_V2_SURFACE_SELECTED_EVENT,
@@ -274,7 +275,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   );
 
   // Initialize streaming
-  usePresentationStreaming(
+  const streamControls = usePresentationStreaming(
     presentation_id,
     stream,
     setLoading,
@@ -285,6 +286,22 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
       generationMode: isSmartPresentation ? "smart" : "standard",
     }
   );
+  const {
+    lifecycle: streamLifecycle,
+    statusMessage: streamStatusMessage,
+    draftCount: streamDraftCount,
+    cancel: streamCancel,
+    keepWaiting: streamKeepWaiting,
+    retry: streamRetry,
+  } = streamControls;
+  // Planned total slide count for the slides confirm string. Prefer the
+  // structure outline total, then the n_slides field, then fall back to the
+  // drafted count so far.
+  const streamTotalCount =
+    presentationData?.structure?.slides?.length ??
+    presentationData?.n_slides ??
+    streamDraftCount ??
+    0;
 
   useEffect(() => {
     if (
@@ -825,7 +842,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   return (
     <div className="h-dvh overflow-hidden font-syne">
       <OverlayLoader
-        show={loadingState.isLoading}
+        show={loadingState.isLoading && !isStreaming}
         text={loadingState.message}
         showProgress={loadingState.showProgress}
         duration={loadingState.duration}
@@ -843,6 +860,16 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           isPresentationSaving={isSaving}
           currentSlide={selectedSlide}
           generationMode={isSmartPresentation ? "smart" : "standard"}
+        />
+        <GenerationStatusBar
+          surface="presentation"
+          lifecycle={streamLifecycle}
+          statusMessage={streamStatusMessage}
+          draftCount={streamDraftCount}
+          totalCount={streamTotalCount}
+          onCancel={streamCancel}
+          onKeepWaiting={streamKeepWaiting}
+          onRetry={streamRetry}
         />
         <div className="flex flex-1 min-h-0 gap-3 overflow-hidden xl:gap-5 2xl:gap-6">
           <div className="sticky top-0 hidden h-full w-[150px] shrink-0 self-start md:block">

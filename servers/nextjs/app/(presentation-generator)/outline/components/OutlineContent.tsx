@@ -20,6 +20,8 @@ import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
+import type { GenerationLifecycleState } from "@/lib/generation-lifecycle";
+import GenerationStatusBar from "../../components/GenerationStatusBar";
 import { useStableOutlineIds } from "../../components/useStableOutlineIds";
 import { OutlineItem } from "./OutlineItem";
 
@@ -30,6 +32,11 @@ interface OutlineContentProps {
   activeSlideIndex: number | null;
   highestActiveIndex: number;
   statusMessage: string;
+  lifecycle: GenerationLifecycleState;
+  draftCount: number;
+  onCancel: () => void;
+  onKeepWaiting: () => void;
+  onRetry: () => void;
   onDragEnd: (oldIndex: number, newIndex: number) => void;
   onAddSlide: () => void;
   onUpdateOutline?: (index: number, newContent: string) => void;
@@ -44,6 +51,11 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
   activeSlideIndex,
   highestActiveIndex,
   statusMessage,
+  lifecycle,
+  draftCount,
+  onCancel,
+  onKeepWaiting,
+  onRetry,
   onDragEnd,
   onAddSlide,
   onUpdateOutline,
@@ -81,6 +93,17 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
 
   return (
     <div className="font-syne">
+      <GenerationStatusBar
+        surface="outline"
+        lifecycle={lifecycle}
+        statusMessage={statusMessage}
+        draftCount={draftCount}
+        totalCount={null}
+        onCancel={onCancel}
+        onKeepWaiting={onKeepWaiting}
+        onRetry={onRetry}
+      />
+
       {isStreaming && (
         <div className="sr-only" role="status" aria-live="polite">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />

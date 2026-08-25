@@ -426,6 +426,11 @@ const OutlinePage: React.FC = () => {
                   activeSlideIndex={streamState.activeSlideIndex}
                   highestActiveIndex={streamState.highestActiveIndex}
                   statusMessage={streamState.statusMessage}
+                  lifecycle={streamState.lifecycle}
+                  draftCount={streamState.draftCount}
+                  onCancel={streamState.cancel}
+                  onKeepWaiting={streamState.keepWaiting}
+                  onRetry={streamState.retry}
                   onDragEnd={handleDragEnd}
                   onAddSlide={handleAddSlide}
                   onUpdateOutline={handleUpdateOutline}
