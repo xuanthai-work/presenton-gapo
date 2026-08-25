@@ -123,9 +123,10 @@ test("GSlide sidebar and header use tokens and wordmark, not purple chrome", asy
   assert.doesNotMatch(sidebar, /#F6F6F9/);
 
   const header = await readNext("components/gslide/GSlideHeader.tsx");
-  assert.match(header, /--gslide-bg/);
+  assert.match(header, /backdrop-blur/);
   assert.match(header, /--gslide-border/);
   assert.match(header, /font-unbounded|--gslide-ink/);
+  assert.doesNotMatch(header, /#7C51F8/);
 });
 
 test("shared Skeleton delegates to GSlideSkeleton", async () => {

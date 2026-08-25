@@ -1,7 +1,7 @@
 # GSlide UI Kit Restyle — Design Spec
 
 **Date:** 2026-08-24  
-**Status:** Implemented (2026-08-24). Chrome kit shipped; Presenton Cloud OAuth/proxy later removed from FastAPI as well.  
+**Status:** Implemented (2026-08-24). Chrome kit shipped; Presenton Cloud OAuth/proxy later removed from FastAPI as well. **2026-08-25:** `GSlideHeader` is a frosted `backdrop-blur` bar (border + ink tokens), not a solid `--gslide-bg` fill — matches Template/Settings topbars.  
 **Approach:** B — build a GSlide component kit, then migrate surfaces onto it.
 
 ## Product goal
@@ -54,7 +54,7 @@ Pages must not keep one-off purple hex for chrome once migrated. Residual purple
 | `GSlideCard` | White surface, `--gslide-border`, ~16px radius matching Auth card |
 | `GSlidePage` | Min-height shell with `--gslide-bg` |
 | `GSlideSidebar` | Dashboard rail: wordmark, nav, active = accent, inactive = muted, border `--gslide-border` |
-| `GSlideHeader` | Chrome header + wordmark link to dashboard |
+| `GSlideHeader` | Sticky chrome header: `--gslide-border`, ink title, `backdrop-blur` (not a solid `--gslide-bg` fill) |
 | `GSlideInput` | Auth-like height, border, focus ring 15% accent |
 | `GSlideSkeleton` | Pulse using `--gslide-accent-soft` on page bg; not gray `#F6F6F9` |
 | `GSlideSplashLoader` | Full-page wait: Auth bg, GSlide wordmark, accent spinner. Replaces `PresentonSplashLoader` |

@@ -1,7 +1,7 @@
 # GSlide Hygiene Cleanup — Design Spec
 
 **Date:** 2026-08-25  
-**Status:** Draft  
+**Status:** Implemented (2026-08-25). Batches 0–2 landed on `main` (`880dcbdb`–`a8b22519`). Header contract test later relaxed: frosted `GSlideHeader` does not require `--gslide-bg`.  
 **Approach:** A — layered batches with review between them. Do not mix batches in one commit.
 
 ## Product goal

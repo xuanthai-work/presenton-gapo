@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status (2026-08-24):** Tasks 1–11 complete on `main`. **Follow-on Task 12** (slide-editor floating toolbars / picker chrome) is in `docs/superpowers/plans/2026-08-24-gslide-slide-editor-chrome.md` — not started. Original constraint “Do not change FastAPI Presenton Cloud modules / Backend OAuth stays” is **superseded**: OAuth router, cloud proxy, `presenton_cloud_provider` table, and leftover `LLM === "presenton"` UI are removed. Community catalog (`api.presenton.ai`) is unchanged. Internal names (`presenton_session`, `sk-presenton-`) stay.
+**Status (2026-08-24):** Tasks 1–11 complete on `main`. **Follow-on Task 12** (slide-editor floating toolbars / picker chrome) is in `docs/superpowers/plans/2026-08-24-gslide-slide-editor-chrome.md` — complete. Original constraint “Do not change FastAPI Presenton Cloud modules / Backend OAuth stays” is **superseded**: OAuth router, cloud proxy, `presenton_cloud_provider` table, and leftover `LLM === "presenton"` UI are removed. Community catalog (`api.presenton.ai`) is unchanged. Cookie/API-key rename (`gslide_session` / `sk-gslide-`) is in the 2026-08-25 hygiene spec. **2026-08-25:** `GSlideHeader` is frosted (`backdrop-blur`); contract tests no longer require `--gslide-bg` on the header.
 
 **Goal:** Restyle all Next.js product chrome to the Auth blue palette under the GSlide brand, via a reusable kit, including splash/skeleton/loader states.
 
