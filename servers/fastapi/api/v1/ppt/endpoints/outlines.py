@@ -28,6 +28,7 @@ from utils.outline_utils import (
     get_no_of_outlines_to_generate_for_n_slides,
     get_presentation_title_from_presentation_outline,
 )
+from utils.json_parse_diagnostics import describe_json_parse_failure
 from utils.outline_limits import normalize_outline_payload
 from utils.llm_calls.generate_presentation_outlines import (
     OutlineGenerationStatus,
@@ -210,6 +211,11 @@ async def stream_outlines(
             )
         except Exception as e:
             traceback.print_exc()
+            LOGGER.error(
+                "Outline JSON parse failed presentation_id=%s %s",
+                presentation.id,
+                describe_json_parse_failure(presentation_outlines_text, e),
+            )
             yield SSEErrorResponse(
                 detail=f"Failed to generate presentation outlines. Please try again. {str(e)}",
             ).to_string()

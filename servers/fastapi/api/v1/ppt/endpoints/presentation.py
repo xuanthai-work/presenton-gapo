@@ -86,6 +86,7 @@ from utils.outline_utils import (
     get_presentation_title_from_presentation_outline,
 )
 from utils.outline_limits import normalize_outline_payload
+from utils.json_parse_diagnostics import describe_json_parse_failure
 from utils.process_slides import (
     process_slide_add_placeholder_assets,
     process_slide_and_fetch_assets,
@@ -2367,8 +2368,12 @@ async def generate_presentation_handler(
                 presentation_outlines_json = dict(
                     dirtyjson.loads(presentation_outlines_text)
                 )
-            except Exception:
+            except Exception as error:
                 traceback.print_exc()
+                logger.error(
+                    "Outline JSON parse failed %s",
+                    describe_json_parse_failure(presentation_outlines_text, error),
+                )
                 raise HTTPException(
                     status_code=400,
                     detail="Failed to generate presentation outlines. Please try again.",
