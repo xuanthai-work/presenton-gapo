@@ -1,28 +1,12 @@
 "use client";
 
 import React from "react";
-import { LayoutDashboard, Star, Brain, Settings, HelpCircle, UsersRound } from "lucide-react";
+import { LayoutDashboard, Settings, HelpCircle, UsersRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 import LogoutButton from "@/components/Auth/LogoutButton";
 import { GSlideSidebar, gslideNavActiveClass, gslideNavIdleClass } from "@/components/gslide";
-
-
-
-export const defaultNavItems = [
-    { key: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
-    { key: "templates" as const, label: "Standard", icon: Star },
-    { key: "designs" as const, label: "Smart", icon: Brain },
-    { key: "community" as const, label: "Community", icon: UsersRound },
-
-
-
-];
-export const BelongingNavItems = [
-    { key: "settings" as const, label: "Settings", icon: Settings },
-
-]
 
 const DashboardSidebar = () => {
     const pathname = usePathname();

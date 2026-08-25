@@ -13,7 +13,7 @@ export function GSlideHeader({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 flex h-[105px] items-center justify-between border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-1",
+        "sticky top-0 z-50 flex h-[105px] items-center justify-between border-b border-[var(--gslide-border)] px-1 backdrop-blur",
         className,
       )}
     >

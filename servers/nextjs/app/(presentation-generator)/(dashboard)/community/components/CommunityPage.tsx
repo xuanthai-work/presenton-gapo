@@ -239,7 +239,7 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-[var(--gslide-bg)] font-manrope">
-      <header className="sticky right-0 top-0 z-40 ml-7 mr-[9px] flex min-h-[105px] items-center justify-between border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-1">
+      <header className="sticky right-0 top-0 z-40 ml-7 mr-[9px] flex min-h-[105px] items-center justify-between border-b border-[var(--gslide-border)] px-1 backdrop-blur">
         <h1 className="font-unbounded text-[22px] font-normal tracking-[-0.03em] text-[var(--gslide-ink)]">
           Community
         </h1>
