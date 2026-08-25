@@ -43,10 +43,34 @@ DisconnectChecker = Callable[[], Awaitable[bool]]
 _STREAM_END = object()
 
 
-async def _yield_stream_items(stream: Any) -> AsyncGenerator[Any, None]:
-    """Yield items from either an async stream or a sync OpenAI ``Stream``."""
+async def _yield_stream_items(
+    stream: Any,
+    *,
+    disconnect_checker: Optional[DisconnectChecker] = None,
+) -> AsyncGenerator[Any, None]:
+    """Yield items from either an async stream or a sync OpenAI ``Stream``.
+
+    Polls ``disconnect_checker`` (when provided) at least every
+    ``CLIENT_DISCONNECT_POLL_SECONDS`` while waiting for the next item so a
+    client disconnect during a hung/stalled LLM stream raises
+    ``asyncio.CancelledError`` promptly.
+    """
     if hasattr(stream, "__aiter__"):
-        async for item in stream:
+        iterator = stream.__aiter__()
+        while True:
+            await _raise_if_client_disconnected(disconnect_checker)
+            next_item = asyncio.create_task(iterator.__anext__())
+            try:
+                while True:
+                    await _raise_if_client_disconnected(disconnect_checker)
+                    done, _ = await asyncio.wait(
+                        {next_item}, timeout=CLIENT_DISCONNECT_POLL_SECONDS
+                    )
+                    if done:
+                        break
+                item = next_item.result()
+            except StopAsyncIteration:
+                break
             yield item
         return
 
@@ -56,7 +80,16 @@ async def _yield_stream_items(stream: Any) -> AsyncGenerator[Any, None]:
         return next(iterator, _STREAM_END)
 
     while True:
-        item = await asyncio.to_thread(_next_item)
+        await _raise_if_client_disconnected(disconnect_checker)
+        next_item = asyncio.ensure_future(asyncio.to_thread(_next_item))
+        while True:
+            await _raise_if_client_disconnected(disconnect_checker)
+            done, _ = await asyncio.wait(
+                {next_item}, timeout=CLIENT_DISCONNECT_POLL_SECONDS
+            )
+            if done:
+                break
+        item = next_item.result()
         if item is _STREAM_END:
             break
         yield item
@@ -423,7 +456,11 @@ async def _dispatch_chat_completion(
 # ---------------------------------------------------------------------------
 
 
-async def _iterate_openai_responses_stream(stream: Any):
+async def _iterate_openai_responses_stream(
+    stream: Any,
+    *,
+    disconnect_checker: Optional[DisconnectChecker] = None,
+):
     """Iterate OpenAI Responses API streaming events.
 
     Maps to the same event shape the chat service / smart deck generator expect:
@@ -434,7 +471,7 @@ async def _iterate_openai_responses_stream(stream: Any):
     accumulated_text: list[str] = []
     accumulated_reasoning: list[str] = []
     final_response: Any = None
-    async for event in _yield_stream_items(stream):
+    async for event in _yield_stream_items(stream, disconnect_checker=disconnect_checker):
         event_type = getattr(event, "type", None)
         if event_type in {"response.output_text.delta", "response.refusal.delta"}:
             delta = getattr(event, "delta", None)
@@ -467,12 +504,16 @@ async def _iterate_openai_responses_stream(stream: Any):
     )
 
 
-async def _iterate_openai_chat_stream(stream: Any):
+async def _iterate_openai_chat_stream(
+    stream: Any,
+    *,
+    disconnect_checker: Optional[DisconnectChecker] = None,
+):
     """Iterate OpenAI Chat Completions streaming chunks."""
     accumulated_text: list[str] = []
     accumulated_tool_calls: dict[int, dict[str, str]] = {}
     final_chunk: Any = None
-    async for chunk in _yield_stream_items(stream):
+    async for chunk in _yield_stream_items(stream, disconnect_checker=disconnect_checker):
         final_chunk = chunk
         choices = getattr(chunk, "choices", None) or []
         if not choices:
@@ -518,12 +559,16 @@ async def _iterate_openai_chat_stream(stream: Any):
     )
 
 
-async def _iterate_google_stream(stream: Any):
+async def _iterate_google_stream(
+    stream: Any,
+    *,
+    disconnect_checker: Optional[DisconnectChecker] = None,
+):
     """Iterate google-genai ``generate_content_stream`` events."""
     accumulated_text: list[str] = []
     accumulated_reasoning: list[str] = []
     final_response: Any = None
-    async for chunk in _yield_stream_items(stream):
+    async for chunk in _yield_stream_items(stream, disconnect_checker=disconnect_checker):
         final_response = chunk
         candidates = getattr(chunk, "candidates", None) or []
         if not candidates:
@@ -666,20 +711,28 @@ async def stream_generate_events(
 
     if provider == LLMProvider.OPENAI:
         if use_responses_api(tools, reasoning=reasoning):
-            async for event in _iterate_openai_responses_stream(native_stream):
+            async for event in _iterate_openai_responses_stream(
+                native_stream, disconnect_checker=disconnect_checker
+            ):
                 yield event
             return
-        async for event in _iterate_openai_chat_stream(native_stream):
+        async for event in _iterate_openai_chat_stream(
+            native_stream, disconnect_checker=disconnect_checker
+        ):
             yield event
         return
 
     if provider == LLMProvider.GOOGLE:
-        async for event in _iterate_google_stream(native_stream):
+        async for event in _iterate_google_stream(
+            native_stream, disconnect_checker=disconnect_checker
+        ):
             yield event
         return
 
     # CUSTOM — OpenAI-compatible chat completions.
-    async for event in _iterate_openai_chat_stream(native_stream):
+    async for event in _iterate_openai_chat_stream(
+        native_stream, disconnect_checker=disconnect_checker
+    ):
         yield event
 
 
@@ -785,6 +838,10 @@ async def _generate_structured_content(
         disconnect_checker=disconnect_checker,
         **stream_kwargs,
     ):
+        # Poll the client disconnect flag on every event so a hung/stalled LLM
+        # stream is aborted promptly even when ``stream_generate_events`` is
+        # patched out by callers (no-op when ``disconnect_checker`` is None).
+        await _raise_if_client_disconnected(disconnect_checker)
         if isinstance(event, _StreamCompletionChunk) or getattr(event, "type", None) == "completion":
             completion_content = event.content
         elif getattr(event, "type", None) == "content":

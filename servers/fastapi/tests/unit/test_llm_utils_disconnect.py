@@ -196,3 +196,47 @@ def test_connected_request_keeps_schema_validation_retries(monkeypatch):
 
     assert result == {"result": "fixed"}
     assert call_count == 2
+
+
+def test_stream_generate_events_polls_disconnect_during_iteration(monkeypatch):
+    monkeypatch.setenv("LLM", "openai")
+    checks = {"count": 0}
+
+    class SlowStream:
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            await asyncio.sleep(0.05)
+            raise StopAsyncIteration
+
+    async def fake_dispatch(*_args, **_kwargs):
+        return SlowStream()
+
+    monkeypatch.setattr("utils.llm_utils._dispatch_chat_completion", fake_dispatch)
+    monkeypatch.setattr(
+        "utils.llm_utils.get_llm_provider",
+        lambda: __import__("enums.llm_provider", fromlist=["LLMProvider"]).LLMProvider.OPENAI,
+    )
+    monkeypatch.setattr("utils.llm_utils.use_responses_api", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr("utils.llm_utils.CLIENT_DISCONNECT_POLL_SECONDS", 0.01)
+
+    async def is_disconnected():
+        checks["count"] += 1
+        return checks["count"] > 2
+
+    async def run():
+        with pytest.raises(asyncio.CancelledError):
+            async for _ in __import__(
+                "utils.llm_utils", fromlist=["stream_generate_events"]
+            ).stream_generate_events(
+                object(),
+                disconnect_checker=is_disconnected,
+                model="test",
+                messages=[],
+                stream=True,
+            ):
+                pass
+
+    asyncio.run(run())
+    assert checks["count"] >= 2

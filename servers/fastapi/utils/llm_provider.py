@@ -1,5 +1,6 @@
 from typing import Any
 
+import httpx
 from fastapi import HTTPException
 from google import genai
 from openai import OpenAI
@@ -20,6 +21,10 @@ from utils.get_env import (
     get_openai_api_key_env,
     get_openai_model_env,
 )
+
+# 180s total request timeout, 10s connect. Applied to OpenAI and OpenAI-compatible
+# (CUSTOM) clients so a stalled LLM stream does not hang the request indefinitely.
+LLM_HTTP_TIMEOUT = httpx.Timeout(180.0, connect=10.0)
 
 
 def get_llm_provider():
@@ -82,7 +87,7 @@ def get_llm_client() -> OpenAI | genai.Client:
         api_key = get_openai_api_key_env()
         if not api_key:
             raise HTTPException(status_code=400, detail="OpenAI API Key is not set")
-        return OpenAI(api_key=api_key, base_url=OPENAI_URL)
+        return OpenAI(api_key=api_key, base_url=OPENAI_URL, timeout=LLM_HTTP_TIMEOUT)
     if provider == LLMProvider.GOOGLE:
         return get_google_llm_client()
     if provider == LLMProvider.CUSTOM:
@@ -95,6 +100,7 @@ def get_llm_client() -> OpenAI | genai.Client:
         return OpenAI(
             api_key=get_custom_llm_api_key_env() or "null",
             base_url=base_url,
+            timeout=LLM_HTTP_TIMEOUT,
         )
     raise HTTPException(
         status_code=500,
