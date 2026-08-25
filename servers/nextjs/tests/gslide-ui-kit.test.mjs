@@ -217,7 +217,7 @@ test("Presenton Cloud onboarding UI file is removed", async () => {
 });
 
 test("onboarding wizard chrome is GSlide blue", async () => {
-  const mode = await readNext("components/OnBoarding/PresentonMode.tsx");
+  const mode = await readNext("components/OnBoarding/OnboardingMode.tsx");
   assert.doesNotMatch(mode, />PRESENTON</);
   assert.doesNotMatch(mode, /bg-\[#7C51F8\]/);
   assert.match(mode, /GSlide|GSLIDE|--gslide-accent|#1D6FE8/);
@@ -269,7 +269,7 @@ const CHROME_FILES = [
   "components/Auth/AuthGate.tsx",
   "components/Home.tsx",
   "components/Header.tsx",
-  "components/OnBoarding/PresentonMode.tsx",
+  "components/OnBoarding/OnboardingMode.tsx",
   "components/OnBoarding/OnBoardingSlidebar.tsx",
   "components/ui/overlay-loader.tsx",
   "app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx",
@@ -418,7 +418,7 @@ test("app metadata does not use presenton.ai", async () => {
 });
 
 test("onboarding and community copy are GSlide not Presenton product", async () => {
-  const mode = await readNext("components/OnBoarding/PresentonMode.tsx");
+  const mode = await readNext("components/OnBoarding/OnboardingMode.tsx");
   assert.doesNotMatch(mode, /Presenton account/);
   assert.doesNotMatch(mode, /how Presenton creates/);
 
@@ -431,4 +431,14 @@ test("onboarding and community copy are GSlide not Presenton product", async () 
     "app/(presentation-generator)/(dashboard)/community/components/CommunityDesignPreviewDialog.tsx",
   );
   assert.doesNotMatch(preview, /Presenton managed/);
+});
+
+test("PresentonMode filename is gone", async () => {
+  await assert.rejects(
+    () => readNext("components/OnBoarding/PresentonMode.tsx"),
+    (error) => error && error.code === "ENOENT",
+  );
+  const home = await readNext("components/Home.tsx");
+  assert.match(home, /OnboardingMode/);
+  assert.doesNotMatch(home, /PresentonMode/);
 });

@@ -23,7 +23,7 @@ const TEXT_PROVIDERS = Object.values(LLM_PROVIDERS).filter(
 );
 const TEXT_PROVIDER_VALUES = new Set(TEXT_PROVIDERS.map((provider) => provider.value));
 
-const PresentonMode = ({
+const OnboardingMode = ({
     providerStep,
     setStep,
     setProviderStep,
@@ -989,4 +989,4 @@ const PresentonMode = ({
     )
 }
 
-export default PresentonMode
+export default OnboardingMode
