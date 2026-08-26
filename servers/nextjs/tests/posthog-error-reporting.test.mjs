@@ -61,3 +61,25 @@ test("ClientRoot wires PostHogInitializer and MixpanelInitializer is gone", asyn
     (error) => error && error.code === "ENOENT",
   );
 });
+
+test("privacy copy is error reports and fail-closed", async () => {
+  const privacy = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/PrivacySettings.tsx",
+  );
+  const finalStep = await readNext("components/OnBoarding/FinalStep.tsx");
+  assert.match(privacy, /Error reports/);
+  assert.match(
+    privacy,
+    /We send anonymous error reports \(crashes and failed generate, export, stream, or save actions\) to our self-hosted PostHog/,
+  );
+  assert.doesNotMatch(
+    privacy,
+    /No personal information or presentation content is collected/,
+  );
+  assert.match(privacy, /from "@\/utils\/posthog"/);
+  assert.doesNotMatch(privacy, /Usage_Analytics_Disabled/);
+  assert.match(privacy, /setTrackingEnabled\(false\)/);
+  assert.match(finalStep, /Error reports/);
+  assert.match(finalStep, /from "@\/utils\/posthog"/);
+  assert.doesNotMatch(finalStep, /setTrackingEnabled\(true\)/);
+});

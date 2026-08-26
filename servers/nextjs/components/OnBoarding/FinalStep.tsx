@@ -1,12 +1,7 @@
 import { ArrowRight, PartyPopper } from 'lucide-react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useState } from 'react'
-import {
-    trackEvent,
-    trackEventImmediately,
-    MixpanelEvent,
-    setTelemetryEnabled,
-} from "@/utils/mixpanel";
+import { setTelemetryEnabled } from "@/utils/posthog";
 import { Switch } from '../ui/switch';
 import confetti from 'canvas-confetti';
 
@@ -29,16 +24,10 @@ function fireRealisticConfetti() {
 
 const FinalStep = () => {
     const router = useRouter()
-    const pathname = usePathname()
     const [trackingEnabled, setTrackingEnabled] = useState<boolean | null>(null);
 
     useEffect(() => {
         fireRealisticConfetti();
-        trackEvent(MixpanelEvent.Onboarding_Step_Viewed, {
-            step_name: "finish",
-            step_number: 4,
-        });
-        trackEvent(MixpanelEvent.Onboarding_Completed);
     }, []);
 
     useEffect(() => {
@@ -49,7 +38,7 @@ const FinalStep = () => {
                 const data = await response.json();
                 setTrackingEnabled(data.telemetryEnabled);
             } catch {
-                setTrackingEnabled(true);
+                setTrackingEnabled(false);
             }
         }
         fetchStatus();
@@ -58,15 +47,6 @@ const FinalStep = () => {
     const handleTrackingToggle = useCallback(async (enabled: boolean) => {
         const prev = trackingEnabled;
         setTrackingEnabled(enabled);
-        if (!enabled) {
-            try {
-                await trackEventImmediately(MixpanelEvent.Usage_Analytics_Disabled, {
-                    source: "onboarding",
-                });
-            } catch {
-                // Analytics failures must not prevent the user from opting out.
-            }
-        }
         setTelemetryEnabled(enabled);
         try {
             const response = await fetch('/api/user-config', {
@@ -78,16 +58,14 @@ const FinalStep = () => {
             if (!response.ok) throw new Error(`user-config returned ${response.status}`);
         } catch {
             setTrackingEnabled(prev);
-            setTelemetryEnabled(prev ?? true);
+            setTelemetryEnabled(prev ?? false);
         }
     }, [trackingEnabled]);
 
     const handleGoToDashboard = () => {
-        trackEvent(MixpanelEvent.Navigation, { from: pathname, to: "/dashboard" });
         router.push('/dashboard')
     }
     const handleGoToUpload = () => {
-        trackEvent(MixpanelEvent.Navigation, { from: pathname, to: "/upload" });
         router.push('/upload')
     }
     return (
@@ -101,8 +79,8 @@ const FinalStep = () => {
                 {trackingEnabled !== null && (
                     <div className='flex items-center gap-3 mt-8 px-5 py-3.5 rounded-[10px] border border-[#EDEEEF] bg-white'>
                         <div>
-                            <p className='text-sm font-medium text-[#191919] font-syne'>Usage analytics</p>
-                            <p className='text-[11px] text-[#9CA3AF] font-syne leading-tight mt-0.5'>Help improve GSlide by sharing anonymous usage data.</p>
+                            <p className='text-sm font-medium text-[#191919] font-syne'>Error reports</p>
+                            <p className='text-[11px] text-[#9CA3AF] font-syne leading-tight mt-0.5'>Anonymous error reports (crashes and failed generate, export, stream, or save actions) to our self-hosted PostHog. No presentation content, prompts, chat, files, or API keys are sent.</p>
                         </div>
                         <Switch
                             checked={trackingEnabled}
