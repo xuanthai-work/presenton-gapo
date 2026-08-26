@@ -7,12 +7,6 @@ const nextConfig = {
   reactStrictMode: false,
   distDir: ".next-build",
   output: "standalone",
-  // When the Next dev server is reached through a reverse proxy (e.g. nginx
-  // in the development container), the dev client must derive the HMR
-  // WebSocket URL from the browser's host header instead of `localhost:3000`.
-  // Without this, the client tries to connect to a port that is not exposed
-  // outside the container and the socket fails with ERR_CONNECTION_REFUSED.
-  ...(process.env.NODE_ENV !== "production" ? { webSocketUrl: "auto" } : {}),
   turbopack: {
     root: nextjsRoot,
   },
