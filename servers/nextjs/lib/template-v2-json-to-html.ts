@@ -2764,7 +2764,9 @@ function verticalAlign(value: string | null): string {
 }
 
 function textAlign(value: string | null): string {
-  return value === "center" || value === "right" ? value : "left";
+  return value === "center" || value === "right" || value === "justify"
+    ? value
+    : "left";
 }
 
 function cssAlignment(value: string | null, fallback: string): string {

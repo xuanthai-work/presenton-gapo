@@ -29,6 +29,7 @@ class HorizontalAlignment(str, Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
+    JUSTIFY = "justify"
 
 
 class VerticalAlignment(str, Enum):
