@@ -28,6 +28,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { notify } from "@/components/ui/sonner";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import Image from "next/image";
+import {
+  SettingsField,
+  settingsControlClassName,
+  settingsDropdownClassName,
+  settingsFormColumnClassName,
+} from "./SettingsField";
 
 interface OpenAIConfigProps {
   onInputChange: (value: string | boolean, field: string) => void;
@@ -237,14 +243,10 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
   };
 
   return (
-    <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
-      {/* API Key Input */}
-      <div className="mb-4 flex flex-col gap-8 rounded-[12px] bg-white pt-5 pb-10 px-10 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
-        <div className="max-w-[290px] shrink-0 ">
-          <div
-            className="w-[60px] h-[60px] rounded-[4px] flex items-center justify-center"
-            style={{ backgroundColor: "#4C55541A" }}
-          >
+    <div className="space-y-6 rounded-[12px] bg-[#F9F8F8] p-7">
+      <div className="mb-4 flex flex-col gap-8 rounded-[12px] bg-white px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
+        <div className="max-w-[280px] shrink-0">
+          <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[4px] bg-[var(--gslide-accent-soft)]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="32"
@@ -275,280 +277,244 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-normal text-[#191919] py-2.5">
+          <h3 className="py-2.5 text-xl font-normal text-[#191919]">
             Text Generation Settings
           </h3>
-          <p className=" text-sm  text-gray-500">
+          <p className="text-sm text-gray-500">
             Choosing where text content comes from
           </p>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col items-stretch justify-end gap-4 sm:items-end">
-          <div
-            className={`flex w-full min-w-0 flex-wrap gap-4 sm:justify-end items-start`}
-          >
-            <div
-              className={`relative shrink-0 w-[262px]`}
+        <div className={settingsFormColumnClassName}>
+          <SettingsField label="Select Text Provider">
+            <Popover
+              open={openProviderSelect}
+              onOpenChange={setOpenProviderSelect}
             >
-              <div className="flex flex-col justify-start ">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Text Provider
-                </label>
-                <Popover
-                  open={openProviderSelect}
-                  onOpenChange={setOpenProviderSelect}
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openProviderSelect}
+                  className={settingsDropdownClassName}
                 >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openProviderSelect}
-                      className="w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
-                    >
-                      <div className="flex gap-3 items-center">
-                        {selectedProviderMeta?.icon ? (
-                          <Image
-                            src={selectedProviderMeta.icon}
-                            alt=""
-                            width={22}
-                            height={22}
-                            className="h-[22px] w-[22px] rounded-[5px] object-contain"
-                          />
-                        ) : null}
-                        <span className="text-sm font-medium text-gray-900">
-                          {llmConfig.LLM
-                            ? LLM_PROVIDERS[llmConfig.LLM]?.label ||
-                              llmConfig.LLM
-                            : "Select text provider"}
-                        </span>
-                      </div>
-                      {openProviderSelect ? (
-                        <ChevronUp className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="p-0"
-                    align="start"
-                    style={{ width: "300px" }}
-                  >
-                    <Command>
-                      <CommandInput placeholder="Search provider..." />
-                      <CommandList>
-                        <CommandEmpty>No provider found.</CommandEmpty>
-                        <CommandGroup>
-                          {Object.values(LLM_PROVIDERS).map(
-                            (provider, index) => (
-                              <CommandItem
-                                key={index}
-                                value={provider.value}
-                                onSelect={(value) => {
-                                  trackEvent(MixpanelEvent.Settings_Provider_Selected, {
-                                    section: "text_provider",
-                                    provider: value,
-                                  });
-                                  onInputChange(value, "LLM");
-                                  setOpenProviderSelect(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    llmConfig.LLM === provider.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex gap-3 items-center">
-                                  <div className="flex flex-col space-y-1 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-sm font-medium text-gray-900 capitalize">
-                                        {provider.label}
-                                      </span>
-                                    </div>
-                                    <span className="text-xs text-gray-600 leading-relaxed">
-                                      {provider.description}
-                                    </span>
-                                  </div>
-                                </div>
-                              </CommandItem>
-                            )
-                          )}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <div
-              className={`relative flex min-w-0 flex-col justify-end items-end w-[282px] shrink-0 max-w-full`}
-            >
-              <div className="flex flex-col justify-start w-full ">
-                <>
-                  <label className="block text-sm font-medium capitalize text-gray-700 mb-2">
-                    {providerApiKeyLabel}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showApiKey ? "text" : "password"}
-                      value={currentApiKey}
-                      onChange={(e) =>
-                        onApiKeyChange(selectedProvider, e.target.value)
-                      }
-                      className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      placeholder={`Enter your ${providerApiKeyLabel}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowApiKey((prev) => !prev)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer"
-                    >
-                      {showApiKey ? (
-                        <Eye className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <EyeOff className="w-4 h-4 text-gray-500" />
-                      )}
-                    </button>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {selectedProviderMeta?.icon ? (
+                      <Image
+                        src={selectedProviderMeta.icon}
+                        alt=""
+                        width={22}
+                        height={22}
+                        className="h-[22px] w-[22px] rounded-[5px] object-contain"
+                      />
+                    ) : null}
+                    <span className="truncate text-sm font-medium text-gray-900">
+                      {llmConfig.LLM
+                        ? LLM_PROVIDERS[llmConfig.LLM]?.label || llmConfig.LLM
+                        : "Select text provider"}
+                    </span>
                   </div>
-                </>
-                {selectedProvider === "custom" && (
-                  <input
-                    type="text"
-                    value={currentCustomUrl}
-                    onChange={(e) =>
-                      onInputChange(e.target.value, "CUSTOM_LLM_URL")
-                    }
-                    className="w-full mt-2 px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                    placeholder="OpenAI-compatible URL"
-                  />
-                )}
-              </div>
-              {!currentModel &&
-                (!modelsChecked ||
-                  availableModels.length === 0) && (
-                  <button
-                    onClick={fetchAvailableModels}
-                    disabled={
-                      modelsLoading ||
-                      (selectedProvider === "openai" && !currentApiKey) ||
-                      (selectedProvider === "google" && !currentApiKey) ||
-                      (selectedProvider === "custom" && !currentCustomUrl)
-                    }
-                    className={`mt-4 py-2.5 bg-[#EDEEEF] px-3.5 w-fit  rounded-[48px] text-xs font-semibold text-[#101323] transition-all duration-200 border ${
-                      modelsLoading
-                        ? " border-gray-300 cursor-not-allowed text-gray-500"
-                        : " border-[#EDEEEF] text-[#101323] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
-                    }`}
-                  >
-                    {modelsLoading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Checking for models...
-                      </span>
-                    ) : (
-                      "Check models"
-                    )}
-                  </button>
-                )}
-            </div>
-          </div>
-          {/* Model Selection - only show if models are available */}
-          {(currentModel || (modelsChecked && modelOptions.length > 0)) ? (
-            <div className="w-[262px]">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  {`Select ${modelLabel} Model`}
-                </label>
-                <div className="w-full">
-                  <Popover
-                    open={openModelSelect}
-                    onOpenChange={handleModelSelectOpenChange}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openModelSelect}
-                        className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
-                      >
-                        <span className="text-sm truncate font-medium text-gray-900">
-                          {(() => {
-                            if (!currentModel) return "Select a model";
-                            const selectedModel = modelOptions.find(
-                              (model) => model.value === currentModel
-                            );
-                            if (!selectedModel) return currentModel;
-                            return selectedModel.label;
-                          })()}
-                        </span>
+                  {openProviderSelect ? (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="p-0"
+                align="start"
+                style={{ width: "var(--radix-popover-trigger-width)" }}
+              >
+                <Command>
+                  <CommandInput placeholder="Search provider..." />
+                  <CommandList>
+                    <CommandEmpty>No provider found.</CommandEmpty>
+                    <CommandGroup>
+                      {Object.values(LLM_PROVIDERS).map((provider, index) => (
+                        <CommandItem
+                          key={index}
+                          value={provider.value}
+                          onSelect={(value) => {
+                            trackEvent(MixpanelEvent.Settings_Provider_Selected, {
+                              section: "text_provider",
+                              provider: value,
+                            });
+                            onInputChange(value, "LLM");
+                            setOpenProviderSelect(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              llmConfig.LLM === provider.value
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          <div className="flex flex-1 flex-col space-y-1">
+                            <span className="text-sm font-medium capitalize text-gray-900">
+                              {provider.label}
+                            </span>
+                            <span className="text-xs leading-relaxed text-gray-600">
+                              {provider.description}
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </SettingsField>
 
-                        <ChevronUp className="w-4 h-4 text-gray-500" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="p-0"
-                      align="start"
-                      style={{ width: "var(--radix-popover-trigger-width)" }}
-                    >
-                      <Command>
-                        <CommandInput placeholder="Search models..." />
-                        <CommandList>
-                          <CommandEmpty>No model found.</CommandEmpty>
-                          <CommandGroup>
-                            {modelsLoading ? (
-                              <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-600">
-                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                Fetching models...
-                              </div>
-                            ) : null}
-                            {modelOptions.map((model) => (
-                              <CommandItem
-                                key={model.value}
-                                value={model.value}
-                                onSelect={() => {
-                                  if (currentModelField) {
-                                    trackEvent(MixpanelEvent.Settings_Model_Selected, {
-                                      provider: selectedProvider,
-                                      model: model.value,
-                                    });
-                                    onInputChange(
-                                      model.value,
-                                      currentModelField
-                                    );
-                                  }
-                                  setOpenModelSelect(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    currentModel === model.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex gap-3 items-center">
-                                  <div className="flex flex-col space-y-1 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {model.label}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+          <SettingsField label={providerApiKeyLabel}>
+            <div className="relative">
+              <input
+                type={showApiKey ? "text" : "password"}
+                value={currentApiKey}
+                onChange={(e) =>
+                  onApiKeyChange(selectedProvider, e.target.value)
+                }
+                className={`${settingsControlClassName} pr-10`}
+                placeholder={`Enter your ${providerApiKeyLabel}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey((prev) => !prev)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer bg-white px-2 py-1"
+              >
+                {showApiKey ? (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
             </div>
+          </SettingsField>
+
+          {selectedProvider === "custom" && (
+            <SettingsField label="OpenAI-compatible URL">
+              <input
+                type="text"
+                value={currentCustomUrl}
+                onChange={(e) =>
+                  onInputChange(e.target.value, "CUSTOM_LLM_URL")
+                }
+                className={settingsControlClassName}
+                placeholder="https://host.docker.internal:5000/v1"
+              />
+            </SettingsField>
+          )}
+
+          {(currentModel || (modelsChecked && modelOptions.length > 0)) ? (
+            <SettingsField label={`Select ${modelLabel} Model`}>
+              <Popover
+                open={openModelSelect}
+                onOpenChange={handleModelSelectOpenChange}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openModelSelect}
+                    className={settingsDropdownClassName}
+                  >
+                    <span className="truncate text-sm font-medium text-gray-900">
+                      {(() => {
+                        if (!currentModel) return "Select a model";
+                        const selectedModel = modelOptions.find(
+                          (model) => model.value === currentModel
+                        );
+                        if (!selectedModel) return currentModel;
+                        return selectedModel.label;
+                      })()}
+                    </span>
+                    {openModelSelect ? (
+                      <ChevronUp className="h-4 w-4 shrink-0 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="p-0"
+                  align="start"
+                  style={{ width: "var(--radix-popover-trigger-width)" }}
+                >
+                  <Command>
+                    <CommandInput placeholder="Search models..." />
+                    <CommandList>
+                      <CommandEmpty>No model found.</CommandEmpty>
+                      <CommandGroup>
+                        {modelsLoading ? (
+                          <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-600">
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                            Fetching models...
+                          </div>
+                        ) : null}
+                        {modelOptions.map((model) => (
+                          <CommandItem
+                            key={model.value}
+                            value={model.value}
+                            onSelect={() => {
+                              if (currentModelField) {
+                                trackEvent(MixpanelEvent.Settings_Model_Selected, {
+                                  provider: selectedProvider,
+                                  model: model.value,
+                                });
+                                onInputChange(model.value, currentModelField);
+                              }
+                              setOpenModelSelect(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                currentModel === model.value
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            <span className="text-sm font-medium text-gray-900">
+                              {model.label}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </SettingsField>
           ) : null}
+
+          {!currentModel && (!modelsChecked || availableModels.length === 0) && (
+            <button
+              type="button"
+              onClick={fetchAvailableModels}
+              disabled={
+                modelsLoading ||
+                (selectedProvider === "openai" && !currentApiKey) ||
+                (selectedProvider === "google" && !currentApiKey) ||
+                (selectedProvider === "custom" && !currentCustomUrl)
+              }
+              className={`w-fit rounded-[48px] border bg-[#EDEEEF] px-3.5 py-2.5 text-xs font-semibold text-[#101323] transition-all duration-200 ${
+                modelsLoading
+                  ? "cursor-not-allowed border-gray-300 text-gray-500"
+                  : "border-[#EDEEEF] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
+              }`}
+            >
+              {modelsLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking for models...
+                </span>
+              ) : (
+                "Check models"
+              )}
+            </button>
+          )}
         </div>
       </div>
       {/* Show message if no models found */}

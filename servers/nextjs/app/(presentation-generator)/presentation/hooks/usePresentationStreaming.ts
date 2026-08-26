@@ -21,9 +21,11 @@ import { PresentationGenerationApi } from "../../services/api/presentation-gener
 import {
   isStalled,
   isUsefulStreamEvent,
+  shouldShowKeepWaiting,
   shouldSilentRetry,
   silentRetryDelayMs,
   type GenerationLifecycleState,
+  type StallCause,
 } from "@/lib/generation-lifecycle";
 
 const MAX_STREAM_RETRIES = 3;
@@ -127,6 +129,7 @@ export const usePresentationStreaming = (
 
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
+  const [stallCause, setStallCause] = useState<StallCause | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>(
     defaultStatusMessage
   );
@@ -138,6 +141,7 @@ export const usePresentationStreaming = (
   const lastUsefulEventAtRef = useRef<number | null>(null);
   const streamStartedAtRef = useRef<number | null>(null);
   const lifecycleRef = useRef<GenerationLifecycleState>("idle");
+  const stallCauseRef = useRef<StallCause | null>(null);
   const statusMessageRef = useRef<string>(defaultStatusMessage);
   const accumulatedChunksRef = useRef<string>("");
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -148,6 +152,10 @@ export const usePresentationStreaming = (
   useEffect(() => {
     lifecycleRef.current = lifecycle;
   }, [lifecycle]);
+
+  useEffect(() => {
+    stallCauseRef.current = stallCause;
+  }, [stallCause]);
 
   // Keep statusMessage ref in sync so stall analytics read the latest value.
   useEffect(() => {
@@ -172,6 +180,9 @@ export const usePresentationStreaming = (
           state: lifecycleRef.current,
         })
       ) {
+        const cause: StallCause = eventSourceRef.current ? "silence" : "socket";
+        stallCauseRef.current = cause;
+        setStallCause(cause);
         setLifecycle("stalled");
         setStatusMessage(
           "Presentation stream stalled — waiting for the server."
@@ -727,6 +738,8 @@ export const usePresentationStreaming = (
         // After a useful event, a dead socket is a stall — do NOT reopen.
         closeEventSource();
         clearStallInterval();
+        stallCauseRef.current = "socket";
+        setStallCause("socket");
         setLifecycle("stalled");
         setStatusMessage(
           "Presentation stream stalled — waiting for the server."
@@ -843,9 +856,14 @@ export const usePresentationStreaming = (
   }, [dispatch, setLoading]);
 
   const keepWaiting = useCallback(() => {
+    if (!eventSourceRef.current) {
+      return;
+    }
     const stalledForMs =
       Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
     lastUsefulEventAtRef.current = Date.now();
+    stallCauseRef.current = null;
+    setStallCause(null);
     setLifecycle("generating");
     // An onerror-stall clears the stall interval. Restart it here so stall
     // detection continues if the user opts to keep waiting after a socket
@@ -872,6 +890,10 @@ export const usePresentationStreaming = (
     previousSlidesLength.current = 0;
     lastUsefulEventAtRef.current = null;
     streamStartedAtRef.current = null;
+    stallCauseRef.current = null;
+    setStallCause(null);
+    dispatch(setStreaming(true));
+    setError(false);
     setLifecycle("connecting");
     setStatusMessage(defaultStatusMessage);
     trackEvent(MixpanelEvent.Generation_Retry_Clicked, {
@@ -879,13 +901,14 @@ export const usePresentationStreaming = (
       from_state: fromState,
     });
     openStreamRef.current();
-  }, [defaultStatusMessage]);
+  }, [defaultStatusMessage, dispatch, setError]);
 
   return {
     lifecycle,
     isStreaming,
     statusMessage,
     draftCount,
+    canKeepWaiting: shouldShowKeepWaiting(stallCause),
     cancel,
     keepWaiting,
     retry,

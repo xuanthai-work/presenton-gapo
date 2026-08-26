@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronUp, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -15,6 +15,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { getApiErrorMessage, getApiUrl } from "@/utils/api";
 import { notify } from "@/components/ui/sonner";
+import {
+  SettingsField,
+  settingsControlClassName,
+  settingsDropdownClassName,
+} from "@/app/(presentation-generator)/(dashboard)/settings/SettingsField";
 
 export interface OpenAICompatibleImageFieldsProps {
   baseUrl: string;
@@ -118,109 +123,117 @@ export default function OpenAICompatibleImageFields({
 
   if (layout === "textProviderSettings") {
     return (
-      <div className="flex shrink-0 flex-col items-end gap-4">
-        <div className="relative flex w-[222px] min-w-0 max-w-full shrink-0 flex-col items-end justify-end">
-          <div className="flex w-full flex-col justify-start">
-            <label className="mb-2 block text-sm font-medium text-gray-700">Image API key</label>
-            <div className="relative">
-              <input
-                type={showApiKey ? "text" : "password"}
-                value={apiKey}
-                onChange={(e) => onApiKeyChange(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-2 py-3 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Key for your image endpoint"
-              />
-              <button
-                type="button"
-                onClick={() => setShowApiKey((p) => !p)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer bg-white px-2 py-1"
-              >
-                {showApiKey ? <Eye className="h-4 w-4 text-gray-500" /> : <EyeOff className="h-4 w-4 text-gray-500" />}
-              </button>
-            </div>
+      <>
+        <SettingsField label="Image API key">
+          <div className="relative">
             <input
-              type="text"
-              value={baseUrl}
-              onChange={(e) => onBaseUrlChange(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-gray-300 px-2 py-3 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Base URL (include /v1)"
+              type={showApiKey ? "text" : "password"}
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+              className={`${settingsControlClassName} pr-10`}
+              placeholder="Key for your image endpoint"
             />
-          </div>
-          {(!modelsChecked || (modelsChecked && models.length === 0)) && (
             <button
               type="button"
-              onClick={() => void fetchModels()}
-              disabled={modelsLoading || !baseUrl.trim()}
-              className={`mt-4 w-fit rounded-[48px] border px-3.5 py-2.5 text-xs font-semibold transition-all duration-200 ${
-                modelsLoading || !baseUrl.trim()
-                  ? "cursor-not-allowed border-gray-300 bg-[#EDEEEF] text-gray-500"
-                  : "border-[#EDEEEF] bg-[#EDEEEF] text-[#101323] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
-              }`}
+              onClick={() => setShowApiKey((p) => !p)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer bg-white px-2 py-1"
             >
-              {modelsLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Checking for models...
-                </span>
+              {showApiKey ? (
+                <Eye className="h-4 w-4 text-gray-500" />
               ) : (
-                "Check models"
+                <EyeOff className="h-4 w-4 text-gray-500" />
               )}
             </button>
-          )}
-        </div>
-
-        {modelsChecked && models.length > 0 ? (
-          <div className="w-[222px]">
-            <div>
-              <label className="mb-3 block text-sm font-medium text-gray-700">Select image model</label>
-              <div className="w-full">
-                <Popover open={openModelSelect} onOpenChange={setOpenModelSelect}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openModelSelect}
-                      className="flex h-12 w-full justify-between rounded-lg border border-gray-300 px-4 py-4 outline-none transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <span className="truncate text-sm font-medium text-gray-900">
-                        {model || "Select a model"}
-                      </span>
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
-                    <Command>
-                      <CommandInput placeholder="Search models..." />
-                      <CommandList>
-                        <CommandEmpty>No model found.</CommandEmpty>
-                        <CommandGroup>
-                          {models.map((m) => (
-                            <CommandItem
-                              key={m}
-                              value={m}
-                              onSelect={() => {
-                                onModelChange(m);
-                                setOpenModelSelect(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", model === m ? "opacity-100" : "opacity-0")} />
-                              <div className="flex flex-1 flex-col space-y-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">{m}</span>
-                                </div>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
           </div>
+        </SettingsField>
+        <SettingsField label="OpenAI-compatible URL">
+          <input
+            type="text"
+            value={baseUrl}
+            onChange={(e) => onBaseUrlChange(e.target.value)}
+            className={settingsControlClassName}
+            placeholder="https://host.docker.internal:5000/v1"
+          />
+        </SettingsField>
+        {(!modelsChecked || models.length === 0) && (
+          <button
+            type="button"
+            onClick={() => void fetchModels()}
+            disabled={modelsLoading || !baseUrl.trim()}
+            className={`w-fit rounded-[48px] border px-3.5 py-2.5 text-xs font-semibold transition-all duration-200 ${
+              modelsLoading || !baseUrl.trim()
+                ? "cursor-not-allowed border-gray-300 bg-[#EDEEEF] text-gray-500"
+                : "border-[#EDEEEF] bg-[#EDEEEF] text-[#101323] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
+            }`}
+          >
+            {modelsLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking for models...
+              </span>
+            ) : (
+              "Check models"
+            )}
+          </button>
+        )}
+        {modelsChecked && models.length > 0 ? (
+          <SettingsField label="Select image model">
+            <Popover open={openModelSelect} onOpenChange={setOpenModelSelect}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openModelSelect}
+                  className={settingsDropdownClassName}
+                >
+                  <span className="truncate text-sm font-medium text-gray-900">
+                    {model || "Select a model"}
+                  </span>
+                  {openModelSelect ? (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="p-0"
+                align="start"
+                style={{ width: "var(--radix-popover-trigger-width)" }}
+              >
+                <Command>
+                  <CommandInput placeholder="Search models..." />
+                  <CommandList>
+                    <CommandEmpty>No model found.</CommandEmpty>
+                    <CommandGroup>
+                      {models.map((m) => (
+                        <CommandItem
+                          key={m}
+                          value={m}
+                          onSelect={() => {
+                            onModelChange(m);
+                            setOpenModelSelect(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              model === m ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span className="text-sm font-medium text-gray-900">
+                            {m}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </SettingsField>
         ) : null}
-      </div>
+      </>
     );
   }
 

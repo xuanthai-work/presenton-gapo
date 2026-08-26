@@ -39,3 +39,6 @@ servers/fastapi/fastembed_cache/
 servers/fastapi/*.egg-info/
 pptxcollection/
 .worktrees/
+
+# agent conversation scratch (local notes, never committed)
+agent/

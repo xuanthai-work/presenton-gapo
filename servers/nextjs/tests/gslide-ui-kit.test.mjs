@@ -191,6 +191,8 @@ test("settings chrome has no filter rail", async () => {
   assert.doesNotMatch(account, /FILTER BY/);
   assert.match(tabs, /role="tablist"/);
   assert.doesNotMatch(tabs, /session/);
+  assert.doesNotMatch(tabs, /motion\/react/);
+  assert.doesNotMatch(tabs, /framer-motion/);
 });
 
 test("dashboard and community chrome use GSlide surfaces", async () => {
@@ -482,6 +484,49 @@ test("GenerationStatusBar uses stall copy and gslide tokens", async () => {
   );
   assert.match(source, /This is taking longer than usual/);
   assert.match(source, /Keep waiting/);
+  assert.match(source, /canKeepWaiting/);
   assert.match(source, /--gslide-accent/);
   assert.match(source, /aria-live/);
+  assert.match(source, /w-fit/);
+  assert.match(source, /max-w-\[min\(100%,22rem\)\]/);
+});
+
+test("create prompt config chip does not expose the text model name", async () => {
+  const source = await readNext(
+    "app/(presentation-generator)/upload/components/CurrentConfig.tsx",
+  );
+  assert.match(source, /textProviderLabel/);
+  assert.doesNotMatch(source, /\$\{textProviderLabel\} \(\$\{selectedTextModel\}\)/);
+  assert.doesNotMatch(source, /textSummary = selectedTextModel/);
+});
+
+test("community preview does not expose the text model name", async () => {
+  const source = await readNext(
+    "app/(presentation-generator)/(dashboard)/community/components/CommunityDesignPreviewDialog.tsx",
+  );
+  assert.match(source, /getProviderVisual\(textProvider\)\.label/);
+  assert.doesNotMatch(source, /setup\?\.text_model/);
+  assert.doesNotMatch(source, /SetupChip>\{setup\.text_model\}/);
+});
+
+test("settings text fields use one labeled column", async () => {
+  const source = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/TextProvider.tsx",
+  );
+  assert.match(source, /OpenAI-compatible URL/);
+  assert.match(source, /settingsFormColumnClassName/);
+  assert.match(source, /ChevronDown/);
+  assert.doesNotMatch(source, /relative shrink-0 w-\[262px\]/);
+  assert.doesNotMatch(source, /w-\[282px\]/);
+});
+
+test("Switch thumb stays inside the track when checked", async () => {
+  const source = await readNext("components/ui/switch.tsx");
+  assert.match(source, /p-\[2px\]/);
+  assert.match(source, /justify-end/);
+  assert.match(source, /justify-start/);
+  assert.match(source, /bg-white/);
+  assert.match(source, /gslide-accent/);
+  assert.doesNotMatch(source, /data-\[state=checked\]:bg-primary/);
+  assert.doesNotMatch(source, /border-2 border-transparent/);
 });

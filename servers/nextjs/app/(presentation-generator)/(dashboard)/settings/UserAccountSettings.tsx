@@ -12,7 +12,7 @@ export default function UserAccountSettings({
 }: UserAccountSettingsProps) {
   return (
     <div className="flex min-h-[100dvh] flex-col font-syne">
-      <GSlideHeader title="Settings" className="ml-7 mr-[9px] px-1" />
+      <GSlideHeader title="Settings" />
 
       <div className="mx-7 mt-8 max-w-xl pb-16">
         <GSlideCard aria-labelledby="account-heading" className="p-7 sm:p-7">

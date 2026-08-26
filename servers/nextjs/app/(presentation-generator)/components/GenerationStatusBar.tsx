@@ -16,6 +16,7 @@ type Props = {
   statusMessage: string;
   draftCount: number;
   totalCount?: number | null;
+  canKeepWaiting?: boolean;
   onCancel: () => void;
   onKeepWaiting: () => void;
   onRetry: () => void;
@@ -27,6 +28,7 @@ const GenerationStatusBar: React.FC<Props> = ({
   statusMessage,
   draftCount,
   totalCount,
+  canKeepWaiting = false,
   onCancel,
   onKeepWaiting,
   onRetry,
@@ -81,7 +83,7 @@ const GenerationStatusBar: React.FC<Props> = ({
       role="status"
       aria-live="polite"
       style={containerStyle}
-      className="mt-2 flex items-center gap-3 rounded-[12px] px-4 py-3 shadow-[0_4px_12px_rgba(16,24,40,0.06)]"
+      className="mt-2 inline-flex w-fit max-w-[min(100%,22rem)] items-center gap-2 rounded-[12px] px-3 py-2 shadow-[0_4px_12px_rgba(16,24,40,0.06)]"
     >
       {isConnectingOrGenerating && (
         <>
@@ -90,15 +92,13 @@ const GenerationStatusBar: React.FC<Props> = ({
             style={{ color: "var(--gslide-accent)" }}
             aria-hidden="true"
           />
-          <span className="min-w-0 flex-1 truncate text-sm">
-            {statusMessage}
-          </span>
+          <span className="min-w-0 truncate text-sm">{statusMessage}</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={handleStop}
-            className="shrink-0 text-sm"
+            className="h-7 shrink-0 px-2 text-sm"
           >
             Stop
           </Button>
@@ -106,44 +106,45 @@ const GenerationStatusBar: React.FC<Props> = ({
       )}
 
       {isStalled && (
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold">
-              This is taking longer than usual
-            </span>
-            <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
+          <span className="text-sm font-semibold">
+            This is taking longer than usual
+          </span>
+          <span className="min-w-0 text-sm opacity-80">
+            {statusMessage || "No new content for 45 seconds."}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {canKeepWaiting && (
               <Button
                 type="button"
                 size="sm"
                 onClick={handleKeepWaiting}
                 style={accentStyle}
-                className="shrink-0"
+                className="h-7 shrink-0 px-2.5"
               >
                 Keep waiting
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleStop}
-                className="shrink-0"
-              >
-                Stop
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleRetry}
-                className="shrink-0"
-              >
-                Try again
-              </Button>
-            </div>
+            )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleStop}
+              className="h-7 shrink-0 px-2.5"
+            >
+              Stop
+            </Button>
+            <Button
+              type="button"
+              variant={canKeepWaiting ? "ghost" : undefined}
+              size="sm"
+              onClick={handleRetry}
+              style={canKeepWaiting ? undefined : accentStyle}
+              className="h-7 shrink-0 px-2.5"
+            >
+              Try again
+            </Button>
           </div>
-          <span className="min-w-0 text-sm opacity-80">
-            {statusMessage || "No new content for 45 seconds."}
-          </span>
         </div>
       )}
 
@@ -154,15 +155,13 @@ const GenerationStatusBar: React.FC<Props> = ({
             style={{ color: "var(--gslide-accent)" }}
             aria-hidden="true"
           />
-          <span className="min-w-0 flex-1 truncate text-sm">
-            Stopping…
-          </span>
+          <span className="min-w-0 truncate text-sm">Stopping…</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             disabled
-            className="shrink-0"
+            className="h-7 shrink-0 px-2"
           >
             Stopping…
           </Button>
@@ -170,17 +169,15 @@ const GenerationStatusBar: React.FC<Props> = ({
       )}
 
       {isFailed && (
-        <>
-          <span className="min-w-0 flex-1 truncate text-sm">
-            {statusMessage}
-          </span>
-          <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
+          <span className="min-w-0 text-sm">{statusMessage}</span>
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               size="sm"
               onClick={handleRetry}
               style={accentStyle}
-              className="shrink-0"
+              className="h-7 shrink-0 px-2.5"
             >
               Try again
             </Button>
@@ -189,12 +186,12 @@ const GenerationStatusBar: React.FC<Props> = ({
               variant="secondary"
               size="sm"
               onClick={handleStop}
-              className="shrink-0"
+              className="h-7 shrink-0 px-2.5"
             >
               Stop
             </Button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

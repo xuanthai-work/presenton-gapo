@@ -293,6 +293,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     cancel: streamCancel,
     keepWaiting: streamKeepWaiting,
     retry: streamRetry,
+    canKeepWaiting: streamCanKeepWaiting,
   } = streamControls;
   // Planned total slide count for the slides confirm string. Prefer the
   // structure outline total, then the n_slides field, then fall back to the
@@ -861,16 +862,19 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           currentSlide={selectedSlide}
           generationMode={isSmartPresentation ? "smart" : "standard"}
         />
-        <GenerationStatusBar
-          surface="presentation"
-          lifecycle={streamLifecycle}
-          statusMessage={streamStatusMessage}
-          draftCount={streamDraftCount}
-          totalCount={streamTotalCount}
-          onCancel={streamCancel}
-          onKeepWaiting={streamKeepWaiting}
-          onRetry={streamRetry}
-        />
+        <div className="px-4">
+          <GenerationStatusBar
+            surface="presentation"
+            lifecycle={streamLifecycle}
+            statusMessage={streamStatusMessage}
+            draftCount={streamDraftCount}
+            totalCount={streamTotalCount}
+            onCancel={streamCancel}
+            onKeepWaiting={streamKeepWaiting}
+            onRetry={streamRetry}
+            canKeepWaiting={streamCanKeepWaiting}
+          />
+        </div>
         <div className="flex flex-1 min-h-0 gap-3 overflow-hidden xl:gap-5 2xl:gap-6">
           <div className="sticky top-0 hidden h-full w-[150px] shrink-0 self-start md:block">
             <SidePanel

@@ -38,7 +38,7 @@ const ActionShimmer = () => (
 const Loading = () => {
   return (
     <div className="min-h-screen w-full px-3 pb-10 sm:px-6">
-      <div className="sticky top-0 right-0 z-50 py-[28px] backdrop-blur mb-2">
+      <div className="sticky top-0 right-0 z-50 -mr-4 mb-2 w-[calc(100%+1rem)] bg-[var(--gslide-bg)] py-[28px] px-6 backdrop-blur">
         <h3 className="text-[28px] tracking-[-0.84px] font-syne font-normal text-[#101828]">
           Slide Presentation
         </h3>

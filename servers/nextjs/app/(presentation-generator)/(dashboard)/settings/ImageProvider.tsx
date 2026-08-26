@@ -1,4 +1,3 @@
-import ToolTip from '@/components/ToolTip'
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -7,9 +6,15 @@ import { Switch } from '@/components/ui/switch'
 import { LLMConfig } from '@/types/llm_config'
 import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageFields'
 import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS } from '@/utils/providerConstants'
-import { Check, ChevronUp, Eye, EyeOff } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { MixpanelEvent, trackEvent } from '@/utils/mixpanel'
+import {
+    SettingsField,
+    settingsControlClassName,
+    settingsDropdownClassName,
+    settingsFormColumnClassName,
+} from './SettingsField'
 
 const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setLlmConfig: (config: any) => void }) => {
     const [showApiKey, setShowApiKey] = useState(false);
@@ -59,218 +64,172 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
     const renderQualitySelector = (llmConfig: LLMConfig, input_field_changed: (value: string, field: string) => void) => {
         if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
             return (
-                <div className="w-[205px]">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        GPT Image 1.5 Quality
-                    </label>
-                    <div className="">
-                        <Select
-                            value={llmConfig.GPT_IMAGE_1_5_QUALITY || 'low'}
-                            onValueChange={(value) => input_field_changed(value, "GPT_IMAGE_1_5_QUALITY")}
-                        >
-                            <SelectTrigger
-
-                                className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
-                                <SelectValue placeholder="Select a quality" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {GPT_IMAGE_1_5_QUALITY_OPTIONS.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                    </div>
-                </div>
+                <SettingsField label="GPT Image 1.5 Quality">
+                    <Select
+                        value={llmConfig.GPT_IMAGE_1_5_QUALITY || 'low'}
+                        onValueChange={(value) => input_field_changed(value, "GPT_IMAGE_1_5_QUALITY")}
+                    >
+                        <SelectTrigger className={settingsDropdownClassName}>
+                            <SelectValue placeholder="Select a quality" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {GPT_IMAGE_1_5_QUALITY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </SettingsField>
             );
         }
 
         return null;
     };
 
-
-
-
     return (
-        <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
-            {/* API Key Input */}
-            <div className="mb-4  bg-white p-10 pt-5 rounded-[12px]">
-                <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center'>
-                    <div className='flex justify-end items-center'>
-                        <Switch
-                            checked={!isImageGenerationDisabled}
-                            className='data-[state=checked]:bg-[#4791FF] data-[state=unchecked]:bg-gray-400'
-                            onCheckedChange={(checked) => handleChangeImageGenerationDisabled(!checked)}
-                        />
-                    </div>
-
-                </ToolTip>
-                <div className='flex items-center justify-between'>
-
-
-                    <div className=" max-w-[290px] pb-[50px]">
-                        <div className='w-[60px] h-[60px] px-[13.5px] py-[14.2px] rounded-[4px] flex items-center justify-center'
-                            style={{ backgroundColor: 'var(--gslide-accent-soft)' }}
-                        >
-                            <img src="/image-markup.svg" className='w-full h-full object-cover' alt='image-markup' />
+        <div className="space-y-6 rounded-[12px] bg-[#F9F8F8] p-7">
+            <div className="mb-4 rounded-[12px] bg-white px-6 py-6 sm:px-8 sm:py-8">
+                <div className="mb-6 flex justify-end">
+                    <Switch
+                        checked={!isImageGenerationDisabled}
+                        onCheckedChange={(checked) => handleChangeImageGenerationDisabled(!checked)}
+                        aria-label="Enable/Disable Image Generation"
+                    />
+                </div>
+                <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
+                    <div className="max-w-[280px] shrink-0">
+                        <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[4px] bg-[var(--gslide-accent-soft)]">
+                            <img src="/image-markup.svg" className="h-full w-full object-cover" alt="image-markup" />
                         </div>
-                        <h3 className="text-xl font-normal text-[#191919] py-2.5">Image Generation Settings</h3>
-                        <p className=" text-sm  text-gray-500">
+                        <h3 className="py-2.5 text-xl font-normal text-[#191919]">Image Generation Settings</h3>
+                        <p className="text-sm text-gray-500">
                             Choosing where images come from
                         </p>
                     </div>
-                    <div className=' '>
-
-                        <div className='flex items-center justify-end gap-4'>
-
-                            {!isImageGenerationDisabled && (
-                                <>
-                                    {/* Image Provider Selection */}
-                                    <div className="">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Select Image Provider
-                                        </label>
-                                        <div className="w-full">
-                                            <Popover
-                                                open={openImageProviderSelect}
-                                                onOpenChange={setOpenImageProviderSelect}
-                                            >
-                                                <PopoverTrigger asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        role="combobox"
-                                                        aria-expanded={openImageProviderSelect}
-                                                        className="w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
-                                                    >
-                                                        <div className="flex gap-3 items-center">
-                                                            <span className="text-sm font-medium text-gray-900">
-                                                                {llmConfig.IMAGE_PROVIDER
-                                                                    ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label || llmConfig.IMAGE_PROVIDER
-                                                                    : "Select image provider"}
-                                                            </span>
-                                                        </div>
-                                                        <ChevronUp className="w-4 h-4 text-gray-500" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent
-                                                    className="p-0"
-                                                    align="start"
-                                                    style={{ width: "300px" }}
-                                                >
-                                                    <Command>
-                                                        <CommandInput placeholder="Search provider..." />
-                                                        <CommandList>
-                                                            <CommandEmpty>No provider found.</CommandEmpty>
-                                                            <CommandGroup>
-                                                                {Object.values(IMAGE_PROVIDERS).map((provider) => (
-                                                                    <CommandItem
-                                                                        key={provider.value}
-                                                                        value={provider.value}
-                                                                        onSelect={(value) => {
-                                                                            trackEvent(MixpanelEvent.Settings_Provider_Selected, {
-                                                                                section: "image_provider",
-                                                                                provider: value,
-                                                                            });
-                                                                            input_field_changed(value, "IMAGE_PROVIDER");
-                                                                            setOpenImageProviderSelect(false);
-                                                                        }}
-                                                                    >
-                                                                        <Check
-                                                                            className={llmConfig.IMAGE_PROVIDER === provider.value ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"}
-                                                                        />
-                                                                        <div className="flex gap-3 items-center">
-                                                                            <div className="flex flex-col space-y-1 flex-1">
-                                                                                <div className="flex items-center justify-between gap-2">
-                                                                                    <span className="text-sm font-medium text-gray-900 capitalize">
-                                                                                        {provider.label}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <span className="text-xs text-gray-600 leading-relaxed">
-                                                                                    {provider.description}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </CommandItem>
-                                                                ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                    </Command>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                    </div>
-
-
-
-                                    {/* Dynamic API Key Input for Image Provider */}
-                                    {llmConfig.IMAGE_PROVIDER &&
-                                        IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER] &&
-                                        (() => {
-                                            const provider = IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER];
-
-
-
-                                            if (provider.value === "openai_compatible") {
-                                                return (
-                                                    <OpenAICompatibleImageFields
-                                                        layout="textProviderSettings"
-                                                        baseUrl={llmConfig.OPENAI_COMPAT_IMAGE_BASE_URL || ""}
-                                                        apiKey={llmConfig.OPENAI_COMPAT_IMAGE_API_KEY || ""}
-                                                        model={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
-                                                        onBaseUrlChange={(v) => {
-                                                            setLlmConfig((prev: any) => ({ ...prev, OPENAI_COMPAT_IMAGE_BASE_URL: v }));
-                                                        }}
-                                                        onApiKeyChange={(v) => {
-                                                            setLlmConfig((prev: any) => ({ ...prev, OPENAI_COMPAT_IMAGE_API_KEY: v }));
-                                                        }}
-                                                        onModelChange={(v) => {
-                                                            setLlmConfig((prev: any) => ({ ...prev, OPENAI_COMPAT_IMAGE_MODEL: v }));
-                                                        }}
-                                                        onModelListMetaChange={setOpenaiCompatListMeta}
-                                                    />
-                                                );
-                                            }
-
-                                            // Show API key input for other providers
-                                            return (
-                                                <div className=" w-[205px]">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        {provider.apiKeyFieldLabel}
-                                                    </label>
-                                                    <div className="relative">
-                                                        <input
-                                                            type={showApiKey ? 'text' : 'password'}
-                                                            placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
-                                                            className="w-full px-4 py-2.5 h-12 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                                            value={getFieldValue(provider.apiKeyField)}
-                                                            onChange={(e) =>
-                                                                updateFieldValue(
-                                                                    provider.apiKeyField,
-                                                                    e.target.value
-                                                                )
-                                                            }
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowApiKey((prev) => !prev)}
-                                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
+                    {!isImageGenerationDisabled && (
+                        <div className={settingsFormColumnClassName}>
+                            <SettingsField label="Select Image Provider">
+                                <Popover
+                                    open={openImageProviderSelect}
+                                    onOpenChange={setOpenImageProviderSelect}
+                                >
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={openImageProviderSelect}
+                                            className={settingsDropdownClassName}
+                                        >
+                                            <span className="truncate text-sm font-medium text-gray-900">
+                                                {llmConfig.IMAGE_PROVIDER
+                                                    ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label || llmConfig.IMAGE_PROVIDER
+                                                    : "Select image provider"}
+                                            </span>
+                                            {openImageProviderSelect ? (
+                                                <ChevronUp className="h-4 w-4 shrink-0 text-gray-500" />
+                                            ) : (
+                                                <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        className="p-0"
+                                        align="start"
+                                        style={{ width: "var(--radix-popover-trigger-width)" }}
+                                    >
+                                        <Command>
+                                            <CommandInput placeholder="Search provider..." />
+                                            <CommandList>
+                                                <CommandEmpty>No provider found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {Object.values(IMAGE_PROVIDERS).map((provider) => (
+                                                        <CommandItem
+                                                            key={provider.value}
+                                                            value={provider.value}
+                                                            onSelect={(value) => {
+                                                                trackEvent(MixpanelEvent.Settings_Provider_Selected, {
+                                                                    section: "image_provider",
+                                                                    provider: value,
+                                                                });
+                                                                input_field_changed(value, "IMAGE_PROVIDER");
+                                                                setOpenImageProviderSelect(false);
+                                                            }}
                                                         >
-                                                            {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
-                                                        </button>
-                                                    </div>
+                                                            <Check
+                                                                className={llmConfig.IMAGE_PROVIDER === provider.value ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"}
+                                                            />
+                                                            <div className="flex flex-1 flex-col space-y-1">
+                                                                <span className="text-sm font-medium capitalize text-gray-900">
+                                                                    {provider.label}
+                                                                </span>
+                                                                <span className="text-xs leading-relaxed text-gray-600">
+                                                                    {provider.description}
+                                                                </span>
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </SettingsField>
 
-                                                </div>
-                                            );
-                                        })()}
+                            {llmConfig.IMAGE_PROVIDER &&
+                                IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER] &&
+                                (() => {
+                                    const provider = IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER];
 
-                                </>
-                            )}
-                        </div>
-                        {!isImageGenerationDisabled && <div className='flex justify-end items-center mt-[18px]'>
+                                    if (provider.value === "openai_compatible") {
+                                        return (
+                                            <OpenAICompatibleImageFields
+                                                layout="textProviderSettings"
+                                                baseUrl={llmConfig.OPENAI_COMPAT_IMAGE_BASE_URL || ""}
+                                                apiKey={llmConfig.OPENAI_COMPAT_IMAGE_API_KEY || ""}
+                                                model={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
+                                                onBaseUrlChange={(v) => {
+                                                    setLlmConfig((prev: any) => ({ ...prev, OPENAI_COMPAT_IMAGE_BASE_URL: v }));
+                                                }}
+                                                onApiKeyChange={(v) => {
+                                                    setLlmConfig((prev: any) => ({ ...prev, OPENAI_COMPAT_IMAGE_API_KEY: v }));
+                                                }}
+                                                onModelChange={(v) => {
+                                                    setLlmConfig((prev: any) => ({ ...prev, OPENAI_COMPAT_IMAGE_MODEL: v }));
+                                                }}
+                                                onModelListMetaChange={setOpenaiCompatListMeta}
+                                            />
+                                        );
+                                    }
+
+                                    return (
+                                        <SettingsField label={provider.apiKeyFieldLabel ?? "API Key"}>
+                                            <div className="relative">
+                                                <input
+                                                    type={showApiKey ? 'text' : 'password'}
+                                                    placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
+                                                    className={`${settingsControlClassName} pr-10`}
+                                                    value={getFieldValue(provider.apiKeyField)}
+                                                    onChange={(e) =>
+                                                        updateFieldValue(
+                                                            provider.apiKeyField,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowApiKey((prev) => !prev)}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer bg-white px-2 py-1"
+                                                >
+                                                    {showApiKey ? <Eye className="h-4 w-4 text-gray-500" /> : <EyeOff className="h-4 w-4 text-gray-500" />}
+                                                </button>
+                                            </div>
+                                        </SettingsField>
+                                    );
+                                })()}
 
                             {renderQualitySelector(llmConfig, input_field_changed)}
-                        </div>}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -284,13 +243,12 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                 No models found. Please make sure your provider credentials are valid and the selected provider is reachable.
                             </p>
                         </div>
-                        <div className="flex w-full justify-end">
-                            <div className="w-[205px]">
-                                <label className="mb-2 block text-sm font-medium text-gray-700">Image model id</label>
+                        <div className={settingsFormColumnClassName}>
+                            <SettingsField label="Image model id">
                                 <input
                                     type="text"
                                     placeholder="e.g. gpt-image-1.5"
-                                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                    className={settingsControlClassName}
                                     value={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
                                     onChange={(e) => {
                                         setLlmConfig((prev: any) => ({
@@ -299,34 +257,10 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                         }));
                                     }}
                                 />
-                            </div>
+                            </SettingsField>
                         </div>
                     </>
                 )}
-
-
-            {/* Web Grounding Toggle - show at the end, below models dropdown */}
-            {/* <div className="bg-white flex justify-between items-center p-10 rounded-[12px]">
-                <div className=' max-w-[290px]'>
-
-                    <h4 className="text-xl font-normal text-[#191919]">Advanced</h4>
-                    <p className="mt-2.5 text-sm  text-gray-500">
-                        Configure advanced AI features.
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-
-                    <div className="w-[275px]">
-
-
-
-                    </div>
-                    <div className="w-[295px]"></div>
-                </div>
-
-            </div> */}
-
-
         </div>
     )
 }

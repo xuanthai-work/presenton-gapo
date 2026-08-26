@@ -9,7 +9,6 @@ export default function LoadingSettings() {
     <div className="flex min-h-[100dvh] flex-col font-syne">
       <GSlideHeader
         title="Settings"
-        className="ml-7 mr-[9px] px-1"
         actions={
           <div className="flex items-center gap-2">
             <Shimmer className="h-11 w-[108px] rounded-full" />

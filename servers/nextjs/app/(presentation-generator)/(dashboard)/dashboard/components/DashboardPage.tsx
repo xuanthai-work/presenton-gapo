@@ -198,7 +198,7 @@ function formatGitHubStars(stars: number) {
 
 function DashboardHeader() {
   return (
-    <GSlideHeader title="Dashboard" className="ml-7 mr-[9px] px-1" />
+    <GSlideHeader title="Dashboard" />
   );
 }
 

@@ -37,6 +37,7 @@ interface OutlineContentProps {
   onCancel: () => void;
   onKeepWaiting: () => void;
   onRetry: () => void;
+  canKeepWaiting?: boolean;
   onDragEnd: (oldIndex: number, newIndex: number) => void;
   onAddSlide: () => void;
   onUpdateOutline?: (index: number, newContent: string) => void;
@@ -56,6 +57,7 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
   onCancel,
   onKeepWaiting,
   onRetry,
+  canKeepWaiting = false,
   onDragEnd,
   onAddSlide,
   onUpdateOutline,
@@ -102,6 +104,7 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
         onCancel={onCancel}
         onKeepWaiting={onKeepWaiting}
         onRetry={onRetry}
+        canKeepWaiting={canKeepWaiting}
       />
 
       {isStreaming && (

@@ -9,9 +9,11 @@ import { limitOutlines } from "@/utils/presentationLimits";
 import {
   isStalled,
   isUsefulStreamEvent,
+  shouldShowKeepWaiting,
   shouldSilentRetry,
   silentRetryDelayMs,
   type GenerationLifecycleState,
+  type StallCause,
 } from "@/lib/generation-lifecycle";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
@@ -40,6 +42,7 @@ export const useOutlineStreaming = (
   const [statusMessage, setStatusMessage] = useState(DEFAULT_STATUS_MESSAGE);
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
+  const [stallCause, setStallCause] = useState<StallCause | null>(null);
 
   const outlinesRef = useRef<{ content: string }[]>(outlines);
   const prevSlidesRef = useRef<{ content: string }[]>([]);
@@ -53,6 +56,7 @@ export const useOutlineStreaming = (
   const lastUsefulEventAtRef = useRef<number | null>(null);
   const streamStartedAtRef = useRef<number | null>(null);
   const lifecycleRef = useRef<GenerationLifecycleState>("idle");
+  const stallCauseRef = useRef<StallCause | null>(null);
   const statusMessageRef = useRef<string>(DEFAULT_STATUS_MESSAGE);
 
   const accumulatedChunksRef = useRef<string>("");
@@ -68,6 +72,10 @@ export const useOutlineStreaming = (
   useEffect(() => {
     lifecycleRef.current = lifecycle;
   }, [lifecycle]);
+
+  useEffect(() => {
+    stallCauseRef.current = stallCause;
+  }, [stallCause]);
 
   // Keep statusMessage ref in sync so stall analytics read the latest value.
   useEffect(() => {
@@ -92,6 +100,9 @@ export const useOutlineStreaming = (
           state: lifecycleRef.current,
         })
       ) {
+        const cause: StallCause = eventSourceRef.current ? "silence" : "socket";
+        stallCauseRef.current = cause;
+        setStallCause(cause);
         setLifecycle("stalled");
         setStatusMessage("Outline stream stalled — waiting for the server.");
         trackEvent(MixpanelEvent.Generation_Stalled, {
@@ -368,6 +379,8 @@ export const useOutlineStreaming = (
         // After a useful event, a dead socket is a stall — do NOT reopen.
         closeEventSourceLocal();
         clearStallIntervalLocal();
+        stallCauseRef.current = "socket";
+        setStallCause("socket");
         setLifecycle("stalled");
         setStatusMessage("Outline stream stalled — waiting for the server.");
         trackEvent(MixpanelEvent.Generation_Stalled, {
@@ -448,9 +461,14 @@ export const useOutlineStreaming = (
   }, [presentationId]);
 
   const keepWaiting = useCallback(() => {
+    if (!eventSourceRef.current) {
+      return;
+    }
     const stalledForMs =
       Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
     lastUsefulEventAtRef.current = Date.now();
+    stallCauseRef.current = null;
+    setStallCause(null);
     setLifecycle("generating");
     // An onerror-stall clears the stall interval. Restart it here so stall
     // detection continues if the user opts to keep waiting after a socket
@@ -476,6 +494,8 @@ export const useOutlineStreaming = (
     accumulatedChunksRef.current = "";
     lastUsefulEventAtRef.current = null;
     streamStartedAtRef.current = null;
+    stallCauseRef.current = null;
+    setStallCause(null);
     setLifecycle("connecting");
     setIsLoading(true);
     setStatusMessage(DEFAULT_STATUS_MESSAGE);
@@ -494,6 +514,7 @@ export const useOutlineStreaming = (
     statusMessage,
     lifecycle,
     draftCount: outlines.length,
+    canKeepWaiting: shouldShowKeepWaiting(stallCause),
     cancel,
     keepWaiting,
     retry,

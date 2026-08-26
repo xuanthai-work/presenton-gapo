@@ -6,6 +6,11 @@ import { Switch } from "@/components/ui/switch";
 
 import { LLMConfig } from "@/types/llm_config";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
+import {
+  SettingsField,
+  settingsControlClassName,
+  settingsFormColumnClassName,
+} from "./SettingsField";
 
 const WebSearchProvider = ({
   llmConfig,
@@ -25,7 +30,7 @@ const WebSearchProvider = ({
 
   return (
     <div className="space-y-6 rounded-[12px] bg-[#F9F8F8] p-7">
-      <div className="mb-4 rounded-[12px] bg-white p-10 pt-5">
+      <div className="mb-4 rounded-[12px] bg-white px-6 py-6 sm:px-8 sm:py-8">
         <div className="mb-6 flex justify-end">
           <Switch
             checked={isWebSearchEnabled}
@@ -46,8 +51,8 @@ const WebSearchProvider = ({
             }}
           />
         </div>
-        <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:gap-10">
-          <div className="max-w-[300px] shrink-0 pb-2 lg:pb-[20px]">
+        <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:gap-12">
+          <div className="max-w-[280px] shrink-0">
             <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[4px] bg-[var(--gslide-accent-soft)]">
               <Search className="h-7 w-7 text-[var(--gslide-accent)]" />
             </div>
@@ -60,41 +65,35 @@ const WebSearchProvider = ({
             </p>
           </div>
           {isWebSearchEnabled && (
-            <div className="w-full max-w-[720px] space-y-4">
+            <div className={settingsFormColumnClassName}>
               <div className="rounded-lg border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] p-3 text-xs text-[var(--gslide-ink)]">
                 Auto uses model-native web grounding when the LLM is OpenAI or
                 Google. Otherwise GSlide queries SearXNG at the URL below
                 (Compose default: http://searxng:8080).
               </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[#4C5554]">
-                  SearXNG base URL
-                </label>
+              <SettingsField label="SearXNG base URL">
                 <input
                   type="url"
-                  className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-[#191919] outline-none transition-colors focus:border-blue-500"
+                  className={settingsControlClassName}
                   placeholder="http://searxng:8080"
                   value={String(llmConfig.SEARXNG_BASE_URL || "")}
                   onChange={(event) =>
                     update("SEARXNG_BASE_URL", event.target.value)
                   }
                 />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[#4C5554]">
-                  Maximum results
-                </label>
+              </SettingsField>
+              <SettingsField label="Maximum results">
                 <input
                   type="number"
                   min={1}
                   max={10}
-                  className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-[#191919] outline-none transition-colors focus:border-blue-500"
+                  className={settingsControlClassName}
                   value={llmConfig.WEB_SEARCH_MAX_RESULTS || "5"}
                   onChange={(event) =>
                     update("WEB_SEARCH_MAX_RESULTS", event.target.value)
                   }
                 />
-              </div>
+              </SettingsField>
             </div>
           )}
         </div>

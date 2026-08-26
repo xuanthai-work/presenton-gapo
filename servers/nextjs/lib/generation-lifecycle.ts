@@ -42,3 +42,11 @@ export function isStalled(args: {
   if (args.lastUsefulEventAt == null) return false;
   return args.now - args.lastUsefulEventAt >= STALL_MS;
 }
+
+export type StallCause = "silence" | "socket";
+
+export function shouldShowKeepWaiting(
+  cause: StallCause | null | undefined,
+): boolean {
+  return cause === "silence";
+}

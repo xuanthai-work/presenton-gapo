@@ -265,9 +265,6 @@ export default function CommunityDesignPreviewDialog({
                         <SetupChip>
                           {textProvider ? getProviderVisual(textProvider).label : "GSlide"}
                         </SetupChip>
-                        {setup?.text_model?.trim() && (
-                          <SetupChip>{setup.text_model}</SetupChip>
-                        )}
                       </SetupRow>
                       <SetupRow label="Images">
                         <SetupChip>

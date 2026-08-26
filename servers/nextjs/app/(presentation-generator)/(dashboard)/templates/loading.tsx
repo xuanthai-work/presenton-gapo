@@ -26,7 +26,7 @@ const TemplateCardSkeleton = () => (
 const Loading = () => {
     return (
         <div className="min-h-screen relative font-syne">
-            <div className="sticky top-0 right-0 z-50 py-[28px] px-6 backdrop-blur">
+            <div className="sticky top-0 right-0 z-50 -mr-4 w-[calc(100%+1rem)] bg-[var(--gslide-bg)] py-[28px] px-6 backdrop-blur">
                 <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
                     <Skeleton className="h-[34px] w-[180px] rounded-lg" />
                     <div className="flex gap-2.5 max-sm:w-full max-md:justify-center max-sm:flex-wrap">

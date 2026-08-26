@@ -60,7 +60,7 @@ const LayoutPreview = () => {
 
   return (
     <div className="min-h-screen relative font-syne">
-      <div className="sticky top-0 right-0 z-50 py-[28px] px-6 backdrop-blur">
+      <div className="sticky top-0 right-0 z-50 -mr-4 w-[calc(100%+1rem)] bg-[var(--gslide-bg)] py-[28px] px-6 backdrop-blur">
         <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
           <h3 className="text-[28px] tracking-[-0.84px] font-unbounded font-normal text-[#101828] flex items-center gap-2">
             Templates

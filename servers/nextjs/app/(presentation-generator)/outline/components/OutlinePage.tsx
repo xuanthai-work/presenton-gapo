@@ -431,6 +431,7 @@ const OutlinePage: React.FC = () => {
                   onCancel={streamState.cancel}
                   onKeepWaiting={streamState.keepWaiting}
                   onRetry={streamState.retry}
+                  canKeepWaiting={streamState.canKeepWaiting}
                   onDragEnd={handleDragEnd}
                   onAddSlide={handleAddSlide}
                   onUpdateOutline={handleUpdateOutline}

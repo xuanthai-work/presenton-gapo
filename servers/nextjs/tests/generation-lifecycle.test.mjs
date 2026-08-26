@@ -8,6 +8,7 @@ import {
   needsCancelConfirm,
   isStalled,
   silentRetryDelayMs,
+  shouldShowKeepWaiting,
 } from "../lib/generation-lifecycle.ts";
 
 test("heartbeat is not a useful event", () => {
@@ -39,6 +40,12 @@ test("stalls after 45s without useful events while generating", () => {
   assert.equal(isStalled({ now: 40_000, lastUsefulEventAt: 0, state: "generating" }), false);
   assert.equal(isStalled({ now: 80_000, lastUsefulEventAt: 0, state: "connecting" }), true);
   assert.equal(isStalled({ now: 80_000, lastUsefulEventAt: 0, state: "complete" }), false);
+});
+
+test("Keep waiting only for silence stalls, not dead sockets", () => {
+  assert.equal(shouldShowKeepWaiting("silence"), true);
+  assert.equal(shouldShowKeepWaiting("socket"), false);
+  assert.equal(shouldShowKeepWaiting(null), false);
 });
 
 test("outline stream hook imports lifecycle helpers", async () => {
@@ -89,4 +96,39 @@ test("presentation cancel persists via updatePresentationContent", async () => {
     "utf8"
   );
   assert.match(source, /updatePresentationContent/);
+});
+
+test("presentation retry re-locks the editor via setStreaming(true)", async () => {
+  const source = await readFile(
+    new URL(
+      "../app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const retryFn = source.slice(source.indexOf("const retry = useCallback"));
+  assert.match(retryFn, /setStreaming\(true\)/);
+  assert.match(retryFn, /setError\(false\)/);
+});
+
+test("stream hooks hide Keep waiting after socket death", async () => {
+  const outline = await readFile(
+    new URL(
+      "../app/(presentation-generator)/outline/hooks/useOutlineStreaming.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const presentation = await readFile(
+    new URL(
+      "../app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  for (const source of [outline, presentation]) {
+    assert.match(source, /shouldShowKeepWaiting/);
+    assert.match(source, /stallCauseRef\.current = "socket"/);
+    assert.match(source, /if \(!eventSourceRef\.current\) \{\s*return;/);
+  }
 });
