@@ -48,6 +48,7 @@ import {
 } from "@/utils/presentationLimits";
 import { bucketMessageLength, sanitizeAnalyticsError } from "@/utils/analytics";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import {
   Popover,
@@ -1432,6 +1433,7 @@ const Chat = ({
       const message =
         error instanceof Error ? error.message : "Failed to send chat message";
       const metrics = promptMetricsRef.current;
+      captureError(message, { operation: "stream" });
       trackEvent(MixpanelEvent.AI_Assistant_Prompt_Failed, {
         ...baseAnalyticsProps(),
         duration_ms: metrics ? Date.now() - metrics.startedAt : null,

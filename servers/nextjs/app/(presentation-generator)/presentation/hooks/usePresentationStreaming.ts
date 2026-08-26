@@ -9,7 +9,7 @@ import {
 import { jsonrepair } from "jsonrepair";
 import { notify } from "@/components/ui/sonner";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
+import { captureError } from "@/utils/posthog";
 import { getApiUrl, normalizeBackendAssetUrls } from "@/utils/api";
 import { store, type RootState } from "@/store/store";
 import {
@@ -243,24 +243,7 @@ export const usePresentationStreaming = (
       description: string,
       opts: { showToast?: boolean } = {}
     ) => {
-      if (isSmartMode && !smartGenerationOutcomeTracked) {
-        smartGenerationOutcomeTracked = true;
-        trackEvent(MixpanelEvent.Smart_Mode_Generation_Failed, {
-          presentation_id: presentationId,
-          stage: "presentation_stream",
-          retry_count: retryCountRef.current,
-          duration_ms: Date.now() - streamStartedAt,
-          error_message: sanitizeAnalyticsError(description, "Stream failed"),
-        });
-      }
-      if (streamIsTemplateV2) {
-        trackEvent(MixpanelEvent.TemplateV2_Stream_Failed, {
-          presentation_id: presentationId,
-          retry_count: retryCountRef.current,
-          duration_ms: Date.now() - streamStartedAt,
-          error_message: sanitizeAnalyticsError(description, "Stream failed"),
-        });
-      }
+      captureError(description, { operation: "generate" });
       closeEventSource();
       clearRetryTimer();
       clearStallInterval();

@@ -12,6 +12,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { LLMConfig } from "@/types/llm_config";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 import SettingSideBar, { SettingsSection } from "./SettingSideBar";
 import TextProvider from "./TextProvider";
 import ImageProvider from "./ImageProvider";
@@ -122,6 +123,7 @@ const SettingsPage = () => {
         error instanceof Error
           ? error.message
           : "Something went wrong while saving.";
+      captureError(error, { operation: "save" });
       notify.error("Could not save settings", message);
       setButtonState((prev) => ({
         ...prev,

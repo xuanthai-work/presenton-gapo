@@ -13,6 +13,7 @@ import {
 } from "../types";
 import { getApiUrl } from "@/utils/api";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 import { bucketFileSize, sanitizeAnalyticsError } from "@/utils/analytics";
 
 const TEMPLATE_V2_LAYOUT_BATCH_SIZE = 1;
@@ -318,6 +319,7 @@ export const useTemplateCreation = () => {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Document preparation failed";
             updateState({ error: errorMessage, isLoading: false });
+            captureError(error, { operation: "generate" });
             trackEvent(MixpanelEvent.CustomTemplate_Preview_Failed, {
                 uploaded_font_count: uploadedFonts.length,
                 duration_ms: Date.now() - startedAt,
@@ -337,19 +339,24 @@ export const useTemplateCreation = () => {
     ): Promise<void> => {
         if (layouts.length === 0) return;
 
-        const response = await fetch(
-            getApiUrl(`/api/v1/ppt/template/${encodeURIComponent(templateId)}/layouts`),
-            {
-                method: "PATCH",
-                headers: getHeader(),
-                body: JSON.stringify({ layouts }),
-            }
-        );
+        try {
+            const response = await fetch(
+                getApiUrl(`/api/v1/ppt/template/${encodeURIComponent(templateId)}/layouts`),
+                {
+                    method: "PATCH",
+                    headers: getHeader(),
+                    body: JSON.stringify({ layouts }),
+                }
+            );
 
-        await ApiResponseHandler.handleResponse(
-            response,
-            "Failed to save generated template layouts"
-        );
+            await ApiResponseHandler.handleResponse(
+                response,
+                "Failed to save generated template layouts"
+            );
+        } catch (error) {
+            captureError(error, { operation: "save" });
+            throw error;
+        }
     }, []);
 
     const createTemplateV2Layout = useCallback(async (
@@ -579,6 +586,7 @@ export const useTemplateCreation = () => {
                     failures.map((item) => [item.index, item.error])
                 );
                 failures.forEach((failure) => {
+                    captureError(failure.error, { operation: "generate" });
                     trackEvent(MixpanelEvent.CustomTemplate_Slide_Generation_Failed, {
                         template_id: templateId,
                         template_version: "v2",
@@ -640,6 +648,7 @@ export const useTemplateCreation = () => {
                         error,
                         "Failed to generate template blocks"
                     );
+                    captureError(error, { operation: "generate" });
                     trackEvent(MixpanelEvent.CustomTemplate_Blocks_Generation_Failed, {
                         template_id: templateId,
                         template_version: "v2",
@@ -685,6 +694,7 @@ export const useTemplateCreation = () => {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Template generation failed";
             updateState({ error: errorMessage, isLoading: false });
+            captureError(error, { operation: "generate" });
             trackEvent(MixpanelEvent.CustomTemplate_Creation_Failed, {
                 template_id: state.templateId,
                 template_version: "v2",
@@ -802,6 +812,7 @@ export const useTemplateCreation = () => {
                 const errorMessage = error instanceof Error
                     ? error.message
                     : "Template layout generation failed";
+                captureError(error, { operation: "generate" });
                 setSlides((current) =>
                     current.map((slide, index) =>
                         index === slideIndex

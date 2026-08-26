@@ -23,6 +23,7 @@ import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { setPptGenUploadState } from "@/store/slices/presentationGenUpload";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { ConfigurationSelects } from "./ConfigurationSelects";
 import { RootState } from "@/store/store";
@@ -489,6 +490,7 @@ const UploadPage = () => {
    */
   const handleGenerationError = (error: any) => {
     console.error("Error in upload page", error);
+    captureError(error, { operation: "generate" });
     if (generationMode === "smart") {
       trackEvent(MixpanelEvent.Smart_Mode_Generation_Failed, {
         ...getUploadSnapshotProps(),

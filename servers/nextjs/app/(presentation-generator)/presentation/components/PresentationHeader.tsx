@@ -31,6 +31,7 @@ import {
   trackEventImmediately,
   MixpanelEvent,
 } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 import { usePresentationUndoRedo } from "../hooks/PresentationUndoRedo";
 import ToolTip from "@/components/ToolTip";
 import {
@@ -258,6 +259,7 @@ const PresentationHeader = ({
       );
     } catch (error) {
       console.error("Export failed:", error);
+      captureError(error, { operation: "export" });
       await trackExportLifecycle(
         MixpanelEvent.Presentation_Export_Failed,
         "pptx",
@@ -333,6 +335,7 @@ const PresentationHeader = ({
       );
     } catch (error) {
       console.error(error);
+      captureError(error, { operation: "export" });
       await trackExportLifecycle(
         MixpanelEvent.Presentation_Export_Failed,
         "pdf",

@@ -7,6 +7,7 @@ import { PresentationGenerationApi } from "../../services/api/presentation-gener
 import { LoadingState } from "../types/index";
 
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import {
   limitOutlines,
@@ -124,6 +125,7 @@ export const usePresentationGeneration = (
       }
     } catch (error: any) {
       console.error("Error In Presentation Generation(prepare).", error);
+      captureError(error, { operation: "generate" });
       trackEvent(MixpanelEvent.TemplateV2_Prepare_Failed, {
         presentation_id: presentationId,
         template_id: selectedTemplateId,

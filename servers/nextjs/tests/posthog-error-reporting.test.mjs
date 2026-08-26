@@ -83,3 +83,33 @@ test("privacy copy is error reports and fail-closed", async () => {
   assert.match(finalStep, /from "@\/utils\/posthog"/);
   assert.doesNotMatch(finalStep, /setTrackingEnabled\(true\)/);
 });
+
+const CAPTURE_SITES = [
+  ["app/(presentation-generator)/outline/hooks/useOutlineStreaming.ts", "generate"],
+  ["app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts", "generate"],
+  ["app/(presentation-generator)/outline/hooks/usePresentationGeneration.ts", "generate"],
+  ["app/(presentation-generator)/outline/components/OutlinePage.tsx", "generate"],
+  ["app/(presentation-generator)/upload/components/UploadPage.tsx", "generate"],
+  ["app/(presentation-generator)/custom-template/hooks/useTemplateCreation.ts", "generate"],
+  ["app/(presentation-generator)/presentation/components/PresentationHeader.tsx", "export"],
+  ["app/(presentation-generator)/presentation/components/Chat.tsx", "stream"],
+  ["app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx", "save"],
+  ["app/(presentation-generator)/(dashboard)/theme/components/ThemePanel/index.tsx", "save"],
+];
+
+test("closed failure list calls captureError with the spec operation", async () => {
+  for (const [file, operation] of CAPTURE_SITES) {
+    const source = await readNext(file);
+    assert.match(source, /from ['"]@\/utils\/posthog['"]/);
+    assert.match(
+      source,
+      new RegExp(`captureError\\([\\s\\S]*operation:\\s*"${operation}"`),
+      `missing captureError operation ${operation} in ${file}`,
+    );
+    assert.doesNotMatch(source, /operation:\s*"[\w]+"\s*,\s*file_name/);
+  }
+  const template = await readNext(
+    "app/(presentation-generator)/custom-template/hooks/useTemplateCreation.ts",
+  );
+  assert.match(template, /operation:\s*"save"/);
+});

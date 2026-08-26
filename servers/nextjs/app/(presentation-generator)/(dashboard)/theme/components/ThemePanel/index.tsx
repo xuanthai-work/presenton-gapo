@@ -32,6 +32,7 @@ import ThemeApi from '@/app/(presentation-generator)/services/api/theme'
 import { useFontLoader } from '@/app/(presentation-generator)/hooks/useFontLoad'
 import Link from 'next/link'
 import { MixpanelEvent, trackEvent } from '@/utils/mixpanel'
+import { captureError } from '@/utils/posthog'
 
 // Fallback theme used before defaults are loaded from API (unified Theme type)
 const FALLBACK_THEME: Theme = {
@@ -465,6 +466,7 @@ const ThemePanel: React.FC = () => {
           notify.success('Theme updated', 'Your theme changes were saved.')
         } catch (error: any) {
           console.error('Failed to update theme', error)
+          captureError(error, { operation: "save" })
           notify.error(
             'Could not update theme',
             error?.message || 'Something went wrong while saving your theme changes.'
@@ -509,6 +511,7 @@ const ThemePanel: React.FC = () => {
       notify.success('Theme saved', 'Your new theme was created and is ready to use.')
     } catch (error: any) {
       console.error('Failed to save theme', error)
+      captureError(error, { operation: "save" })
       notify.error(
         'Could not save theme',
         error?.message || 'Something went wrong while creating your theme.'

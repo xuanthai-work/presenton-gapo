@@ -23,6 +23,7 @@ import {
 } from "@/utils/presentationLimits";
 import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
+import { captureError } from "@/utils/posthog";
 
 import Chat from "../../presentation/components/Chat";
 import {
@@ -290,6 +291,7 @@ const OutlinePage: React.FC = () => {
       setIsTemplateStage(false);
     } catch (error: unknown) {
       console.error("Error regenerating outline", error);
+      captureError(error, { operation: "generate" });
       trackEvent(MixpanelEvent.TemplateV2_Outline_Regeneration_Failed, {
         presentation_id,
         template_id: selectedTemplateId,
