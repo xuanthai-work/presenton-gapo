@@ -1,7 +1,7 @@
 # PostHog Error Reporting — Design Spec
 
 **Date:** 2026-08-26  
-**Status:** Draft  
+**Status:** Implemented (2026-08-26, `main`, commits cfcae923 / 80dffe75 / b359950c / 1e9058c0; not pushed)  
 **Approach:** Tear out Presenton Mixpanel. Report only user-visible failures to self-hosted PostHog.
 
 ## Product goal
