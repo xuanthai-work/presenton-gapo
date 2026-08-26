@@ -7,17 +7,17 @@
 # UI:     http://localhost:8010
 #
 # Bootstrap once (the upstream PostHog repo is bind-mounted by the hobby file,
-# so it must exist on disk and is gitignored here):
-#   git clone --depth 1 https://github.com/PostHog/posthog.git deploy/posthog/upstream
-# Then copy .env.example to .env and edit POSTHOG_SECRET.
+# so it must exist on disk and is gitignored here). Pin the commit below — the
+# hobby file's fronting service is `proxy` on 80/443 at this revision.
 #
-# The PostHog hobby compose publishes its web/proxy container on host port 80.
-# We remap that to 8010 so it never collides with GSlide (5001) or SearXNG (8080).
+# The PostHog hobby compose publishes Caddy (`proxy`) on host ports 80 and 443.
+# We replace those ports with 8010:80 so it never collides with GSlide (5001)
+# or SearXNG (8080), and so host 80/443 stay free.
 name: gslide-posthog
 include:
   - path: ./upstream/docker-compose.hobby.yml
 
 services:
-  web:
-    ports:
-      - "8010:8000"
+  proxy:
+    ports: !override
+      - "8010:80"

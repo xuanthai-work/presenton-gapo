@@ -18,7 +18,11 @@ const TEMPLATE_V2_LAYOUT_BATCH_SIZE = 1;
 const MAX_PROCESSING_PROGRESS_PERCENT = 95;
 
 type CreatedTemplateV2Layout = { index: number; layout: TemplateV2Layout };
-type FailedTemplateV2Layout = { index: number; error: string };
+type FailedTemplateV2Layout = {
+    index: number;
+    error: string;
+    alreadyReported?: boolean;
+};
 type GoogleFontReplacement = { fontName: string; fontUrl: string };
 
 const initialState: TemplateCreationState = {
@@ -380,6 +384,7 @@ export const useTemplateCreation = () => {
                         ...layouts.map((layout) => ({
                             index: layout.index,
                             error: saveError,
+                            alreadyReported: true,
                         })),
                     ],
                 };
@@ -511,6 +516,7 @@ export const useTemplateCreation = () => {
                     failures.map((item) => [item.index, item.error])
                 );
                 failures.forEach((failure) => {
+                    if (failure.alreadyReported) return;
                     captureError(failure.error, { operation: "generate" });
                 });
                 updateGeneratedSlides((currentSlides) =>
@@ -661,6 +667,22 @@ export const useTemplateCreation = () => {
                 );
                 const failure = failures.find((item) => item.index === slideIndex);
                 if (failure) {
+                    if (failure.alreadyReported) {
+                        setSlides((current) =>
+                            current.map((slide, index) =>
+                                index === slideIndex
+                                    ? {
+                                        ...slide,
+                                        processing: false,
+                                        processed: false,
+                                        error: failure.error,
+                                    }
+                                    : slide
+                            )
+                        );
+                        notify.error(`Slide ${slideIndex + 1} failed`, failure.error);
+                        return;
+                    }
                     throw new Error(failure.error);
                 }
                 const layout = createdLayouts.find((item) => item.index === slideIndex)?.layout;

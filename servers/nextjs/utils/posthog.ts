@@ -48,7 +48,10 @@ async function ensureTelemetryStatus(): Promise<boolean> {
 
 function initializePostHogNow(host: string, key: string): void {
   if (typeof window === "undefined") return;
-  if (window.__posthog_initialized) return;
+  if (window.__posthog_initialized) {
+    posthog.opt_in_capturing();
+    return;
+  }
   posthog.init(key, {
     api_host: host,
     autocapture: false,
@@ -76,8 +79,7 @@ export function captureError(
     if (window.__posthog_telemetry_enabled === false) return;
     if (!window.__posthog_initialized) return;
     const message = sanitizeAnalyticsError(error, "Unknown error");
-    const err = error instanceof Error ? error : new Error(message);
-    posthog.captureException(err, {
+    posthog.captureException(new Error(message), {
       operation: context.operation,
       pathname: window.location.pathname,
     });
@@ -94,10 +96,15 @@ export function resetTelemetryCache(): void {
 }
 
 export function setTelemetryEnabled(enabled: boolean): void {
-  if (typeof window !== "undefined") {
-    window.__posthog_telemetry_enabled = enabled;
-  }
+  if (typeof window === "undefined") return;
   statusPromise = null;
-  if (!enabled) return;
+  if (!enabled) {
+    window.__posthog_telemetry_enabled = false;
+    if (window.__posthog_initialized) {
+      posthog.opt_out_capturing();
+    }
+    return;
+  }
+  delete window.__posthog_telemetry_enabled;
   void ensureTelemetryStatus();
 }

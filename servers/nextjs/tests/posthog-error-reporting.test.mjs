@@ -62,6 +62,28 @@ test("ClientRoot wires PostHogInitializer and MixpanelInitializer is gone", asyn
   );
 });
 
+test("privacy and onboarding persist user-config before enabling telemetry", async () => {
+  const privacy = await readNext(
+    "app/(presentation-generator)/(dashboard)/settings/PrivacySettings.tsx",
+  );
+  const finalStep = await readNext("components/OnBoarding/FinalStep.tsx");
+  for (const [name, source] of [
+    ["PrivacySettings", privacy],
+    ["FinalStep", finalStep],
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /setTelemetryEnabled\(enabled\);[\s\S]{0,120}fetch\(['"]\/api\/user-config['"]/,
+      `${name} must not enable telemetry before POST /api/user-config`,
+    );
+    assert.match(
+      source,
+      /if \(!response\.ok\) throw[\s\S]*setTelemetryEnabled\(enabled\)/,
+      `${name} must enable telemetry only after user-config POST succeeds`,
+    );
+  }
+});
+
 test("privacy copy is error reports and fail-closed", async () => {
   const privacy = await readNext(
     "app/(presentation-generator)/(dashboard)/settings/PrivacySettings.tsx",
@@ -112,6 +134,12 @@ test("closed failure list calls captureError with the spec operation", async () 
     "app/(presentation-generator)/custom-template/hooks/useTemplateCreation.ts",
   );
   assert.match(template, /operation:\s*"save"/);
+  assert.match(template, /alreadyReported:\s*true/);
+  assert.match(
+    template,
+    /if\s*\(\s*failure\.alreadyReported\s*\)\s*return/,
+    "save-originated layout failures must not be recaptured as generate",
+  );
 });
 
 test("mixpanel is gone from Next.js app source", async () => {
@@ -151,7 +179,14 @@ test("PostHog stack is a separate compose project in deploy/posthog", async () =
   assert.match(readme, /gslide-posthog/);
   assert.match(readme, /localhost:8010/);
   assert.match(readme, /--project-name gslide-posthog/);
+  assert.match(readme, /9f29728b378fba9453a8c78e1c4039aa018f2629/);
   await access(path.join(repoRoot, "deploy/posthog/docker-compose.yml"));
+  const compose = await readRepo("deploy/posthog/docker-compose.yml");
+  assert.match(compose, /proxy:/);
+  assert.match(compose, /ports:\s*!override/);
+  assert.match(compose, /["']8010:80["']/);
+  assert.doesNotMatch(compose, /8010:8000/);
+  assert.doesNotMatch(compose, /["']80:80["']/);
   const gslide = await readRepo("docker-compose.yml");
   assert.doesNotMatch(gslide, /include:[\s\S]*deploy\/posthog/);
 });

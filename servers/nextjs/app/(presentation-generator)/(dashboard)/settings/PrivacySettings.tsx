@@ -27,7 +27,9 @@ const PrivacySettings = () => {
     setTrackingEnabled(enabled);
     setSaving(true);
     try {
-      setTelemetryEnabled(enabled);
+      if (!enabled) {
+        setTelemetryEnabled(false);
+      }
       const response = await fetch("/api/user-config", {
         method: "POST",
         body: JSON.stringify({
@@ -35,6 +37,7 @@ const PrivacySettings = () => {
         }),
       });
       if (!response.ok) throw new Error(`user-config returned ${response.status}`);
+      setTelemetryEnabled(enabled);
     } catch {
       setTrackingEnabled(prev);
       setTelemetryEnabled(prev ?? false);

@@ -24,10 +24,14 @@ the error-reporting UI.
 
 The PostHog hobby compose bind-mounts files from a PostHog git checkout, so the
 upstream repo must exist on disk. It is gitignored here so you keep your own
-shallow copy:
+copy. Pin this commit (hobby fronting service is `proxy` on 80/443):
+
+`9f29728b378fba9453a8c78e1c4039aa018f2629`
 
 ```bash
-git clone --depth 1 https://github.com/PostHog/posthog.git deploy/posthog/upstream
+git clone --filter=blob:none --no-checkout https://github.com/PostHog/posthog.git deploy/posthog/upstream
+git -C deploy/posthog/upstream fetch --depth 1 origin 9f29728b378fba9453a8c78e1c4039aa018f2629
+git -C deploy/posthog/upstream checkout 9f29728b378fba9453a8c78e1c4039aa018f2629
 ```
 
 Copy the env template and set a secret:
@@ -57,14 +61,12 @@ The PostHog UI is served at **http://localhost:8010**.
 
 ### Port note
 
-The PostHog hobby compose publishes its web container on host port 80. This
-file remaps it to **8010** so it never collides with GSlide (5001) or SearXNG
-(8080). If `include` + the `web` port override does not work with your version
-of the hobby file (some revisions name the fronting service `proxy` or use
-Caddy on a different port), edit the `services:` override in
-`deploy/posthog/docker-compose.yml` to remap whichever service publishes port
-80/8000 to `8010:80` (or `8010:8000`). The README command and port stay the
-same.
+The pinned hobby compose publishes Caddy as service **`proxy`** on host `80:80`
+and `443:443`. Our compose file **replaces** those ports (`ports: !override`)
+with **`8010:80`** only — it does not append, so host 80/443 stay free. If a
+newer upstream revision renames that service, update `deploy/posthog/docker-compose.yml`
+to override whichever service currently publishes 80, still mapping `8010:80`.
+Requires Docker Compose 2.24+ for the `!override` YAML tag.
 
 ## First run — point GSlide at PostHog
 
@@ -95,13 +97,13 @@ like `http://posthog:8000` — the user's browser cannot resolve it. Use
 ## Troubleshooting
 
 - **Caddy refuses HTTP on localhost:** the hobby stack may try to provision
-  TLS for `DOMAIN=localhost`. If it does not bind cleanly, remap the web
-  container's listen port to host `8010` (see the Port note) and set
-  `SITE_URL=http://localhost:8010`.
+  TLS for `DOMAIN=localhost`. Local HTTP is the intended setup (`SITE_URL=http://localhost:8010`).
+  If Caddy still refuses, keep the `proxy` override at `8010:80` and check the
+  proxy container logs.
 - **`include` / `extends` path errors:** the hobby file `extends` its
   `docker-compose.base.yml` relative to the `upstream/` folder. If Compose
   cannot resolve those paths from the parent folder, run Compose with its
   working directory inside `deploy/posthog/upstream/` and add a sibling
-  override file that only remaps the web/proxy service port to `8010`. The
-  command must still use `--project-name gslide-posthog` and the UI is still at
+  override file that remaps **`proxy`** with `ports: !override` to `8010:80`.
+  The command must still use `--project-name gslide-posthog` and the UI is still at
   `localhost:8010`.

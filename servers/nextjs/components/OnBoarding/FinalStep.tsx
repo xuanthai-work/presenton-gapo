@@ -47,8 +47,10 @@ const FinalStep = () => {
     const handleTrackingToggle = useCallback(async (enabled: boolean) => {
         const prev = trackingEnabled;
         setTrackingEnabled(enabled);
-        setTelemetryEnabled(enabled);
         try {
+            if (!enabled) {
+                setTelemetryEnabled(false);
+            }
             const response = await fetch('/api/user-config', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -56,6 +58,7 @@ const FinalStep = () => {
                 }),
             });
             if (!response.ok) throw new Error(`user-config returned ${response.status}`);
+            setTelemetryEnabled(enabled);
         } catch {
             setTrackingEnabled(prev);
             setTelemetryEnabled(prev ?? false);
