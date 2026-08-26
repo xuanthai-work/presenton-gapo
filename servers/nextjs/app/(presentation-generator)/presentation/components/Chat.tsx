@@ -46,8 +46,6 @@ import {
   MAX_NUMBER_OF_SLIDES,
   MAX_OUTLINE_CONTENT_WORDS,
 } from "@/utils/presentationLimits";
-import { bucketMessageLength, sanitizeAnalyticsError } from "@/utils/analytics";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import {
@@ -78,7 +76,6 @@ import {
 import { presentationChatAdapter } from "./chat/chat-adapter";
 import type {
   AssistantActivity,
-  AssistantPromptMetrics,
   ChatDocumentAttachment,
   ChatEditPreview,
   ChatLink,
@@ -213,8 +210,6 @@ const Chat = ({
   const focusDispatchTimerRef = useRef<number | null>(null);
   const refreshInFlightRef = useRef(false);
   const refreshQueuedRef = useRef(false);
-  const openedAnalyticsKeyRef = useRef<string | null>(null);
-  const promptMetricsRef = useRef<AssistantPromptMetrics | null>(null);
   const activeEditPreviewRef = useRef<{
     assistantMessageId: string;
     originalSlidesByIndex: Record<number, unknown>;
@@ -223,24 +218,6 @@ const Chat = ({
     changeCount: number;
   } | null>(null);
   const activeResourceId = resourceId ?? presentationId;
-
-  const baseAnalyticsProps = useCallback(
-    () => ({
-      variant,
-      presentation_id: presentationId,
-      resource_id: activeResourceId,
-      conversation_scope: conversationStorageScope,
-    }),
-    [activeResourceId, conversationStorageScope, presentationId, variant]
-  );
-
-  useEffect(() => {
-    if (!activeResourceId) return;
-    const key = `${variant}:${activeResourceId}`;
-    if (openedAnalyticsKeyRef.current === key) return;
-    openedAnalyticsKeyRef.current = key;
-    trackEvent(MixpanelEvent.AI_Assistant_Opened, baseAnalyticsProps());
-  }, [activeResourceId, baseAnalyticsProps, variant]);
 
   useEffect(() => {
     let cancelled = false;
@@ -264,7 +241,6 @@ const Chat = ({
     setApplyingEditPreviewMessageId(null);
     setExpandedActivityByMessage({});
     setHiddenOverlaySlideReference(null);
-    promptMetricsRef.current = null;
     activeEditPreviewRef.current = null;
 
     if (!activeResourceId) {
@@ -730,10 +706,6 @@ const Chat = ({
 
   const resetChat = async () => {
     const conversationIdToDelete = conversationId;
-    trackEvent(MixpanelEvent.AI_Assistant_Chat_Reset, {
-      ...baseAnalyticsProps(),
-      delete_saved_conversation: true,
-    });
     clearChatUi();
 
     if (activeResourceId) {
@@ -972,7 +944,6 @@ const Chat = ({
 
   const processTemplateV2Files = async (
     files: File[],
-    source: "file_input" | "paste" | "drop" = "file_input"
   ) => {
     if (files.length === 0 || chatInputDisabled) {
       return;
@@ -1036,20 +1007,7 @@ const Chat = ({
         "Attachment ready",
         `${files.length} file${files.length === 1 ? "" : "s"} attached.`
       );
-      trackEvent(MixpanelEvent.AI_Assistant_Attachment_Added, {
-        ...baseAnalyticsProps(),
-        source,
-        image_count: imageFiles.length,
-        document_count: documentFiles.length,
-        total_count: files.length,
-      });
     } catch (error) {
-      trackEvent(MixpanelEvent.AI_Assistant_Attachment_Failed, {
-        ...baseAnalyticsProps(),
-        source,
-        file_count: files.length,
-        error_message: sanitizeAnalyticsError(error, "Attachment upload failed"),
-      });
       notify.error(
         "Could not attach file",
         error instanceof Error ? error.message : "Upload failed."
@@ -1136,12 +1094,6 @@ const Chat = ({
       try {
         imagesForMessage = await extractImageTextContext(pastedImages);
       } catch (error) {
-        trackEvent(MixpanelEvent.AI_Assistant_Attachment_Failed, {
-          ...baseAnalyticsProps(),
-          source: "image_ocr",
-          file_count: pastedImages.length,
-          error_message: sanitizeAnalyticsError(error, "Image processing failed"),
-        });
         notify.error(
           "Could not read image",
           error instanceof Error ? error.message : "Image processing failed."
@@ -1196,27 +1148,6 @@ const Chat = ({
     setActiveAssistantMessageId(assistantMessageId);
     refreshQueuedRef.current = false;
     refreshInFlightRef.current = false;
-    promptMetricsRef.current = {
-      startedAt: Date.now(),
-      attachmentImageCount: imagesForMessage.length,
-      attachmentDocumentCount: attachedDocuments.length,
-      linkCount: chatLinks.length,
-      mutatingToolCount: 0,
-      readToolCount: 0,
-      uniqueTools: new Set<string>(),
-      mutatedSlides: new Set<number>(),
-    };
-    trackEvent(MixpanelEvent.AI_Assistant_Prompt_Submitted, {
-      ...baseAnalyticsProps(),
-      has_text: trimmedMessage.length > 0,
-      message_length_bucket: bucketMessageLength(outboundMessage.length),
-      attachment_image_count: imagesForMessage.length,
-      attachment_document_count: attachedDocuments.length,
-      link_count: chatLinks.length,
-      has_selected_slide: typeof currentSlide === "number",
-      has_selected_template_target: Boolean(selectedTemplateV2Target),
-      has_selected_html_element: Boolean(selectionContext),
-    });
     const streamAbortController = new AbortController();
     abortControllerRef.current = streamAbortController;
 
@@ -1255,19 +1186,6 @@ const Chat = ({
             });
           },
           onTrace: (trace) => {
-            const metrics = promptMetricsRef.current;
-            if (metrics && trace.tool && trace.status === "start") {
-              metrics.uniqueTools.add(trace.tool);
-              if (MUTATING_TOOLS.has(trace.tool)) {
-                metrics.mutatingToolCount += 1;
-                const slideIndex = readTraceSlideIndex(trace);
-                if (slideIndex !== null) {
-                  metrics.mutatedSlides.add(slideIndex);
-                }
-              } else {
-                metrics.readToolCount += 1;
-              }
-            }
             if (
               trace.tool &&
               trace.status === "start" &&
@@ -1377,40 +1295,11 @@ const Chat = ({
       await refreshPresentationIfNeeded(
         Array.isArray(response.tool_calls) ? response.tool_calls : []
       );
-      const metrics = promptMetricsRef.current;
-      const responseToolCalls = Array.isArray(response.tool_calls)
-        ? response.tool_calls
-        : [];
-      responseToolCalls.forEach((tool) => metrics?.uniqueTools.add(tool));
-      trackEvent(MixpanelEvent.AI_Assistant_Prompt_Completed, {
-        ...baseAnalyticsProps(),
-        conversation_id_present: Boolean(response.conversation_id ?? conversationId),
-        duration_ms: metrics ? Date.now() - metrics.startedAt : null,
-        mutating_tool_count:
-          metrics?.mutatingToolCount ??
-          responseToolCalls.filter((tool) => MUTATING_TOOLS.has(tool)).length,
-        read_tool_count:
-          metrics?.readToolCount ??
-          responseToolCalls.filter((tool) => !MUTATING_TOOLS.has(tool)).length,
-        unique_tools: metrics
-          ? Array.from(metrics.uniqueTools)
-          : Array.from(new Set(responseToolCalls)),
-        mutated_slide_count: metrics?.mutatedSlides.size ?? 0,
-        attachment_image_count: metrics?.attachmentImageCount ?? imagesForMessage.length,
-        attachment_document_count:
-          metrics?.attachmentDocumentCount ?? attachedDocuments.length,
-        link_count: metrics?.linkCount ?? chatLinks.length,
-      });
       setPastedImages([]);
       setAttachedDocuments([]);
       setChatLinks([]);
     } catch (error) {
       if (isAbortError(error)) {
-        const metrics = promptMetricsRef.current;
-        trackEvent(MixpanelEvent.AI_Assistant_Prompt_Stopped, {
-          ...baseAnalyticsProps(),
-          duration_ms: metrics ? Date.now() - metrics.startedAt : null,
-        });
         setMessages((previous) =>
           previous.map((message) =>
             message.id === assistantMessageId
@@ -1432,15 +1321,7 @@ const Chat = ({
 
       const message =
         error instanceof Error ? error.message : "Failed to send chat message";
-      const metrics = promptMetricsRef.current;
       captureError(message, { operation: "stream" });
-      trackEvent(MixpanelEvent.AI_Assistant_Prompt_Failed, {
-        ...baseAnalyticsProps(),
-        duration_ms: metrics ? Date.now() - metrics.startedAt : null,
-        error_message: sanitizeAnalyticsError(message, "Failed to send chat message"),
-        mutating_tool_count: metrics?.mutatingToolCount ?? 0,
-        unique_tools: metrics ? Array.from(metrics.uniqueTools) : [],
-      });
 
       setMessages((previous) =>
         previous.map((entry) =>
@@ -1477,7 +1358,6 @@ const Chat = ({
         current === assistantMessageId ? null : current
       );
       setIsSending(false);
-      promptMetricsRef.current = null;
     }
   };
 
@@ -1569,7 +1449,7 @@ const Chat = ({
   ) => {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    void processTemplateV2Files(files, "file_input");
+    void processTemplateV2Files(files);
   };
 
   const handlePaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -1587,7 +1467,7 @@ const Chat = ({
       if (cleanText) {
         setInput((previous) => appendInputText(previous, cleanText));
       }
-      void processTemplateV2Files(files, "paste");
+      void processTemplateV2Files(files);
       return;
     }
 
@@ -1626,24 +1506,11 @@ const Chat = ({
         throw new Error("Image upload did not return a URL.");
       }
       setPastedImages((previous) => [...previous, ...nextImages]);
-      trackEvent(MixpanelEvent.AI_Assistant_Attachment_Added, {
-        ...baseAnalyticsProps(),
-        source: "paste",
-        image_count: nextImages.length,
-        document_count: 0,
-        total_count: nextImages.length,
-      });
       notify.success(
         "Image pasted",
         `${nextImages.length} image${nextImages.length === 1 ? "" : "s"} ready to use.`
       );
     } catch (error) {
-      trackEvent(MixpanelEvent.AI_Assistant_Attachment_Failed, {
-        ...baseAnalyticsProps(),
-        source: "paste",
-        file_count: imageFiles.length,
-        error_message: sanitizeAnalyticsError(error, "Image upload failed"),
-      });
       notify.error(
         "Could not paste image",
         error instanceof Error ? error.message : "Image upload failed."
@@ -1700,7 +1567,7 @@ const Chat = ({
       notify.warning("Drop unavailable", "Use the attach button for this file.");
       return;
     }
-    void processTemplateV2Files(files, "drop");
+    void processTemplateV2Files(files);
   };
 
   const isOutlineVariant = variant === "outline";

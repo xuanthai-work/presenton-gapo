@@ -11,7 +11,6 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -31,7 +30,6 @@ import {
 } from "@/store/slices/presentationGeneration";
 import { addToHistory } from "@/store/slices/undoRedoSlice";
 import { RootState } from "@/store/store";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import {
   BLANK_SLIDE_LAYOUT_ID,
   createBlankPresentationSlide,
@@ -68,7 +66,6 @@ const SlideActionBar = ({
 }: SlideActionBarProps) => {
   const dispatch = useDispatch();
   const store = useStore();
-  const pathname = usePathname();
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
   const [isSpeakerPopoverOpen, setIsSpeakerPopoverOpen] = useState(false);
   const [isSlideMenuOpen, setIsSlideMenuOpen] = useState(false);
@@ -163,15 +160,6 @@ const SlideActionBar = ({
           }
         : undefined,
     );
-    trackEvent(MixpanelEvent.Presentation_Slide_Added, {
-      pathname,
-      presentation_id: presentationId,
-      inserted_after_index: currentIndex,
-      template_id: templateId,
-      layout_id: BLANK_SLIDE_LAYOUT_ID,
-      source: "blank_action_bar",
-      is_template_v2: isTemplateV2Slide,
-    });
   };
 
   const handleDuplicateSlide = () => {
@@ -189,15 +177,6 @@ const SlideActionBar = ({
     );
     const insertedIndex = currentIndex + 1;
     onSlideSelected(insertedIndex);
-    trackEvent(MixpanelEvent.Presentation_Slide_Added, {
-      pathname,
-      presentation_id: presentationId,
-      inserted_after_index: currentIndex,
-      source: "duplicate_action_bar",
-      slide_id: slide?.id,
-      slide_index: currentIndex,
-      layout: slideLayout,
-    });
   };
 
   const handleMoveSlide = (toIndex: number) => {
@@ -208,14 +187,6 @@ const SlideActionBar = ({
     rememberSlides("MOVE_SLIDE");
     dispatch(movePresentationSlide({ fromIndex: currentIndex, toIndex }));
     onSlideSelected(toIndex);
-    trackEvent(MixpanelEvent.Presentation_Slides_Reordered, {
-      pathname,
-      presentation_id: presentationId,
-      from_index: currentIndex,
-      to_index: toIndex,
-      slide_count: slideCount,
-      source: "action_bar",
-    });
   };
 
   const handleDeleteSlide = () => {
@@ -232,15 +203,6 @@ const SlideActionBar = ({
       rememberSlides("DELETE_LAST_SLIDE");
       dispatch(replaceSlidesWithBlankFallback({ slideData: blankSlide }));
       onSlideSelected(0);
-      trackEvent(MixpanelEvent.Presentation_Slide_Deleted, {
-        pathname,
-        presentation_id: presentationId,
-        slide_id: slide?.id,
-        slide_index: currentIndex,
-        layout: slideLayout,
-        blank_fallback: true,
-        fallback_slide_id: slideId,
-      });
       return;
     }
 
@@ -248,13 +210,6 @@ const SlideActionBar = ({
     rememberSlides("DELETE_SLIDE");
     dispatch(deletePresentationSlide(currentIndex));
     onSlideSelected(nextSelectedIndex);
-    trackEvent(MixpanelEvent.Presentation_Slide_Deleted, {
-      pathname,
-      presentation_id: presentationId,
-      slide_id: slide?.id,
-      slide_index: currentIndex,
-      layout: slideLayout,
-    });
   };
 
   const openTemplatePicker = () => {

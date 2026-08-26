@@ -9,7 +9,6 @@ import {
   TemplateListEmptyState,
   TemplateListSection,
 } from "../../components/TemplateListUi";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 interface TemplateSelectionProps {
   presentationId: string | null;
@@ -35,7 +34,6 @@ const normalizeTemplateName = (name: string) =>
 
 const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
   function TemplateSelection({
-    presentationId,
     selectedTemplateId,
     suggestedTemplate,
     onSuggestedTemplateResolved,
@@ -109,11 +107,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
           showArrow
           selectionPage
           onClick={() => {
-            trackEvent(MixpanelEvent.TemplateV2_Template_Selected, {
-              presentation_id: presentationId,
-              template_id: template.id,
-              template_source: source,
-            });
             onSelectTemplate({
               id: template.id,
               name: template.name,

@@ -8,7 +8,6 @@ import {
 } from "@/store/slices/presentationGeneration";
 import { jsonrepair } from "jsonrepair";
 import { notify } from "@/components/ui/sonner";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
 import { getApiUrl, normalizeBackendAssetUrls } from "@/utils/api";
 import { store, type RootState } from "@/store/store";
@@ -187,11 +186,6 @@ export const usePresentationStreaming = (
         setStatusMessage(
           "Presentation stream stalled — waiting for the server."
         );
-        trackEvent(MixpanelEvent.Generation_Stalled, {
-          surface: "presentation",
-          last_status: statusMessageRef.current,
-          duration_ms: now - (streamStartedAtRef.current ?? now),
-        });
       }
     }, STALL_INTERVAL_MS);
   }, []);
@@ -340,32 +334,11 @@ export const usePresentationStreaming = (
         return;
       }
       streamIsTemplateV2 = true;
-      const slides = isTemplateV2PresentationPayload(presentation)
-        ? (presentation as Record<string, unknown>).slides
-        : store.getState().presentationGeneration.presentationData?.slides;
-      trackEvent(MixpanelEvent.TemplateV2_Stream_Completed, {
-        presentation_id: presentationId,
-        slide_count: Array.isArray(slides) ? slides.length : 0,
-        retry_count: retryCountRef.current,
-        duration_ms: Date.now() - streamStartedAt,
-      });
     };
 
-    const trackSmartModeGenerationCompleted = (presentation: unknown) => {
+    const trackSmartModeGenerationCompleted = (_presentation: unknown) => {
       if (!isSmartMode || smartGenerationOutcomeTracked) return;
       smartGenerationOutcomeTracked = true;
-      const slides =
-        presentation &&
-        typeof presentation === "object" &&
-        Array.isArray((presentation as Record<string, unknown>).slides)
-          ? (presentation as Record<string, unknown>).slides
-          : store.getState().presentationGeneration.presentationData?.slides;
-      trackEvent(MixpanelEvent.Smart_Mode_Generation_Completed, {
-        presentation_id: presentationId,
-        slide_count: Array.isArray(slides) ? slides.length : 0,
-        retry_count: retryCountRef.current,
-        duration_ms: Date.now() - streamStartedAt,
-      });
     };
 
     const updateGeneratingStatus = (slidesLength: number) => {
@@ -727,11 +700,6 @@ export const usePresentationStreaming = (
         setStatusMessage(
           "Presentation stream stalled — waiting for the server."
         );
-        trackEvent(MixpanelEvent.Generation_Stalled, {
-          surface: "presentation",
-          last_status: statusMessageRef.current,
-          duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
-        });
       };
 
       // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"
@@ -747,10 +715,6 @@ export const usePresentationStreaming = (
     const startStream = async () => {
       dispatch(setStreaming(true));
       dispatch(clearPresentationData());
-      trackEvent(MixpanelEvent.Presentation_Stream_API_Call, {
-        presentation_id: presentationId,
-        generation_mode: options.generationMode ?? "standard",
-      });
       setStatusMessage(defaultStatusMessage);
       setLifecycle("connecting");
       await preloadPreparedPresentation();
@@ -787,7 +751,6 @@ export const usePresentationStreaming = (
   const draftCount = presentationData?.slides?.length ?? 0;
 
   const cancel = useCallback(async () => {
-    const previousLifecycle = lifecycleRef.current;
     setLifecycle("cancelling");
     isClosedRef.current = true;
     if (eventSourceRef.current) {
@@ -811,16 +774,6 @@ export const usePresentationStreaming = (
       window.history.replaceState({}, "", newUrl.toString());
     }
     setLifecycle("cancelled");
-    const draftSlides =
-      store.getState().presentationGeneration.presentationData?.slides?.length ??
-      0;
-    trackEvent(MixpanelEvent.Generation_Cancelled, {
-      surface: "presentation",
-      reason:
-        previousLifecycle === "stalled" ? "user_stop_stalled" : "user_stop",
-      draft_count: draftSlides,
-      duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
-    });
     // Best-effort persist of the stopped slide draft. Set lifecycle to
     // "cancelled" BEFORE the await so the UI dismisses the bar immediately;
     // the UI fire-and-forgets this with `void cancel()` (Task 8). Do NOT
@@ -842,8 +795,6 @@ export const usePresentationStreaming = (
     if (!eventSourceRef.current) {
       return;
     }
-    const stalledForMs =
-      Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
     lastUsefulEventAtRef.current = Date.now();
     stallCauseRef.current = null;
     setStallCause(null);
@@ -855,10 +806,6 @@ export const usePresentationStreaming = (
     if (!stallIntervalRef.current) {
       startStallWatcher();
     }
-    trackEvent(MixpanelEvent.Generation_Keep_Waiting, {
-      surface: "presentation",
-      stalled_for_ms: stalledForMs,
-    });
   }, [startStallWatcher]);
 
   const retry = useCallback(() => {
@@ -879,10 +826,6 @@ export const usePresentationStreaming = (
     setError(false);
     setLifecycle("connecting");
     setStatusMessage(defaultStatusMessage);
-    trackEvent(MixpanelEvent.Generation_Retry_Clicked, {
-      surface: "presentation",
-      from_state: fromState,
-    });
     openStreamRef.current();
   }, [defaultStatusMessage, dispatch, setError]);
 

@@ -14,8 +14,6 @@ import {
   GSLIDE_SPLASH_MIN_DURATION_MS,
 } from "@/components/gslide";
 import { notify } from "@/components/ui/sonner";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 type AuthStatus = {
   configured: boolean;
@@ -32,12 +30,6 @@ const initialStatus: AuthStatus = {
   username: null,
   role: null,
 };
-
-function authFlow(mode: AuthMode): string {
-  if (mode === "setup") return "setup";
-  if (mode === "register") return "register";
-  return "sign_in";
-}
 
 export default function AuthGate() {
   const [status, setStatus] = useState<AuthStatus>(initialStatus);
@@ -67,11 +59,6 @@ export default function AuthGate() {
 
   useEffect(() => {
     if (isAuthDisabled()) {
-      trackEvent(MixpanelEvent.Auth_Status_Checked, {
-        configured: true,
-        authenticated: true,
-        auth_disabled: true,
-      });
       setStatus({
         configured: true,
         authenticated: true,
@@ -106,9 +93,6 @@ export default function AuthGate() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("reason") === "unauthorized") {
       if (status.configured && !status.authenticated) {
-        trackEvent(MixpanelEvent.Auth_Unauthorized_Redirect, {
-          configured: true,
-        });
         notify.error("Unauthorized", "Sign in to view this page.", {
           id: "auth-unauthorized-redirect",
           duration: 5000,
@@ -133,12 +117,6 @@ export default function AuthGate() {
       }
 
       const data = (await response.json()) as AuthStatus;
-      trackEvent(MixpanelEvent.Auth_Status_Checked, {
-        configured: Boolean(data.configured),
-        authenticated: Boolean(data.authenticated),
-        auth_disabled: false,
-        role: data.role ?? null,
-      });
       setStatus({
         configured: Boolean(data.configured),
         authenticated: Boolean(data.authenticated),
@@ -147,15 +125,6 @@ export default function AuthGate() {
       });
     } catch (fetchError) {
       console.error(fetchError);
-      trackEvent(MixpanelEvent.Auth_Status_Checked, {
-        configured: false,
-        authenticated: false,
-        auth_disabled: false,
-        error_message: sanitizeAnalyticsError(
-          fetchError,
-          "Could not load login state"
-        ),
-      });
       notify.error(
         "Could not load login",
         "We could not connect to the login service. Please refresh and try again."
@@ -164,27 +133,6 @@ export default function AuthGate() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (
-      isLoading ||
-      isRedirecting ||
-      status.authenticated ||
-      !hasMetSplashDuration
-    ) {
-      return;
-    }
-
-    trackEvent(MixpanelEvent.Auth_Gate_Viewed, {
-      flow: authFlow(authMode),
-    });
-  }, [
-    authMode,
-    hasMetSplashDuration,
-    isLoading,
-    isRedirecting,
-    status.authenticated,
-  ]);
 
   const switchConfiguredView = (next: "login" | "register") => {
     setConfiguredView(next);
@@ -196,15 +144,10 @@ export default function AuthGate() {
     event.preventDefault();
 
     const cleanedUsername = username.trim();
-    const flow = authFlow(authMode);
     const isSetupMode = authMode === "setup";
     const isRegisterMode = authMode === "register";
 
     if (cleanedUsername.length < 3) {
-      trackEvent(MixpanelEvent.Auth_Validation_Failed, {
-        flow,
-        reason: "username_too_short",
-      });
       notify.warning(
         "Username too short",
         "Your username must be at least 3 characters."
@@ -214,10 +157,6 @@ export default function AuthGate() {
 
     const minimumPasswordLength = isSetupMode || isRegisterMode ? 8 : 6;
     if (password.length < minimumPasswordLength) {
-      trackEvent(MixpanelEvent.Auth_Validation_Failed, {
-        flow,
-        reason: "password_too_short",
-      });
       notify.warning(
         "Password too short",
         `Your password must be at least ${minimumPasswordLength} characters.`
@@ -226,10 +165,6 @@ export default function AuthGate() {
     }
 
     if ((isSetupMode || isRegisterMode) && password !== confirmPassword) {
-      trackEvent(MixpanelEvent.Auth_Validation_Failed, {
-        flow,
-        reason: "passwords_do_not_match",
-      });
       notify.warning(
         "Passwords do not match",
         "Make sure both password fields match before continuing."
@@ -238,15 +173,6 @@ export default function AuthGate() {
     }
 
     setIsSubmitting(true);
-
-    const startedEvent = isSetupMode
-      ? MixpanelEvent.Auth_Setup_Started
-      : isRegisterMode
-        ? MixpanelEvent.Auth_Register_Started
-        : MixpanelEvent.Auth_SignIn_Started;
-    trackEvent(startedEvent, {
-      username_length: cleanedUsername.length,
-    });
 
     const endpoint = isSetupMode
       ? "/api/v1/auth/setup"
@@ -270,22 +196,6 @@ export default function AuthGate() {
       const payload = await response.json();
       if (!response.ok) {
         const detail = formatFastApiDetail(payload?.detail);
-        const failedEvent = isSetupMode
-          ? MixpanelEvent.Auth_Setup_Failed
-          : isRegisterMode
-            ? MixpanelEvent.Auth_Register_Failed
-            : MixpanelEvent.Auth_SignIn_Failed;
-        trackEvent(failedEvent, {
-          status_code: response.status,
-          error_message: sanitizeAnalyticsError(
-            detail,
-            isSetupMode
-              ? "Could not create account"
-              : isRegisterMode
-                ? "Could not create account"
-                : "Sign-in failed"
-          ),
-        });
 
         if (response.status === 401) {
           notify.error(
@@ -321,9 +231,6 @@ export default function AuthGate() {
       }
 
       if (isSetupMode) {
-        trackEvent(MixpanelEvent.Auth_Setup_Completed, {
-          username_length: cleanedUsername.length,
-        });
         setStatus({
           configured: true,
           authenticated: false,
@@ -349,19 +256,11 @@ export default function AuthGate() {
       });
 
       if (isRegisterMode) {
-        trackEvent(MixpanelEvent.Auth_Register_Completed, {
-          username_length: cleanedUsername.length,
-          role: (payload as AuthStatus).role ?? null,
-        });
         notify.success(
           "Account created",
           "Welcome. Loading your workspace."
         );
       } else {
-        trackEvent(MixpanelEvent.Auth_SignIn_Completed, {
-          username_length: cleanedUsername.length,
-          role: (payload as AuthStatus).role ?? null,
-        });
         notify.success(
           "Signed in",
           "Welcome back. Loading your workspace."
@@ -372,20 +271,6 @@ export default function AuthGate() {
       setConfirmPassword("");
     } catch (submitError) {
       console.error(submitError);
-      const failedEvent = isSetupMode
-        ? MixpanelEvent.Auth_Setup_Failed
-        : isRegisterMode
-          ? MixpanelEvent.Auth_Register_Failed
-          : MixpanelEvent.Auth_SignIn_Failed;
-      trackEvent(failedEvent, {
-        status_code: null,
-        error_message: sanitizeAnalyticsError(
-          submitError,
-          isSetupMode || isRegisterMode
-            ? "Could not create account"
-            : "Login unavailable"
-        ),
-      });
       notify.error(
         isSetupMode || isRegisterMode ? "Registration unavailable" : "Login unavailable",
         "The login service is unavailable right now. Please try again in a moment."

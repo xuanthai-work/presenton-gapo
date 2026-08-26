@@ -5,7 +5,6 @@ import { Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 import { LLMConfig } from "@/types/llm_config";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import {
   SettingsField,
   settingsControlClassName,
@@ -36,11 +35,6 @@ const WebSearchProvider = ({
             checked={isWebSearchEnabled}
             className="data-[state=checked]:bg-[#4791FF] data-[state=unchecked]:bg-gray-400"
             onCheckedChange={(checked) => {
-              trackEvent(MixpanelEvent.Settings_Provider_Selected, {
-                section: "web_search_provider",
-                enabled: checked,
-                provider: checked ? "auto" : "disabled",
-              });
               setLlmConfig((current) => ({
                 ...current,
                 WEB_GROUNDING: checked,

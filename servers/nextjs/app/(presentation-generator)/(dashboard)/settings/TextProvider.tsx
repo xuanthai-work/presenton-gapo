@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { notify } from "@/components/ui/sonner";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import Image from "next/image";
 import {
   SettingsField,
@@ -335,10 +334,6 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                           key={index}
                           value={provider.value}
                           onSelect={(value) => {
-                            trackEvent(MixpanelEvent.Settings_Provider_Selected, {
-                              section: "text_provider",
-                              provider: value,
-                            });
                             onInputChange(value, "LLM");
                             setOpenProviderSelect(false);
                           }}
@@ -459,10 +454,6 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                             value={model.value}
                             onSelect={() => {
                               if (currentModelField) {
-                                trackEvent(MixpanelEvent.Settings_Model_Selected, {
-                                  provider: selectedProvider,
-                                  model: model.value,
-                                });
                                 onInputChange(model.value, currentModelField);
                               }
                               setOpenModelSelect(false);

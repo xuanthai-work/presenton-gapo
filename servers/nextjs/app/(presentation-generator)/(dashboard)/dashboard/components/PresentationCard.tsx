@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { notify } from "@/components/ui/sonner";
 import {
   Dialog,
@@ -26,7 +26,6 @@ import {
   TemplateV2HtmlSlidePreview,
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import MarkdownRenderer from "@/components/MarkDownRender";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 
 export const PresentationCard = ({
   id,
@@ -44,7 +43,6 @@ export const PresentationCard = ({
   onDuplicated?: (presentation: any) => void;
 }) => {
   const router = useRouter();
-  const pathname = usePathname();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showActions, setShowActions] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -64,13 +62,6 @@ export const PresentationCard = ({
       );
       return;
     }
-    trackEvent(MixpanelEvent.Dashboard_Presentation_Opened, {
-      pathname,
-      presentation_id: id,
-      title_length: (title || "").length,
-      slide_count: presentation?.slides?.length || 0,
-      presentation_type: presentationType,
-    });
     router.push(`/presentation?id=${id}&type=${presentationType}`);
   };
 
@@ -81,11 +72,6 @@ export const PresentationCard = ({
     const response = await DashboardApi.deletePresentation(id);
 
     if (response?.success) {
-      trackEvent(MixpanelEvent.Dashboard_Presentation_Deleted, {
-        pathname,
-        presentation_id: id,
-        slide_count: presentation?.slides?.length || 0,
-      });
       notify.success("Presentation deleted", "The presentation was removed from your dashboard.");
       setShowDeleteDialog(false);
       if (onDeleted) {
@@ -102,12 +88,6 @@ export const PresentationCard = ({
     setIsDuplicating(true);
     try {
       const duplicated = await DashboardApi.duplicatePresentation(id);
-      trackEvent(MixpanelEvent.Dashboard_Presentation_Duplicated, {
-        pathname,
-        presentation_id: id,
-        duplicate_presentation_id: duplicated?.id,
-        slide_count: presentation?.slides?.length || 0,
-      });
       notify.success("Presentation duplicated", "A copy was added to your dashboard.");
       onDuplicated?.(duplicated);
     } catch (error) {

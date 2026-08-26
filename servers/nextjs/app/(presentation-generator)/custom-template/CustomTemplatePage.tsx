@@ -51,7 +51,6 @@ import {
 import type { RootState } from "@/store/store";
 import { normalizeBackendAssetUrls, resolveBackendAssetUrl } from "@/utils/api";
 import { setupImageUrlConverter } from "@/utils/image-url-converter";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 import { useFontLoader as loadFontAssets } from "../hooks/useFontLoad";
 import TemplateService from "../services/api/template";
@@ -1726,10 +1725,6 @@ const CustomTemplatePage = () => {
     );
     if (data) {
       loadFontAssets(normalizeBackendAssetUrls(data.fonts));
-      trackEvent(MixpanelEvent.Templates_Build_Template_Clicked, {
-        source: "template_studio_preview_ready",
-        slide_count: data.slide_image_urls.length,
-      });
     }
   }, [
     fontUploadAndPreview,
@@ -1781,10 +1776,6 @@ const CustomTemplatePage = () => {
 
       setIsSubmittingTemplate(true);
       try {
-        trackEvent(MixpanelEvent.Templates_Build_Template_Clicked, {
-          source: "template_studio_create_async",
-          slide_count: state.previewData.slide_image_urls.length,
-        });
         await TemplateService.createTemplate({
           pptx_url: state.previewData.modified_pptx_url,
           slide_image_urls: state.previewData.slide_image_urls,

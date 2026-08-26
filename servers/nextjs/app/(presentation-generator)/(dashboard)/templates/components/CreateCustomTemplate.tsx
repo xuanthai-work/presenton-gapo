@@ -3,7 +3,6 @@
 
 import { Plus, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { cn } from "@/lib/utils";
 
 const CreateCustomTemplate = ({
@@ -16,7 +15,6 @@ const CreateCustomTemplate = ({
     const router = useRouter();
 
     const handleOpenTemplateBuilder = () => {
-        trackEvent(MixpanelEvent.Templates_Build_Template_Clicked);
         onClick?.();
         router.push("/custom-template");
     };

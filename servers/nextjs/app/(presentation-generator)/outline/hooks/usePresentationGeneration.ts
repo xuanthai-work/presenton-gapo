@@ -1,14 +1,12 @@
 import { useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { notify } from "@/components/ui/sonner";
 import { clearPresentationData } from "@/store/slices/presentationGeneration";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import { LoadingState } from "../types/index";
 
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
 import {
   limitOutlines,
   MAX_NUMBER_OF_SLIDES,
@@ -28,7 +26,6 @@ export const usePresentationGeneration = (
 ) => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const pathname = usePathname();
   const [loadingState, setLoadingState] = useState<LoadingState>(
     DEFAULT_LOADING_STATE
   );
@@ -90,13 +87,6 @@ export const usePresentationGeneration = (
     if (!validateInputs(latestOutlines)) return;
     const preparedOutlines = limitOutlines(latestOutlines);
 
-    trackEvent(MixpanelEvent.Outline_Presentation_Generation_Started, {
-      pathname,
-      presentation_id: presentationId,
-      outline_count: preparedOutlines.length,
-      template_id: selectedTemplateId,
-    });
-
     setLoadingState({
       message: "Generating presentation data...",
       isLoading: true,
@@ -112,11 +102,6 @@ export const usePresentationGeneration = (
       });
 
       if (response) {
-        trackEvent(MixpanelEvent.TemplateV2_Prepare_Completed, {
-          presentation_id: presentationId,
-          template_id: selectedTemplateId,
-          outline_count: preparedOutlines.length,
-        });
         dispatch(clearPresentationData());
         clearTheme();
         router.replace(
@@ -126,15 +111,6 @@ export const usePresentationGeneration = (
     } catch (error: any) {
       console.error("Error In Presentation Generation(prepare).", error);
       captureError(error, { operation: "generate" });
-      trackEvent(MixpanelEvent.TemplateV2_Prepare_Failed, {
-        presentation_id: presentationId,
-        template_id: selectedTemplateId,
-        outline_count: preparedOutlines.length,
-        error_message: sanitizeAnalyticsError(
-          error,
-          "Error in presentation generation"
-        ),
-      });
       notify.error(
         "Generation error",
         error.message || "Error in presentation generation."
@@ -148,7 +124,6 @@ export const usePresentationGeneration = (
     dispatch,
     router,
     selectedTemplateId,
-    pathname,
   ]);
 
   return { loadingState, handleSubmit };

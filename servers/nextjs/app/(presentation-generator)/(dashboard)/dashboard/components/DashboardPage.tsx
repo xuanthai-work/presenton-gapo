@@ -18,10 +18,8 @@ import { PresentationGenerationApi } from "@/app/(presentation-generator)/servic
 import Link from "next/link";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { notify } from "@/components/ui/sonner";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { GSlideHeader } from "@/components/gslide";
 
 const actionCardBase =
@@ -203,7 +201,6 @@ function DashboardHeader() {
 }
 
 const DashboardPage: React.FC = () => {
-  const pathname = usePathname();
   const router = useRouter();
   const [presentations, setPresentations] = useState<PresentationResponse[]>(
     [],
@@ -229,8 +226,6 @@ const DashboardPage: React.FC = () => {
   );
 
   const fetchPresentations = useCallback(async () => {
-    let fetchedCount = 0;
-    let hasError = false;
     try {
       setIsLoading(true);
       setError(null);
@@ -238,23 +233,16 @@ const DashboardPage: React.FC = () => {
         DashboardApi.getPresentations("v2-standard"),
         DashboardApi.getPresentations("v1-standard", { includeSlides: false }),
       ]);
-      fetchedCount = supported.length + legacy.length;
       setPresentations(supported);
       setLegacyPresentations(legacy);
     } catch {
-      hasError = true;
       setError(null);
       setPresentations([]);
       setLegacyPresentations([]);
     } finally {
-      trackEvent(MixpanelEvent.Dashboard_Page_Viewed, {
-        pathname,
-        presentation_count: fetchedCount,
-        load_failed: hasError,
-      });
       setIsLoading(false);
     }
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     void fetchPresentations();
@@ -265,19 +253,10 @@ const DashboardPage: React.FC = () => {
 
     blankPresentationRequestInFlight.current = true;
     setIsCreatingBlankPresentation(true);
-    trackEvent(MixpanelEvent.Dashboard_New_Presentation_Clicked, {
-      pathname,
-      source: "dashboard_blank_presentation_card",
-    });
 
     try {
       const presentation =
         await PresentationGenerationApi.createBlankPresentation();
-      trackEvent(MixpanelEvent.Dashboard_Blank_Presentation_Created, {
-        pathname,
-        presentation_id: presentation.id,
-        slide_count: presentation.n_slides,
-      });
       router.push(
         `/presentation?id=${encodeURIComponent(presentation.id)}&type=standard`,
       );
@@ -286,16 +265,12 @@ const DashboardPage: React.FC = () => {
         creationError instanceof Error
           ? creationError.message
           : "Something went wrong while creating the presentation.";
-      trackEvent(MixpanelEvent.Dashboard_Blank_Presentation_Create_Failed, {
-        pathname,
-        error_message: sanitizeAnalyticsError(creationError),
-      });
       notify.error("Could not create blank presentation", message);
     } finally {
       blankPresentationRequestInFlight.current = false;
       setIsCreatingBlankPresentation(false);
     }
-  }, [pathname, router]);
+  }, [router]);
 
   const removePresentation = (presentationId: string) => {
     setPresentations((prev) => prev.filter((p) => p.id !== presentationId));
@@ -321,12 +296,6 @@ const DashboardPage: React.FC = () => {
         <div className="mt-[18px] grid w-full max-w-[625px] grid-cols-1 gap-4 sm:grid-cols-2">
           <DashboardActionCard
             href="/upload"
-            onClick={() =>
-              trackEvent(MixpanelEvent.Dashboard_New_Presentation_Clicked, {
-                pathname,
-                source: "dashboard_actions_card",
-              })
-            }
             title="Create new Presentation"
             ariaLabel="Create new presentation"
             media={

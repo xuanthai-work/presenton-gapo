@@ -64,8 +64,6 @@ import {
 import { updateSlideUi } from "@/store/slices/presentationGeneration";
 import { useNearViewport } from "@/app/hooks/useNearViewport";
 import { resolveBackendAssetSource } from "@/utils/api";
-import { bucketFileSize, sanitizeAnalyticsError } from "@/utils/analytics";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import IconsEditor from "@/components/slide-editor/images/IconsEditor";
 import {
@@ -336,7 +334,6 @@ function TemplateV2KonvaSlideComponent({
   layout,
   isEditMode,
   slideId = null,
-  presentationId,
   slideIndex,
   renderIndex,
   fonts,
@@ -728,14 +725,6 @@ function TemplateV2KonvaSlideComponent({
     const index = typeof renderIndex === "number" ? renderIndex : slideIndex;
     return Number.isFinite(index) ? index : null;
   }, [renderIndex, slideIndex]);
-  const editorAnalyticsProps = useCallback(
-    (props: Record<string, unknown> = {}) => ({
-      presentation_id: presentationId ?? null,
-      slide_index: surfaceSlideIndex ?? slideIndex,
-      ...props,
-    }),
-    [presentationId, slideIndex, surfaceSlideIndex],
-  );
   const selectedSurfaceTarget = useMemo(
     () => surfaceSelectionTarget(uiDraft, selection, surfaceSlideIndex),
     [selection, surfaceSlideIndex, uiDraft],
@@ -1533,12 +1522,6 @@ function TemplateV2KonvaSlideComponent({
       const components = [...readArray(currentUiRef.current.components)];
       if (componentIndex < 0 || componentIndex >= components.length) return;
       components.splice(componentIndex, 1);
-      trackEvent(MixpanelEvent.Editor_Element_Deleted, {
-        ...editorAnalyticsProps({
-          target_kind: "component",
-          element_type: "component",
-        }),
-      });
       commitUi({ ...currentUiRef.current, components });
       setSelection(null);
       clearTableCellSelection();
@@ -1552,25 +1535,11 @@ function TemplateV2KonvaSlideComponent({
       clearTableCellSelection,
       closeChartEditor,
       commitUi,
-      editorAnalyticsProps,
     ],
   );
 
   const deleteSelection = useCallback(() => {
     if (!selection) return;
-    const element =
-      selection.kind === "element"
-        ? getElementAtSelection(currentUiRef.current, selection)
-        : null;
-    trackEvent(MixpanelEvent.Editor_Element_Deleted, {
-      ...editorAnalyticsProps({
-        target_kind: selection.kind,
-        element_type:
-          selection.kind === "element"
-            ? readString(element?.type) || "unknown"
-            : "component",
-      }),
-    });
     commitUi(deleteSelectionFromUi(currentUiRef.current, selection));
     setSelection(null);
     clearTableCellSelection();
@@ -1583,7 +1552,6 @@ function TemplateV2KonvaSlideComponent({
     clearTableCellSelection,
     closeChartEditor,
     commitUi,
-    editorAnalyticsProps,
     selection,
   ]);
 
@@ -1628,11 +1596,6 @@ function TemplateV2KonvaSlideComponent({
         { kind: "component", componentIndex },
       );
       if (!clipboardComponent) return;
-      trackEvent(MixpanelEvent.Editor_Element_Duplicated, {
-        ...editorAnalyticsProps({
-          target_kind: "component",
-        }),
-      });
       pasteClipboardPayload(
         createTemplateV2ClipboardPayload(
           clipboardComponent.components.map((item) => ({
@@ -1643,19 +1606,14 @@ function TemplateV2KonvaSlideComponent({
         16,
       );
     },
-    [editorAnalyticsProps, pasteClipboardPayload],
+    [pasteClipboardPayload],
   );
 
   const duplicateSelection = useCallback(() => {
     const payload = createClipboardPayload();
     if (!payload) return;
-    trackEvent(MixpanelEvent.Editor_Element_Duplicated, {
-      ...editorAnalyticsProps({
-        target_kind: selection?.kind ?? "selection",
-      }),
-    });
     pasteClipboardPayload(payload, 16);
-  }, [createClipboardPayload, editorAnalyticsProps, pasteClipboardPayload, selection]);
+  }, [createClipboardPayload, pasteClipboardPayload, selection]);
 
   useTemplateV2Clipboard({
     enabled: isEditMode,
@@ -1731,19 +1689,6 @@ function TemplateV2KonvaSlideComponent({
           runs
             ? autoSizeInlineTextFrame(current.frame, runs, style)
             : current.frame;
-        const previousElement = getElementAtSelection(
-          currentUiRef.current,
-          current.selection,
-        );
-        const previousContent =
-          !previousElement
-            ? ""
-            : current.kind === "text"
-            ? rawTextContent(previousElement as any)
-            : textRunsContent(rawTextListRunsForEditor(previousElement as any));
-        const nextContent = runsOverride
-          ? textRunsContent(runsOverride)
-          : current.draft;
         commitUi(
           syncComponentHeightToElement(
             updateElementInUi(
@@ -1764,20 +1709,12 @@ function TemplateV2KonvaSlideComponent({
             current.selection,
           ),
         );
-        if (previousContent !== nextContent) {
-          trackEvent(MixpanelEvent.Editor_Element_Text_Edited, {
-            ...editorAnalyticsProps({
-              element_type: current.kind,
-              target_kind: current.selection.kind,
-            }),
-          });
-        }
       }
       setSelection(current.selection);
       clearInlineEdit();
       setVectorEditSelection(null);
     },
-    [clearInlineEdit, commitUi, editorAnalyticsProps, inlineEdit],
+    [clearInlineEdit, commitUi, inlineEdit],
   );
 
   const commitInlineTextRuns = useCallback(
@@ -1813,12 +1750,6 @@ function TemplateV2KonvaSlideComponent({
       if (!current || !box) return;
       const next = mergeEditorToolbarElement(current, editorElement, box);
       updateElement(selection, () => next);
-      trackEvent(MixpanelEvent.Editor_Element_Style_Changed, {
-        ...editorAnalyticsProps({
-          element_type: readString(current.type) || editorElement.type,
-          change_source: "element_toolbar",
-        }),
-      });
       updateInlineEdit(selection, (active) => {
         if (
           !active?.style ||
@@ -1851,19 +1782,12 @@ function TemplateV2KonvaSlideComponent({
         return { ...active, style: rawTextStyle(next) };
       });
     },
-    [editorAnalyticsProps, selection, updateElement, updateInlineEdit],
+    [selection, updateElement, updateInlineEdit],
   );
 
   const applyLayoutElementChange = useCallback(
     (changes: Record<string, unknown>) => {
       if (!layoutToolbarTarget) return;
-      trackEvent(MixpanelEvent.Editor_Element_Style_Changed, {
-        ...editorAnalyticsProps({
-          element_type:
-            readString(layoutToolbarTarget.element.type) || "layout",
-          change_source: "layout_toolbar",
-        }),
-      });
       if (
         layoutToolbarTarget.selection.componentIndex ===
         ROOT_ELEMENTS_COMPONENT_INDEX
@@ -1903,7 +1827,7 @@ function TemplateV2KonvaSlideComponent({
         ),
       );
     },
-    [commitUi, editorAnalyticsProps, layoutToolbarTarget, updateComponent],
+    [commitUi, layoutToolbarTarget, updateComponent],
   );
 
   const applyChartToolbarElementChange = useCallback(
@@ -1920,14 +1844,8 @@ function TemplateV2KonvaSlideComponent({
       if (!current || !box) return;
       const next = mergeEditorToolbarElement(current, editorElement, box);
       updateElement(chartToolbarTarget.selection, () => next);
-      trackEvent(MixpanelEvent.Editor_Element_Style_Changed, {
-        ...editorAnalyticsProps({
-          element_type: "chart",
-          change_source: "chart_toolbar",
-        }),
-      });
     },
-    [chartToolbarTarget, editorAnalyticsProps, updateElement],
+    [chartToolbarTarget, updateElement],
   );
 
   const applyTableToolbarElementChange = useCallback(
@@ -1944,14 +1862,8 @@ function TemplateV2KonvaSlideComponent({
       if (!current || !box) return;
       const next = mergeEditorToolbarElement(current, editorElement, box);
       updateElement(tableToolbarTarget.selection, () => next);
-      trackEvent(MixpanelEvent.Editor_Element_Style_Changed, {
-        ...editorAnalyticsProps({
-          element_type: "table",
-          change_source: "table_toolbar",
-        }),
-      });
     },
-    [editorAnalyticsProps, tableToolbarTarget, updateElement],
+    [tableToolbarTarget, updateElement],
   );
 
   const applyEditorToolbarTargetElementChange = useCallback(
@@ -1968,14 +1880,8 @@ function TemplateV2KonvaSlideComponent({
       if (!current || !box) return;
       const next = mergeEditorToolbarElement(current, editorElement, box);
       updateElement(editorToolbarTarget.selection, () => next);
-      trackEvent(MixpanelEvent.Editor_Element_Style_Changed, {
-        ...editorAnalyticsProps({
-          element_type: readString(current.type) || editorElement.type,
-          change_source: "component_element_toolbar",
-        }),
-      });
     },
-    [editorAnalyticsProps, editorToolbarTarget, updateElement],
+    [editorToolbarTarget, updateElement],
   );
 
   const groupSelectedComponents = useCallback(() => {
@@ -2056,9 +1962,6 @@ function TemplateV2KonvaSlideComponent({
     );
     if (!result) return;
     commitUi(result.ui as RawUi);
-    trackEvent(MixpanelEvent.Editor_Component_Ungrouped, {
-      ...editorAnalyticsProps(),
-    });
     selectionRef.current = result.selection;
     setSelection(result.selection);
     activateSurface(result.selection);
@@ -2071,7 +1974,6 @@ function TemplateV2KonvaSlideComponent({
     clearInlineEdit,
     clearTableCellSelection,
     commitUi,
-    editorAnalyticsProps,
   ]);
 
   const ungroupSelectedComponent = useCallback(() => {
@@ -2101,11 +2003,6 @@ function TemplateV2KonvaSlideComponent({
         ...currentUiRef.current,
         components: result.components,
       });
-      trackEvent(MixpanelEvent.Editor_Component_Layer_Changed, {
-        ...editorAnalyticsProps({
-          action,
-        }),
-      });
       setSelection(nextSelection);
       clearTableCellSelection();
       clearInlineEdit();
@@ -2118,7 +2015,6 @@ function TemplateV2KonvaSlideComponent({
       clearInlineEdit,
       clearTableCellSelection,
       commitUi,
-      editorAnalyticsProps,
     ],
   );
 
@@ -2235,13 +2131,8 @@ function TemplateV2KonvaSlideComponent({
         data: newIconUrl,
         ...(query ? { icon_query: query } : {}),
       }));
-      trackEvent(MixpanelEvent.Editor_Icon_Replaced, {
-        ...editorAnalyticsProps({
-          query_present: Boolean(query),
-        }),
-      });
     },
-    [editorAnalyticsProps, iconEditorSelection, updateElement],
+    [iconEditorSelection, updateElement],
   );
 
   const openChartEditor = useCallback(
@@ -2266,21 +2157,10 @@ function TemplateV2KonvaSlideComponent({
       if (!file || !target) return;
 
       if (!file.type.startsWith("image/")) {
-        trackEvent(MixpanelEvent.Editor_Image_Replace_Failed, {
-          ...editorAnalyticsProps({
-            error_message: "Invalid image file type",
-          }),
-        });
         notify.warning("Invalid file", "Please upload an image file.");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        trackEvent(MixpanelEvent.Editor_Image_Replace_Failed, {
-          ...editorAnalyticsProps({
-            file_size_bucket: bucketFileSize(file.size),
-            error_message: "Image file too large",
-          }),
-        });
         notify.warning("File too large", "Image files must be smaller than 5MB.");
         return;
       }
@@ -2298,21 +2178,8 @@ function TemplateV2KonvaSlideComponent({
           focus_y: 50,
           crop_scale: null,
         }));
-        trackEvent(MixpanelEvent.Editor_Image_Replaced, {
-          ...editorAnalyticsProps({
-            file_size_bucket: bucketFileSize(file.size),
-          }),
-        });
         notify.success("Image updated", "The selected image was replaced.");
       } catch (error) {
-        trackEvent(MixpanelEvent.Editor_Image_Replace_Failed, {
-          ...editorAnalyticsProps({
-            error_message: sanitizeAnalyticsError(
-              error,
-              "Failed to upload image"
-            ),
-          }),
-        });
         notify.error(
           "Upload failed",
           error instanceof Error
@@ -2324,7 +2191,7 @@ function TemplateV2KonvaSlideComponent({
         setIsUploadingImage(false);
       }
     },
-    [editorAnalyticsProps, updateElement],
+    [updateElement],
   );
 
   const handleElementDoubleClick = useCallback(

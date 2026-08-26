@@ -113,3 +113,45 @@ test("closed failure list calls captureError with the spec operation", async () 
   );
   assert.match(template, /operation:\s*"save"/);
 });
+
+test("mixpanel is gone from Next.js app source", async () => {
+  await assert.rejects(
+    () => access(path.join(nextRoot, "utils/mixpanel.ts")),
+    (error) => error && error.code === "ENOENT",
+  );
+  const pkg = await readNext("package.json");
+  assert.doesNotMatch(pkg, /mixpanel-browser/);
+  const banned = /d726e8bea8ec147f4c7720060cb2e6d1|api-eu\.mixpanel\.com|@\/utils\/mixpanel/;
+  const { readdir } = await import("node:fs/promises");
+  async function walk(dir) {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name === ".next" || entry.name === ".next-build") continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      if (!/\.(ts|tsx|js|mjs|json)$/.test(entry.name)) continue;
+      if (entry.name === "NOTICE") continue;
+      if (entry.name === "posthog-error-reporting.test.mjs") continue;
+      if (full.endsWith("package-lock.json")) {
+        const lock = await readFile(full, "utf8");
+        assert.doesNotMatch(lock, /mixpanel-browser/, full);
+        continue;
+      }
+      const text = await readFile(full, "utf8");
+      assert.doesNotMatch(text, banned, full);
+    }
+  }
+  await walk(nextRoot);
+});
+
+test("PostHog stack is a separate compose project in deploy/posthog", async () => {
+  const readme = await readRepo("deploy/posthog/README.md");
+  assert.match(readme, /gslide-posthog/);
+  assert.match(readme, /localhost:8010/);
+  assert.match(readme, /--project-name gslide-posthog/);
+  await access(path.join(repoRoot, "deploy/posthog/docker-compose.yml"));
+  const gslide = await readRepo("docker-compose.yml");
+  assert.doesNotMatch(gslide, /include:[\s\S]*deploy\/posthog/);
+});

@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import CreateCustomTemplate from "./CreateCustomTemplate";
 import Link from "next/link";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { ensureTailwindBrowserScript } from "@/lib/tailwind-browser";
 import { useTemplateSummaries, TemplateTab } from "../../../hooks/useTemplateSummaries";
 import {
@@ -31,28 +30,17 @@ const LayoutPreview = () => {
       setTab(requestedTab);
     }
 
-    trackEvent(MixpanelEvent.Templates_Page_Viewed);
     ensureTailwindBrowserScript();
   }, []);
 
   const handleOpenTemplate = useCallback(
     (templateId: string, templateName: string, isDefault: boolean) => {
-      trackEvent(
-        isDefault
-          ? MixpanelEvent.Templates_Inbuilt_Opened
-          : MixpanelEvent.Templates_Custom_Opened,
-        {
-          template_id: templateId,
-          template_name: templateName,
-        }
-      );
       router.push(`/template-preview?templateV2Id=${templateId}`);
     },
     [router]
   );
 
   const handleTabChange = useCallback((nextTab: TemplateTab) => {
-    trackEvent(MixpanelEvent.Templates_Tab_Switched, { tab: nextTab });
     setTab(nextTab);
   }, []);
 
@@ -68,7 +56,6 @@ const LayoutPreview = () => {
           <div className="flex gap-2.5 max-sm:w-full max-md:justify-center max-sm:flex-wrap">
             <Link
               href="/custom-template"
-              onClick={() => trackEvent(MixpanelEvent.Templates_New_Template_Clicked)}
               className="inline-flex items-center font-syne font-semibold gap-2 rounded-xl px-4 py-2.5 text-black text-sm shadow-sm hover:shadow-md"
               aria-label="Create new template"
               style={{

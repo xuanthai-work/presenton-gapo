@@ -16,7 +16,7 @@ import {
   MousePointer2,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Popover,
   PopoverContent,
@@ -26,11 +26,6 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { RootState } from "@/store/store";
 import { notify } from "@/components/ui/sonner";
-import {
-  trackEvent,
-  trackEventImmediately,
-  MixpanelEvent,
-} from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
 import { usePresentationUndoRedo } from "../hooks/PresentationUndoRedo";
 import ToolTip from "@/components/ToolTip";
@@ -54,7 +49,6 @@ import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { v4 as uuidv4 } from "uuid";
 
 const MAX_EXPORT_TITLE_LENGTH = 40;
@@ -116,7 +110,6 @@ const PresentationHeader = ({
   /** Avoid committing on blur when Save/Cancel was used (focus/click ordering) */
   const titleBlurIntentRef = useRef<"none" | "save" | "cancel">("none");
 
-  const pathname = usePathname();
   const dispatch = useDispatch();
 
   const { presentationData, isStreaming, enableHtmlSelector } = useSelector(
@@ -145,11 +138,6 @@ const PresentationHeader = ({
     dispatch(setEnableHtmlSelector(nextValue));
     if (!nextValue) dispatch(clearChatHtmlSelection());
     window.localStorage.setItem("html-selector-mode", String(nextValue));
-    trackEvent(MixpanelEvent.Smart_Mode_Select_Edit_Toggled, {
-      pathname,
-      presentation_id,
-      enabled: nextValue,
-    });
   };
 
   const beginTitleEdit = () => {
@@ -167,12 +155,6 @@ const PresentationHeader = ({
     const next = trimmed || presentationData.title || "Presentation";
     if (next !== presentationData.title) {
       dispatch(updateTitle(next));
-      trackEvent(MixpanelEvent.Presentation_Title_Updated, {
-        pathname,
-        presentation_id,
-        previous_title_length: (presentationData.title || "").length,
-        next_title_length: next.length,
-      });
     }
     setIsEditingTitle(false);
   };
@@ -204,9 +186,6 @@ const PresentationHeader = ({
   const handleExportPptx = async () => {
     if (isStreaming) return;
 
-    const exportId = uuidv4();
-    const exportStartedAt = Date.now();
-    const exportRuntime = "browser_api" as const;
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
@@ -214,13 +193,6 @@ const PresentationHeader = ({
         "Your presentation is being exported. This may take a moment."
       );
       setIsExporting(true);
-      await trackExportLifecycle(
-        MixpanelEvent.Presentation_Export_Started,
-        "pptx",
-        exportRuntime,
-        exportId,
-        exportStartedAt
-      );
       const safePptxFileName = buildSafeExportFileName(
         presentationData?.title,
         "pptx"
@@ -245,13 +217,6 @@ const PresentationHeader = ({
       }
 
       downloadLink(pptxPath, safePptxFileName);
-      await trackExportLifecycle(
-        MixpanelEvent.Presentation_Export_Completed,
-        "pptx",
-        exportRuntime,
-        exportId,
-        exportStartedAt
-      );
       notify.success(
         "Export complete",
         "Your PPTX file has been downloaded.",
@@ -260,14 +225,6 @@ const PresentationHeader = ({
     } catch (error) {
       console.error("Export failed:", error);
       captureError(error, { operation: "export" });
-      await trackExportLifecycle(
-        MixpanelEvent.Presentation_Export_Failed,
-        "pptx",
-        exportRuntime,
-        exportId,
-        exportStartedAt,
-        error
-      );
       notify.error(
         "Export failed",
         "We are having trouble exporting your presentation. Please try again.",
@@ -281,9 +238,6 @@ const PresentationHeader = ({
   const handleExportPdf = async () => {
     if (isStreaming) return;
 
-    const exportId = uuidv4();
-    const exportStartedAt = Date.now();
-    const exportRuntime = "browser_api" as const;
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
@@ -291,13 +245,6 @@ const PresentationHeader = ({
         "Your presentation is being exported. This may take a moment."
       );
       setIsExporting(true);
-      await trackExportLifecycle(
-        MixpanelEvent.Presentation_Export_Started,
-        "pdf",
-        exportRuntime,
-        exportId,
-        exportStartedAt
-      );
       const safePdfFileName = buildSafeExportFileName(
         presentationData?.title,
         "pdf"
@@ -321,13 +268,6 @@ const PresentationHeader = ({
       } else {
         throw new Error("Failed to export PDF");
       }
-      await trackExportLifecycle(
-        MixpanelEvent.Presentation_Export_Completed,
-        "pdf",
-        exportRuntime,
-        exportId,
-        exportStartedAt
-      );
       notify.success(
         "Export complete",
         "Your PDF file has been downloaded.",
@@ -336,14 +276,6 @@ const PresentationHeader = ({
     } catch (error) {
       console.error(error);
       captureError(error, { operation: "export" });
-      await trackExportLifecycle(
-        MixpanelEvent.Presentation_Export_Failed,
-        "pdf",
-        exportRuntime,
-        exportId,
-        exportStartedAt,
-        error
-      );
       notify.error(
         "Export failed",
         "We are having trouble exporting your presentation. Please try again.",
@@ -357,20 +289,6 @@ const PresentationHeader = ({
     setIsRegenerateConfirmOpen(false);
     dispatch(clearPresentationData());
     dispatch(clearHistory());
-    trackEvent(MixpanelEvent.Presentation_Regenerated, {
-      pathname,
-      presentation_id,
-      slide_count: presentationData?.slides?.length || 0,
-      generation_mode: generationMode,
-    });
-    if (generationMode === "smart") {
-      trackEvent(MixpanelEvent.Smart_Mode_Generation_Started, {
-        pathname,
-        presentation_id,
-        slide_count: presentationData?.slides?.length || 0,
-        source: "regenerate",
-      });
-    }
     router.push(
       `/presentation?id=${presentation_id}&stream=true${
         generationMode === "smart" ? "&type=smart" : ""
@@ -385,39 +303,6 @@ const PresentationHeader = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const trackExportLifecycle = async (
-    event:
-      | MixpanelEvent.Presentation_Export_Started
-      | MixpanelEvent.Presentation_Export_Completed
-      | MixpanelEvent.Presentation_Export_Failed,
-    format: "pptx" | "pdf",
-    exportRuntime: "browser_api",
-    exportId: string,
-    exportStartedAt: number,
-    error?: unknown
-  ) => {
-    try {
-      await trackEventImmediately(event, {
-        pathname,
-        presentation_id,
-        export_id: exportId,
-        format,
-        slide_count: presentationData?.slides?.length || 0,
-        export_runtime: exportRuntime,
-        generation_mode: generationMode,
-        ...(event !== MixpanelEvent.Presentation_Export_Started
-          ? { duration_ms: Date.now() - exportStartedAt }
-          : {}),
-        ...(error !== undefined
-          ? { error_message: sanitizeAnalyticsError(error, "Export failed") }
-          : {}),
-      });
-    } catch (analyticsError) {
-      // Analytics must never prevent or change the result of an export.
-      console.warn("Failed to track export lifecycle:", analyticsError);
-    }
   };
 
   const ExportOptions = ({ mobile }: { mobile: boolean }) => (
@@ -648,14 +533,6 @@ const PresentationHeader = ({
                   const to = `?id=${presentation_id}&mode=present&slide=${
                     currentSlide || 0
                   }${generationMode === "smart" ? "&type=smart" : ""}`;
-                  trackEvent(MixpanelEvent.Presentation_Mode_Entered, {
-                    pathname,
-                    presentation_id,
-                    slide_index: currentSlide || 0,
-                    slide_count: presentationData?.slides?.length || 0,
-                    generation_mode: generationMode,
-                  });
-                  trackEvent(MixpanelEvent.Navigation, { from: pathname, to });
                   router.push(to);
                 }}
                 disabled={

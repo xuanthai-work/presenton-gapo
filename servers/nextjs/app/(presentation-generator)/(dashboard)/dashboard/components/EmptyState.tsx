@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 export const EmptyState = () => {
   return (
@@ -11,11 +10,6 @@ export const EmptyState = () => {
         href="/upload"
         aria-label="Create your first presentation"
         className="group mx-auto flex h-[250px] w-full max-w-[577px] flex-col items-center justify-center gap-[14px] border-x border-[#EDEEEF] bg-white px-5 outline-none transition-colors hover:bg-[#FDFDFF] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--gslide-accent)]"
-        onClick={() =>
-          trackEvent(MixpanelEvent.Dashboard_New_Presentation_Clicked, {
-            source: "dashboard_empty_state",
-          })
-        }
       >
         <Image
           src="/dashboard-body/empty-folder.png"

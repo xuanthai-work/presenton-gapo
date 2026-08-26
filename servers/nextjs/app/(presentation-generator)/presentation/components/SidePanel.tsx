@@ -25,9 +25,7 @@ import {
 } from "@/store/slices/presentationGeneration";
 import { SortableSlide } from "./SortableSlide";
 import { notify } from "@/components/ui/sonner";
-import { usePathname } from "next/navigation";
 import NewSlide from "./NewSlide";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { SlideThumbnailCard } from "./SlideThumbnailCard";
 import {
   BLANK_SLIDE_LAYOUT_GROUP,
@@ -58,7 +56,6 @@ const SidePanel = ({
 
   loading,
 }: SidePanelProps) => {
-  const pathname = usePathname();
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -116,15 +113,6 @@ const SidePanel = ({
           index: lastSlideIndex,
         })
       );
-      trackEvent(MixpanelEvent.Presentation_Slide_Added, {
-        pathname,
-        presentation_id: presentationId,
-        inserted_after_index: lastSlideIndex,
-        template_id: BLANK_SLIDE_LAYOUT_GROUP,
-        layout_id: BLANK_SLIDE_LAYOUT_ID,
-        source: "blank_side_panel",
-        is_template_v2: true,
-      });
       onSlideClick(newIndex);
       return;
     }
@@ -184,13 +172,6 @@ const SidePanel = ({
       dispatch(
         setPresentationData({ ...presentationData, slides: updatedArray })
       );
-      trackEvent(MixpanelEvent.Presentation_Slides_Reordered, {
-        pathname,
-        presentation_id: presentationId,
-        from_index: oldIndex,
-        to_index: newIndex,
-        slide_count: updatedArray.length,
-      });
     }
   };
 

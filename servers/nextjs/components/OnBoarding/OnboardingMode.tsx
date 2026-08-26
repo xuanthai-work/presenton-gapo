@@ -12,8 +12,6 @@ import { notify } from '@/components/ui/sonner';
 import ToolTip from '../ToolTip';
 import { Switch } from '../ui/switch';
 import { Select, SelectItem, SelectContent, SelectValue, SelectTrigger } from '../ui/select';
-import { MixpanelEvent, trackEvent } from '@/utils/mixpanel';
-import { usePathname } from 'next/navigation';
 import { getLLMConfigValidationError, handleSaveLLMConfig } from '@/utils/storeHelpers';
 import { getApiErrorMessage, getApiUrl } from '@/utils/api';
 import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageFields';
@@ -32,7 +30,6 @@ const OnboardingMode = ({
     setStep: (step: number) => void,
     setProviderStep: (step: number) => void,
 }) => {
-    const pathname = usePathname();
     const userConfigState = useSelector((state: RootState) => state.userConfig);
     const [openProviderSelect, setOpenProviderSelect] = useState(false);
 
@@ -49,11 +46,6 @@ const OnboardingMode = ({
     const isActiveTextProvider = TEXT_PROVIDER_VALUES.has(llmConfig.LLM || "");
 
     const handleProviderChange = (provider: string) => {
-        trackEvent(MixpanelEvent.Onboarding_Text_Provider_Selected, {
-            provider,
-            provider_label: LLM_PROVIDERS[provider]?.label || provider,
-            selection_source: "provider_control",
-        });
         setLlmConfig(prev => ({
             ...prev,
             LLM: provider,
@@ -107,24 +99,6 @@ const OnboardingMode = ({
         llmConfig.LLM === 'custom'
             ? 'Custom LLM API Key'
             : `${llmConfig.LLM} API Key`;
-
-    const getSelectedTextModel = (config: LLMConfig): string => {
-        switch (config.LLM) {
-            case 'openai':
-                return config.OPENAI_MODEL || '';
-            case 'google':
-                return config.GOOGLE_MODEL || '';
-            case 'custom':
-                return config.CUSTOM_MODEL || '';
-            default:
-                return '';
-        }
-    };
-
-    const getSelectedImageQuality = (config: LLMConfig): string => {
-        if (config.IMAGE_PROVIDER === 'gpt-image-1.5') return config.GPT_IMAGE_1_5_QUALITY || '';
-        return '';
-    };
 
     const fetchAvailableModels = async () => {
         if (llmConfig.LLM === 'openai' && !currentApiKey) return;
@@ -225,10 +199,6 @@ const OnboardingMode = ({
                         <Select
                             value={llmConfig.GPT_IMAGE_1_5_QUALITY || 'low'}
                             onValueChange={(value) => {
-                                trackEvent(MixpanelEvent.Onboarding_Image_Quality_Selected, {
-                                    image_provider: "gpt-image-1.5",
-                                    quality: value,
-                                });
                                 setLlmConfig((prev) => ({
                                     ...prev,
                                     GPT_IMAGE_1_5_QUALITY: value
@@ -345,58 +315,14 @@ const OnboardingMode = ({
         try {
             const validationError = getLLMConfigValidationError(llmConfig);
             if (validationError) {
-                trackEvent(MixpanelEvent.Onboarding_Validation_Failed, {
-                    step_name: "web_search",
-                    web_search_enabled: !!llmConfig.WEB_GROUNDING,
-                    web_search_provider: llmConfig.WEB_SEARCH_PROVIDER || "auto",
-                    validation_error: validationError,
-                });
                 notify.warning("Cannot save yet", validationError);
                 return;
             }
             setSavingConfig(true);
 
             await handleSaveLLMConfig(llmConfig);
-            trackEvent(MixpanelEvent.Onboarding_Configuration_Saved, {
-                text_provider: llmConfig.LLM || "",
-                image_generation_enabled: !llmConfig.DISABLE_IMAGE_GENERATION,
-                image_step_skipped: !!llmConfig.DISABLE_IMAGE_GENERATION,
-                image_provider: llmConfig.DISABLE_IMAGE_GENERATION ? "disabled" : llmConfig.IMAGE_PROVIDER || "",
-                web_search_enabled: !!llmConfig.WEB_GROUNDING,
-                web_search_step_skipped: !llmConfig.WEB_GROUNDING,
-                web_search_provider: llmConfig.WEB_GROUNDING ? llmConfig.WEB_SEARCH_PROVIDER || "auto" : "disabled",
-            });
-
-            const textProvider = llmConfig.LLM || '';
-            const textModel = getSelectedTextModel(llmConfig);
-            const imageGenerationEnabled = !llmConfig.DISABLE_IMAGE_GENERATION;
-            const imageProvider = imageGenerationEnabled ? (llmConfig.IMAGE_PROVIDER || '') : 'disabled';
-
-            trackEvent(MixpanelEvent.Onboarding_Providers_Models_Selected, {
-                pathname,
-                text_provider: textProvider,
-                text_provider_label: LLM_PROVIDERS[textProvider]?.label || textProvider || '',
-                text_model: textModel,
-                image_generation_enabled: imageGenerationEnabled,
-                image_step_skipped: !imageGenerationEnabled,
-                image_provider: imageProvider,
-                image_provider_label: imageGenerationEnabled
-                    ? (IMAGE_PROVIDERS[imageProvider]?.label || imageProvider || '')
-                    : 'Image generation disabled',
-                image_quality: imageGenerationEnabled ? getSelectedImageQuality(llmConfig) : '',
-                web_search_enabled: !!llmConfig.WEB_GROUNDING,
-                web_search_step_skipped: !llmConfig.WEB_GROUNDING,
-                web_search_provider: llmConfig.WEB_GROUNDING ? (llmConfig.WEB_SEARCH_PROVIDER || "auto") : "disabled",
-            });
 
             notify.success("Configuration saved", "Your configuration was saved successfully.");
-            trackEvent(MixpanelEvent.Onboarding_Step_Continued, {
-                from_step: "web_search",
-                to_step: "finish",
-                web_search_enabled: !!llmConfig.WEB_GROUNDING,
-                web_search_step_skipped: !llmConfig.WEB_GROUNDING,
-                web_search_provider: llmConfig.WEB_GROUNDING ? llmConfig.WEB_SEARCH_PROVIDER || "auto" : "disabled",
-            });
             setStep(3)
             // router.push("/upload");
         } catch (error) {
@@ -415,11 +341,6 @@ const OnboardingMode = ({
             WEB_GROUNDING: false,
         });
         if (validationError) {
-            trackEvent(MixpanelEvent.Onboarding_Validation_Failed, {
-                step_name: "text_provider",
-                provider: llmConfig.LLM || "",
-                validation_error: validationError,
-            });
             notify.warning("Cannot continue yet", validationError);
             return false;
         }
@@ -429,11 +350,6 @@ const OnboardingMode = ({
     const handleContinue = async () => {
         if (providerStep === 1) {
             if (await validateTextProvider()) {
-                trackEvent(MixpanelEvent.Onboarding_Step_Continued, {
-                    from_step: "text_provider",
-                    to_step: "image_provider",
-                    provider: llmConfig.LLM || "",
-                });
                 setProviderStep(2);
             }
             return;
@@ -441,23 +357,9 @@ const OnboardingMode = ({
         if (providerStep === 2) {
             const validationError = getLLMConfigValidationError({ ...llmConfig, WEB_GROUNDING: false });
             if (validationError) {
-                trackEvent(MixpanelEvent.Onboarding_Validation_Failed, {
-                    step_name: "image_provider",
-                    image_generation_enabled: !llmConfig.DISABLE_IMAGE_GENERATION,
-                    image_step_skipped: !!llmConfig.DISABLE_IMAGE_GENERATION,
-                    image_provider: llmConfig.IMAGE_PROVIDER || "",
-                    validation_error: validationError,
-                });
                 notify.warning("Cannot continue yet", validationError);
                 return;
             }
-            trackEvent(MixpanelEvent.Onboarding_Step_Continued, {
-                from_step: "image_provider",
-                to_step: "web_search",
-                image_generation_enabled: !llmConfig.DISABLE_IMAGE_GENERATION,
-                image_step_skipped: !!llmConfig.DISABLE_IMAGE_GENERATION,
-                image_provider: llmConfig.DISABLE_IMAGE_GENERATION ? "disabled" : llmConfig.IMAGE_PROVIDER || "",
-            });
             setProviderStep(3);
             return;
         }
@@ -465,11 +367,6 @@ const OnboardingMode = ({
     };
 
     const handleBack = () => {
-        trackEvent(MixpanelEvent.Onboarding_Back_Clicked, {
-            from_step: providerStep === 1 ? "text_provider" : providerStep === 2 ? "image_provider" : "web_search",
-            to_step: providerStep === 1 ? "text_provider" : providerStep === 2 ? "text_provider" : "image_provider",
-            source: "footer_button",
-        });
         if (providerStep > 1) {
             setProviderStep(providerStep - 1);
         }
@@ -478,38 +375,6 @@ const OnboardingMode = ({
     useEffect(() => {
         llmConfigRef.current = llmConfig;
     }, [llmConfig]);
-
-    useEffect(() => {
-        const config = llmConfigRef.current;
-        const stepName =
-            providerStep === 1
-                ? "text_provider"
-                : providerStep === 2
-                    ? "image_provider"
-                    : "web_search";
-        const stepProps =
-            providerStep === 1
-                ? {
-                    provider: config.LLM || "",
-                }
-                : providerStep === 2
-                    ? {
-                        image_generation_enabled: !config.DISABLE_IMAGE_GENERATION,
-                        image_step_skipped: !!config.DISABLE_IMAGE_GENERATION,
-                        image_provider: config.DISABLE_IMAGE_GENERATION ? "disabled" : config.IMAGE_PROVIDER || "",
-                    }
-                    : {
-                        web_search_enabled: !!config.WEB_GROUNDING,
-                        web_search_step_skipped: !config.WEB_GROUNDING,
-                        web_search_provider: config.WEB_GROUNDING ? config.WEB_SEARCH_PROVIDER || "auto" : "disabled",
-                    };
-
-        trackEvent(MixpanelEvent.Onboarding_Step_Viewed, {
-            step_name: stepName,
-            step_number: providerStep,
-            ...stepProps,
-        });
-    }, [providerStep]);
 
     const imageProviderRows = Object.values(IMAGE_PROVIDERS).reduce(
         (rows, provider, index) => {
@@ -768,10 +633,6 @@ const OnboardingMode = ({
                                                                 value={model}
                                                                 onSelect={(value) => {
                                                                     if (currentModelField) {
-                                                                        trackEvent(MixpanelEvent.Onboarding_Text_Model_Selected, {
-                                                                            provider: llmConfig.LLM || "",
-                                                                            model: value,
-                                                                        });
                                                                         setLlmConfig(prev => ({
                                                                             ...prev,
                                                                             [currentModelField]: value
@@ -820,10 +681,6 @@ const OnboardingMode = ({
                             checked={!llmConfig.DISABLE_IMAGE_GENERATION}
                             className='data-[state=checked]:bg-[#4791FF] h-[22px] w-[36px] data-[state=unchecked]:bg-[#E2E0E1]'
                             onCheckedChange={(checked) => {
-                                trackEvent(MixpanelEvent.Onboarding_Image_Generation_Toggled, {
-                                    enabled: checked,
-                                    image_step_skipped: !checked,
-                                });
                                 setLlmConfig(prev => ({
                                     ...prev,
                                     DISABLE_IMAGE_GENERATION: !checked
@@ -862,10 +719,6 @@ const OnboardingMode = ({
                                                 type="button"
                                                 key={provider.value}
                                                 onClick={() => {
-                                                    trackEvent(MixpanelEvent.Onboarding_Image_Provider_Selected, {
-                                                        image_provider: provider.value,
-                                                        image_provider_label: provider.label,
-                                                    });
                                                     setLlmConfig(prev => ({ ...prev, IMAGE_PROVIDER: provider.value }));
                                                 }}
                                                 className={cn(
@@ -908,10 +761,6 @@ const OnboardingMode = ({
                                 checked={!!llmConfig.WEB_GROUNDING}
                                 className='data-[state=checked]:bg-[#4791FF] h-[22px] w-[36px] data-[state=unchecked]:bg-[#E2E0E1]'
                                 onCheckedChange={(checked) => {
-                                    trackEvent(MixpanelEvent.Onboarding_Web_Search_Toggled, {
-                                        enabled: checked,
-                                        web_search_step_skipped: !checked,
-                                    });
                                     setLlmConfig(prev => ({
                                         ...prev,
                                         WEB_GROUNDING: checked,

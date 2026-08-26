@@ -1,5 +1,4 @@
 import React from 'react'
-import { MixpanelEvent, trackEvent } from '@/utils/mixpanel'
 
 const STEPS = ["Text Provider", "Image Provider", "Web Search", "Finish Setup"];
 
@@ -18,11 +17,6 @@ const OnBoardingHeader = ({
 
     const goToStep = (target: number) => {
         if (target >= activeStep) return;
-        trackEvent(MixpanelEvent.Onboarding_Back_Clicked, {
-            from_step_number: activeStep,
-            to_step_number: target,
-            source: "progress_header",
-        });
         setProviderStep(target);
         setStep(2);
     };

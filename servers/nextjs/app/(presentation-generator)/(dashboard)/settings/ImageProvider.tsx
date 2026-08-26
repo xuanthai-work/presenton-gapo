@@ -8,7 +8,6 @@ import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageField
 import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS } from '@/utils/providerConstants'
 import { Check, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { MixpanelEvent, trackEvent } from '@/utils/mixpanel'
 import {
     SettingsField,
     settingsControlClassName,
@@ -31,11 +30,6 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
     }, [llmConfig.IMAGE_PROVIDER])
     const isImageGenerationDisabled = llmConfig.DISABLE_IMAGE_GENERATION ?? false;
     const handleChangeImageGenerationDisabled = (value: boolean) => {
-        trackEvent(MixpanelEvent.Settings_Provider_Selected, {
-            section: "image_provider",
-            enabled: !value,
-            provider: value ? "disabled" : llmConfig.IMAGE_PROVIDER || "",
-        });
         setLlmConfig((prev: any) => ({
             ...prev,
             DISABLE_IMAGE_GENERATION: value
@@ -146,10 +140,6 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                             key={provider.value}
                                                             value={provider.value}
                                                             onSelect={(value) => {
-                                                                trackEvent(MixpanelEvent.Settings_Provider_Selected, {
-                                                                    section: "image_provider",
-                                                                    provider: value,
-                                                                });
                                                                 input_field_changed(value, "IMAGE_PROVIDER");
                                                                 setOpenImageProviderSelect(false);
                                                             }}

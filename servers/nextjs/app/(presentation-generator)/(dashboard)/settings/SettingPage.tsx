@@ -11,7 +11,6 @@ import {
 } from "@/utils/storeHelpers";
 import { useRouter, usePathname } from "next/navigation";
 import { LLMConfig } from "@/types/llm_config";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
 import SettingSideBar, { SettingsSection } from "./SettingSideBar";
 import TextProvider from "./TextProvider";
@@ -67,26 +66,11 @@ const SettingsPage = () => {
   }, [userConfigState.llm_config]);
 
   const selectSettingsSection = (section: SettingsSection) => {
-    trackEvent(MixpanelEvent.Settings_Tab_Switched, {
-      from_section: selectedProvider,
-      to_section: section,
-    });
     setSelectedProvider(section);
   };
 
-  useEffect(() => {
-    trackEvent(MixpanelEvent.Settings_Section_Entered, {
-      section: selectedProvider,
-      image_generation_enabled: !llmConfig.DISABLE_IMAGE_GENERATION,
-      web_search_enabled: !!llmConfig.WEB_GROUNDING,
-    });
-  }, [selectedProvider, llmConfig.DISABLE_IMAGE_GENERATION, llmConfig.WEB_GROUNDING]);
-
   const handleSaveConfig = async () => {
 
-    trackEvent(MixpanelEvent.Settings_SaveConfiguration_Button_Clicked, {
-      pathname,
-    });
     const validationError = getLLMConfigValidationError(llmConfig);
     if (validationError) {
       notify.warning("Cannot save settings", validationError);
@@ -106,7 +90,6 @@ const SettingsPage = () => {
         isDisabled: true,
         text: "Saving...",
       }));
-      trackEvent(MixpanelEvent.Settings_SaveConfiguration_API_Call);
       await handleSaveLLMConfig(llmConfig);
       notify.success(
         "Settings saved",

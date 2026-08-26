@@ -70,12 +70,6 @@ import {
   type SchemaField,
   type UnknownRecord,
 } from "./editor/templatePreviewUtils";
-import {
-  ANALYTICS_EVENTS,
-  getPresentationErrorProperties,
-  track,
-  useAnalyticsPageView,
-} from "./editor/templatePreviewAnalytics";
 import { TemplateV2PromptOverlay } from "../../_shared/TemplateV2PromptOverlay";
 
 type GroupLayoutPreviewProps = {
@@ -175,14 +169,6 @@ const GroupLayoutPreview = ({
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   const loadOutcomeTrackedRef = useRef(false);
 
-  useAnalyticsPageView(() => {
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_PAGE_VIEWED, {
-      page_path: "/template-preview",
-      template_id: templateId || undefined,
-      has_template_id: Boolean(templateId),
-    });
-  });
-
   useEffect(() => {
     loadOutcomeTrackedRef.current = false;
   }, [templateId]);
@@ -192,21 +178,9 @@ const GroupLayoutPreview = ({
     loadOutcomeTrackedRef.current = true;
 
     if (error || !template) {
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LOAD_FAILED, {
-        template_id: templateId || undefined,
-        reason: !templateId ? "template_id_missing" : "template_not_available",
-        ...getPresentationErrorProperties(error),
-      });
       return;
     }
-
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LOADED, {
-      template_id: templateId,
-      template_source: template.is_default ? "default" : "custom",
-      layout_count: layouts.length,
-      can_edit: !template.is_default,
-    });
-  }, [error, layouts.length, loading, template, templateId]);
+  }, [error, loading, template, templateId]);
 
   useEffect(() => {
     ensureTailwindBrowserScript();
@@ -289,10 +263,6 @@ const GroupLayoutPreview = ({
 
     try {
       await navigator.clipboard.writeText(layoutToken);
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_ID_COPIED, {
-        template_id: templateId,
-        layout_index: layoutIndex,
-      });
       notify.success("Copied", "Template layout ID copied.");
     } catch {
       notify.error("Copy failed", layoutToken);
@@ -306,9 +276,6 @@ const GroupLayoutPreview = ({
   const copyTemplateId = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(templateId);
-      track(ANALYTICS_EVENTS.TEMPLATE_ID_COPIED, {
-        template_id: templateId,
-      });
       notify.success("Copied", "Template ID copied.");
     } catch (copyError) {
       notify.error(
@@ -398,29 +365,17 @@ const GroupLayoutPreview = ({
     }
 
     setDensity(nextDensity);
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_SCHEMA_CHANGED, {
-      template_id: templateId,
-      layout_index: activeLayoutIndex,
-      change_type: "content_density",
-      density: nextDensity.toLowerCase(),
-    });
   }, [
     activeLayout,
     activeLayoutIndex,
     canEditTemplate,
     schemaFields,
-    templateId,
   ]);
 
   const resetContentDensity = useCallback(() => {
     if (!density) return;
     setDensity("");
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_SCHEMA_CHANGED, {
-      template_id: templateId,
-      layout_index: activeLayoutIndex,
-      change_type: "content_density_reset",
-    });
-  }, [activeLayoutIndex, density, templateId]);
+  }, [density]);
 
   const handleLayoutMetadataChange = useCallback(
     (
@@ -448,20 +403,9 @@ const GroupLayoutPreview = ({
 
       resetContentDensity();
       setPromptLayoutId(null);
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_SELECTED, {
-        template_id: templateId,
-        layout_index: nextIndex,
-        previous_layout_index: activeLayoutIndex,
-        layout_count: editableLayouts.length,
-      });
       setActiveLayoutIndex(nextIndex);
     },
-    [
-      activeLayoutIndex,
-      editableLayouts.length,
-      resetContentDensity,
-      templateId,
-    ],
+    [activeLayoutIndex, editableLayouts.length, resetContentDensity],
   );
 
   const handleSchemaFieldChange = useCallback(
@@ -473,14 +417,8 @@ const GroupLayoutPreview = ({
           ? normalizeBackendAssetUrls(updatedLayout)
           : updatedLayout,
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_SCHEMA_CHANGED, {
-        template_id: templateId,
-        layout_index: activeLayoutIndex,
-        change_type: "field",
-        field_id: field.id,
-      });
     },
-    [activeLayout, activeLayoutIndex, templateId, updateActiveLayout],
+    [activeLayout, updateActiveLayout],
   );
 
   const handleSchemaConstraintChange = useCallback(
@@ -489,15 +427,8 @@ const GroupLayoutPreview = ({
       updateActiveLayout(
         updateLayoutSchemaConstraint(activeLayout, field, constraint, value),
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_SCHEMA_CHANGED, {
-        template_id: templateId,
-        layout_index: activeLayoutIndex,
-        change_type: "constraint",
-        constraint,
-        field_id: field.id,
-      });
     },
-    [activeLayout, activeLayoutIndex, templateId, updateActiveLayout],
+    [activeLayout, updateActiveLayout],
   );
 
   const handleSchemaDecorationChange = useCallback(
@@ -506,26 +437,14 @@ const GroupLayoutPreview = ({
       updateActiveLayout(
         updateLayoutSchemaDecoration(activeLayout, field, decorative),
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_SCHEMA_CHANGED, {
-        template_id: templateId,
-        layout_index: activeLayoutIndex,
-        change_type: "decorative",
-        decorative,
-        field_id: field.id,
-      });
     },
-    [activeLayout, activeLayoutIndex, templateId, updateActiveLayout],
+    [activeLayout, updateActiveLayout],
   );
 
   const runHistoryCommand = useCallback((action: "undo" | "redo") => {
     resetContentDensity();
     setHistoryCommand({ action, token: Date.now() });
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_HISTORY_ACTION, {
-      template_id: templateId,
-      layout_index: activeLayoutIndex,
-      action,
-    });
-  }, [activeLayoutIndex, resetContentDensity, templateId]);
+  }, [resetContentDensity]);
 
   const duplicateActiveLayout = useCallback(() => {
     if (!canEditTemplate || !activeLayout) return;
@@ -544,20 +463,12 @@ const GroupLayoutPreview = ({
     });
     setActiveLayoutIndex((index) => index + 1);
     setHasUnsavedChanges(true);
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_DUPLICATED, {
-      template_id: templateId,
-      layout_index: activeLayoutIndex,
-      layout_count_before: editableLayouts.length,
-      layout_count_after: editableLayouts.length + 1,
-    });
   }, [
     activeLayout,
     activeLayoutId,
     activeLayoutIndex,
     canEditTemplate,
-    editableLayouts.length,
     resetContentDensity,
-    templateId,
     updateEditableLayouts,
   ]);
 
@@ -617,7 +528,6 @@ const GroupLayoutPreview = ({
       }
 
       setIsPromptGenerating(true);
-      const startedAt = Date.now();
       try {
         const response = await TemplateService.generateTemplateLayout({
           template_id: templateId,
@@ -653,12 +563,6 @@ const GroupLayoutPreview = ({
           "Slide created",
           `Slide ${targetIndex + 1} was generated. Save to keep it.`,
         );
-        track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_RECONSTRUCTED, {
-          template_id: templateId,
-          layout_index: targetIndex,
-          duration_ms: Date.now() - startedAt,
-          source: "blank_slide_prompt",
-        });
         return true;
       } catch (generationError) {
         notify.error(
@@ -667,13 +571,6 @@ const GroupLayoutPreview = ({
             ? generationError.message
             : "Something went wrong while creating this slide.",
         );
-        track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_RECONSTRUCT_FAILED, {
-          template_id: templateId,
-          layout_index: targetIndex,
-          duration_ms: Date.now() - startedAt,
-          source: "blank_slide_prompt",
-          ...getPresentationErrorProperties(generationError),
-        });
         return false;
       } finally {
         setIsPromptGenerating(false);
@@ -703,19 +600,12 @@ const GroupLayoutPreview = ({
       });
       setActiveLayoutIndex(nextIndex);
       setHasUnsavedChanges(true);
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_MOVED, {
-        template_id: templateId,
-        from_index: activeLayoutIndex,
-        to_index: nextIndex,
-        layout_count: editableLayouts.length,
-      });
     },
     [
       activeLayoutIndex,
       canEditTemplate,
       editableLayouts.length,
       resetContentDensity,
-      templateId,
       updateEditableLayouts,
     ],
   );
@@ -739,18 +629,11 @@ const GroupLayoutPreview = ({
       Math.max(0, Math.min(index, editableLayouts.length - 2)),
     );
     setHasUnsavedChanges(true);
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_DELETED, {
-      template_id: templateId,
-      layout_index: activeLayoutIndex,
-      layout_count_before: editableLayouts.length,
-      layout_count_after: editableLayouts.length - 1,
-    });
   }, [
     activeLayoutIndex,
     canEditTemplate,
     editableLayouts.length,
     resetContentDensity,
-    templateId,
     updateEditableLayouts,
   ]);
 
@@ -761,11 +644,6 @@ const GroupLayoutPreview = ({
 
     resetContentDensity();
     setIsReconstructing(true);
-    const startedAt = Date.now();
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_RECONSTRUCT_REQUESTED, {
-      template_id: templateId,
-      layout_index: activeLayoutIndex,
-    });
     try {
       const response = await TemplateService.createTemplateLayout({
         template_id: templateId,
@@ -783,11 +661,6 @@ const GroupLayoutPreview = ({
         "Slide reconstructed",
         `Slide ${activeLayoutIndex + 1} was reconstructed. Save to keep it.`,
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_RECONSTRUCTED, {
-        template_id: templateId,
-        layout_index: activeLayoutIndex,
-        duration_ms: Date.now() - startedAt,
-      });
     } catch (reconstructError) {
       notify.error(
         "Failed to reconstruct slide",
@@ -795,12 +668,6 @@ const GroupLayoutPreview = ({
           ? reconstructError.message
           : "Something went wrong while reconstructing this slide.",
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_LAYOUT_RECONSTRUCT_FAILED, {
-        template_id: templateId,
-        layout_index: activeLayoutIndex,
-        duration_ms: Date.now() - startedAt,
-        ...getPresentationErrorProperties(reconstructError),
-      });
     } finally {
       setIsReconstructing(false);
     }
@@ -876,34 +743,20 @@ const GroupLayoutPreview = ({
       if (!insertEditorElements(createTextInsertElements(item.id), item.label)) {
         return;
       }
-      track(ANALYTICS_EVENTS.EDITOR_PALETTE_ITEM_INSERTED, {
-        template_id: templateId,
-        category: "texts",
-        item_id: item.id,
-        layout_index: activeLayoutIndex,
-      });
     },
-    [activeLayoutIndex, insertEditorElements, templateId],
+    [insertEditorElements],
   );
 
   const handleChartItemSelect = useCallback(
     (item: PaletteItem) => {
       const chartElements = createChartInsertElements(item.id);
-      const category = chartElements.length > 0 ? "charts" : "infographics";
       const elements =
         chartElements.length > 0
           ? chartElements
           : createInfographicInsertElements(item.id);
       if (!insertEditorElements(elements, item.label)) return;
-
-      track(ANALYTICS_EVENTS.EDITOR_PALETTE_ITEM_INSERTED, {
-        template_id: templateId,
-        category,
-        item_id: item.id,
-        layout_index: activeLayoutIndex,
-      });
     },
-    [activeLayoutIndex, insertEditorElements, templateId],
+    [insertEditorElements],
   );
 
   const handleTableItemSelect = useCallback(
@@ -913,14 +766,8 @@ const GroupLayoutPreview = ({
       ) {
         return;
       }
-      track(ANALYTICS_EVENTS.EDITOR_PALETTE_ITEM_INSERTED, {
-        template_id: templateId,
-        category: "tables",
-        item_id: item.id,
-        layout_index: activeLayoutIndex,
-      });
     },
-    [activeLayoutIndex, insertEditorElements, templateId],
+    [insertEditorElements],
   );
 
   const handleImageItemSelect = useCallback(
@@ -928,14 +775,8 @@ const GroupLayoutPreview = ({
       if (!insertEditorContent(createImageInsertContent(item.id), item.label)) {
         return;
       }
-      track(ANALYTICS_EVENTS.EDITOR_PALETTE_ITEM_INSERTED, {
-        template_id: templateId,
-        category: "images",
-        item_id: item.id,
-        layout_index: activeLayoutIndex,
-      });
     },
-    [activeLayoutIndex, insertEditorContent, templateId],
+    [insertEditorContent],
   );
 
   const handleElementItemSelect = useCallback(
@@ -945,14 +786,8 @@ const GroupLayoutPreview = ({
       ) {
         return;
       }
-      track(ANALYTICS_EVENTS.EDITOR_PALETTE_ITEM_INSERTED, {
-        template_id: templateId,
-        category: "elements",
-        item_id: item.id,
-        layout_index: activeLayoutIndex,
-      });
     },
-    [activeLayoutIndex, insertEditorElements, templateId],
+    [insertEditorElements],
   );
 
   const handleBlockSelect = useCallback(
@@ -968,21 +803,13 @@ const GroupLayoutPreview = ({
         return;
       }
 
-      const inserted = insertEditorContent(
+      insertEditorContent(
         { components: [block.raw as TemplateV2InsertComponent] },
         block.title,
         true,
       );
-      if (inserted) {
-        track(ANALYTICS_EVENTS.EDITOR_TEMPLATE_BLOCK_INSERTED, {
-          template_id: templateId,
-          block_index: block.index,
-          layout_index: activeLayoutIndex,
-          element_count: recordArray(block.raw, "elements").length,
-        });
-      }
     },
-    [activeLayoutIndex, insertEditorContent, templateId],
+    [insertEditorContent],
   );
 
   const saveTemplate = useCallback(async () => {
@@ -997,7 +824,6 @@ const GroupLayoutPreview = ({
     }
 
     setIsSaving(true);
-    const startedAt = Date.now();
     try {
       // Save can be clicked while Tiptap still has an update queued for the
       // active text element. Force that editor to flush and close before the
@@ -1007,12 +833,6 @@ const GroupLayoutPreview = ({
       );
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
       layoutsToSave = editableLayoutsRef.current;
-
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_SAVE_REQUESTED, {
-        template_id: templateId,
-        layout_count: layoutsToSave.length,
-        had_unsaved_changes: hasUnsavedChanges,
-      });
 
       const nextTemplateName = templateNameDraft.trim() || "Untitled Template";
       if (nextTemplateName !== templateNameDraft) {
@@ -1034,11 +854,6 @@ const GroupLayoutPreview = ({
         "Changes saved",
         "Template JSON was updated.",
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_SAVED, {
-        template_id: templateId,
-        layout_count: layoutsToSave.length,
-        duration_ms: Date.now() - startedAt,
-      });
     } catch (saveError) {
       notify.error(
         "Failed to save template",
@@ -1046,18 +861,11 @@ const GroupLayoutPreview = ({
           ? saveError.message
           : "Something went wrong while saving the template.",
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_SAVE_FAILED, {
-        template_id: templateId,
-        layout_count: layoutsToSave.length,
-        duration_ms: Date.now() - startedAt,
-        ...getPresentationErrorProperties(saveError),
-      });
     } finally {
       setIsSaving(false);
     }
   }, [
     canEditTemplate,
-    hasUnsavedChanges,
     template,
     templateId,
     templateNameDraft,
@@ -1066,17 +874,12 @@ const GroupLayoutPreview = ({
   const openDeleteTemplateDialog = useCallback(() => {
     if (!templateId || template?.is_default) return;
     setIsDeleteDialogOpen(true);
-    track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_DELETE_REQUESTED, {
-      template_id: templateId,
-      layout_count: editableLayouts.length,
-    });
-  }, [editableLayouts.length, template?.is_default, templateId]);
+  }, [template?.is_default, templateId]);
 
   const confirmDeleteTemplate = useCallback(async () => {
     if (!templateId || template?.is_default || isDeletingTemplate) return;
 
     setIsDeletingTemplate(true);
-    const startedAt = Date.now();
     try {
       const result = await TemplateService.deleteTemplate(templateId);
       if (result.success) {
@@ -1085,10 +888,6 @@ const GroupLayoutPreview = ({
           "Template deleted",
           "The template was deleted successfully.",
         );
-        track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_DELETED, {
-          template_id: templateId,
-          duration_ms: Date.now() - startedAt,
-        });
         router.push("/templates");
         return;
       }
@@ -1097,11 +896,6 @@ const GroupLayoutPreview = ({
         "Could not delete template",
         result.message || "Something went wrong while deleting the template.",
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_DELETE_FAILED, {
-        template_id: templateId,
-        duration_ms: Date.now() - startedAt,
-        error_code: "delete_rejected",
-      });
     } catch (deleteError) {
       notify.error(
         "Could not delete template",
@@ -1109,11 +903,6 @@ const GroupLayoutPreview = ({
           ? deleteError.message
           : "Something went wrong while deleting the template.",
       );
-      track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_TEMPLATE_DELETE_FAILED, {
-        template_id: templateId,
-        duration_ms: Date.now() - startedAt,
-        ...getPresentationErrorProperties(deleteError),
-      });
     } finally {
       setIsDeletingTemplate(false);
     }
@@ -1244,11 +1033,6 @@ const GroupLayoutPreview = ({
                 if (nextPanel !== "schema") {
                   resetContentDensity();
                 }
-                track(ANALYTICS_EVENTS.TEMPLATE_PREVIEW_PANEL_SELECTED, {
-                  template_id: templateId,
-                  panel: nextPanel,
-                  previous_panel: activePanel,
-                });
                 setActivePanel(nextPanel);
               }}
             />

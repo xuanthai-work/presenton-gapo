@@ -21,8 +21,6 @@ import {
   parseLimitedSlideCount,
   trimTextToWordLimit,
 } from "@/utils/presentationLimits";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
 
 import Chat from "../../presentation/components/Chat";
@@ -252,19 +250,6 @@ const OutlinePage: React.FC = () => {
 
     setIsRegeneratingOutline(true);
     setHasOutlineStreamFinished(false);
-    trackEvent(MixpanelEvent.TemplateV2_Outline_Regeneration_Started, {
-      presentation_id,
-      template_id: selectedTemplateId,
-      prompt_present: draftConfig.prompt.trim().length > 0,
-      document_count: documentPaths.length,
-      slide_count: parseLimitedSlideCount(draftConfig.slides),
-      language: draftConfig.language,
-      tone: draftConfig.tone,
-      verbosity: draftConfig.verbosity,
-      web_search: !!draftConfig.webSearch,
-      include_title_slide: !!draftConfig.includeTitleSlide,
-      include_table_of_contents: !!draftConfig.includeTableOfContents,
-    });
 
     try {
       const createResponse = await PresentationGenerationApi.createPresentation({
@@ -283,23 +268,10 @@ const OutlinePage: React.FC = () => {
       dispatch(setPptGenUploadState({ config: draftConfig, files }));
       dispatch(clearOutlines());
       dispatch(setPresentationId(createResponse.id));
-      trackEvent(MixpanelEvent.TemplateV2_Outline_Regeneration_Completed, {
-        old_presentation_id: presentation_id,
-        new_presentation_id: createResponse.id,
-        template_id: selectedTemplateId,
-      });
       setIsTemplateStage(false);
     } catch (error: unknown) {
       console.error("Error regenerating outline", error);
       captureError(error, { operation: "generate" });
-      trackEvent(MixpanelEvent.TemplateV2_Outline_Regeneration_Failed, {
-        presentation_id,
-        template_id: selectedTemplateId,
-        error_message: sanitizeAnalyticsError(
-          error,
-          "Failed to regenerate outline"
-        ),
-      });
       toast.error("Outline Error", {
         description:
           error instanceof Error

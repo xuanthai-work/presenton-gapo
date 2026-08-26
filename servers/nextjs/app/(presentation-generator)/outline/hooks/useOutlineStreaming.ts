@@ -15,7 +15,6 @@ import {
   type GenerationLifecycleState,
   type StallCause,
 } from "@/lib/generation-lifecycle";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
@@ -106,11 +105,6 @@ export const useOutlineStreaming = (
         setStallCause(cause);
         setLifecycle("stalled");
         setStatusMessage("Outline stream stalled — waiting for the server.");
-        trackEvent(MixpanelEvent.Generation_Stalled, {
-          surface: "outline",
-          last_status: statusMessageRef.current,
-          duration_ms: now - (streamStartedAtRef.current ?? now),
-        });
       }
     }, STALL_INTERVAL_MS);
   }, []);
@@ -387,11 +381,6 @@ export const useOutlineStreaming = (
         setStallCause("socket");
         setLifecycle("stalled");
         setStatusMessage("Outline stream stalled — waiting for the server.");
-        trackEvent(MixpanelEvent.Generation_Stalled, {
-          surface: "outline",
-          last_status: statusMessageRef.current,
-          duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
-        });
       };
 
       // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"
@@ -426,7 +415,6 @@ export const useOutlineStreaming = (
   const isStreaming = STREAMING_STATES.has(lifecycle);
 
   const cancel = useCallback(async () => {
-    const previousLifecycle = lifecycleRef.current;
     setLifecycle("cancelling");
     isClosedRef.current = true;
     if (eventSourceRef.current) {
@@ -443,13 +431,6 @@ export const useOutlineStreaming = (
     }
     setIsLoading(false);
     setLifecycle("cancelled");
-    trackEvent(MixpanelEvent.Generation_Cancelled, {
-      surface: "outline",
-      reason:
-        previousLifecycle === "stalled" ? "user_stop_stalled" : "user_stop",
-      draft_count: outlinesRef.current.length,
-      duration_ms: Date.now() - (streamStartedAtRef.current ?? Date.now()),
-    });
     // Best-effort persist of the stopped outline draft. Set lifecycle to
     // "cancelled" BEFORE the await so the UI dismisses the bar immediately;
     // the UI fire-and-forgets this with `void cancel()` (Task 8).
@@ -468,8 +449,6 @@ export const useOutlineStreaming = (
     if (!eventSourceRef.current) {
       return;
     }
-    const stalledForMs =
-      Date.now() - (lastUsefulEventAtRef.current ?? Date.now());
     lastUsefulEventAtRef.current = Date.now();
     stallCauseRef.current = null;
     setStallCause(null);
@@ -481,10 +460,6 @@ export const useOutlineStreaming = (
     if (!stallIntervalRef.current) {
       startStallWatcher();
     }
-    trackEvent(MixpanelEvent.Generation_Keep_Waiting, {
-      surface: "outline",
-      stalled_for_ms: stalledForMs,
-    });
   }, [startStallWatcher]);
 
   const retry = useCallback(() => {
@@ -503,10 +478,6 @@ export const useOutlineStreaming = (
     setLifecycle("connecting");
     setIsLoading(true);
     setStatusMessage(DEFAULT_STATUS_MESSAGE);
-    trackEvent(MixpanelEvent.Generation_Retry_Clicked, {
-      surface: "outline",
-      from_state: fromState,
-    });
     openStreamRef.current();
   }, []);
 

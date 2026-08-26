@@ -17,8 +17,7 @@ import PresentationMode from "./PresentationMode";
 import SidePanel from "./SidePanel";
 import SlideContent from "./SlideContent";
 import { Button } from "@/components/ui/button";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ChevronRight,
@@ -41,7 +40,6 @@ import {
   createBlankPresentationSlide,
   getPresentationTemplateId,
   isTemplateV2Slide,
-  isTemplateV2TemplateId,
 } from "../../_shared/blank-slide";
 import PresentationHeader from "./PresentationHeader";
 import PresentationActions from "./PresentationActions";
@@ -70,32 +68,6 @@ function hasTemplateV2Slides(slides: unknown): boolean {
     Array.isArray(slides) &&
     slides.some((slide) => isTemplateV2Slide(slide))
   );
-}
-
-function collectTemplateV2Ids(value: unknown): string[] {
-  const ids = new Set<string>();
-  const visit = (item: unknown, depth = 0) => {
-    if (depth > 4 || !item) return;
-    if (Array.isArray(item)) {
-      item.forEach((entry) => visit(entry, depth + 1));
-      return;
-    }
-    if (typeof item !== "object") return;
-    const record = item as Record<string, unknown>;
-    ["layout_group", "layout", "template_id", "templateV2Id", "template_v2_id", "id"].forEach(
-      (key) => {
-        const value = record[key];
-        if (isTemplateV2TemplateId(value)) {
-          ids.add(value);
-        }
-      }
-    );
-    visit(record.layout, depth + 1);
-    visit(record.layouts, depth + 1);
-    visit(record.slides, depth + 1);
-  };
-  visit(value);
-  return Array.from(ids);
 }
 
 interface LoadingState {
@@ -143,7 +115,6 @@ const NAVIGATION_SCROLL_WINDOW_MS = 800;
 const PresentationPage: React.FC<PresentationPageProps> = ({
   presentation_id,
 }) => {
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   // State management
@@ -178,7 +149,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const mobileAssistantTriggerRef = useRef<HTMLButtonElement | null>(null);
   const mobileAssistantCloseRef = useRef<HTMLButtonElement | null>(null);
   const presentationCanvasRef = useRef<HTMLDivElement | null>(null);
-  const templateV2EditorLoadedKeyRef = useRef<string | null>(null);
   const navigationHintShownRef = useRef(false);
   const navigationHintSlideRef = useRef<number | null>(null);
   const navigationScrollIntentRef = useRef({ amount: 0, lastAt: 0 });
@@ -449,46 +419,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     }
     dismissNavigationHint();
   }, [dismissNavigationHint, selectedSlide, showNavigationHint]);
-
-  useEffect(() => {
-    trackEvent(MixpanelEvent.Presentation_Editor_Viewed, {
-      pathname,
-      presentation_id,
-      stream_mode: !!stream,
-      presentation_mode: isPresentMode ? "present" : "edit",
-      generation_mode: isSmartPresentation ? "smart" : "standard",
-    });
-  }, [
-    isPresentMode,
-    isSmartPresentation,
-    pathname,
-    presentation_id,
-    stream,
-  ]);
-
-  useEffect(() => {
-    if (!presentationData || !isTemplateV2Presentation || loading || error) {
-      return;
-    }
-    if (templateV2EditorLoadedKeyRef.current === presentation_id) {
-      return;
-    }
-    templateV2EditorLoadedKeyRef.current = presentation_id;
-    trackEvent(MixpanelEvent.TemplateV2_Editor_Loaded, {
-      presentation_id,
-      slide_count: slidesLength,
-      stream_mode: !!stream,
-      template_id_candidates: collectTemplateV2Ids(presentationData),
-    });
-  }, [
-    error,
-    isTemplateV2Presentation,
-    loading,
-    presentationData,
-    presentation_id,
-    slidesLength,
-    stream,
-  ]);
 
   /** Editor tree unmounts in present mode; remount loses inline theme CSS — re-apply from Redux. */
   useLayoutEffect(() => {
@@ -814,10 +744,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           <div className="flex gap-2 justify-center items-center">
             <Button
               onClick={() => {
-                trackEvent(
-                  MixpanelEvent.PresentationPage_Refresh_Page_Button_Clicked,
-                  { pathname }
-                );
                 window.location.reload();
               }}
             >
@@ -825,10 +751,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             </Button>
             <Button
               onClick={() => {
-                trackEvent(MixpanelEvent.Navigation, {
-                  from: pathname,
-                  to: "/upload",
-                });
                 router.push("/upload");
               }}
             >

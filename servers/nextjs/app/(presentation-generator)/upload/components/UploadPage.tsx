@@ -11,7 +11,7 @@
 
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { clearOutlines, setPresentationId } from "@/store/slices/presentationGeneration";
 import { PromptInput } from "./PromptInput";
@@ -22,13 +22,10 @@ import { PresentationGenerationApi } from "../../services/api/presentation-gener
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { setPptGenUploadState } from "@/store/slices/presentationGenUpload";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { captureError } from "@/utils/posthog";
-import { sanitizeAnalyticsError } from "@/utils/analytics";
 import { ConfigurationSelects } from "./ConfigurationSelects";
 import { RootState } from "@/store/store";
 import CurrentConfig from "./CurrentConfig";
-import { LLMConfig } from "@/types/llm_config";
 import {
   clampSlideCountValue,
   parseLimitedSlideCount,
@@ -41,13 +38,6 @@ import {
 
 type GenerationMode = "smart" | "standard";
 
-const FILE_TYPE_WORD = new Set([".doc", ".docx", ".docm", ".odt", ".rtf"]);
-const FILE_TYPE_PRESENTATION = new Set([".ppt", ".pptx", ".pptm", ".odp"]);
-const FILE_TYPE_SPREADSHEET = new Set([".xls", ".xlsx", ".xlsm", ".ods", ".csv", ".tsv"]);
-const FILE_TYPE_IMAGE = new Set([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"]);
-const FILE_MIME_IMAGE = new Set(["image/jpeg", "image/png", "image/gif", "image/bmp", "image/tiff", "image/webp"]);
-const FILE_TYPE_PDF = new Set([".pdf"]);
-const FILE_TYPE_TEXT = new Set([".txt"]);
 // Types for loading state
 interface LoadingState {
   isLoading: boolean;
@@ -56,43 +46,6 @@ interface LoadingState {
   showProgress?: boolean;
   extra_info?: string;
 }
-
-const getFileExtension = (fileName: string): string => {
-  const index = fileName.lastIndexOf(".");
-  if (index < 0) return "";
-  return fileName.slice(index).toLowerCase();
-};
-
-const getFileCategory = (file: File): string => {
-  const extension = getFileExtension(file.name || "");
-  if (FILE_TYPE_WORD.has(extension)) return "word";
-  if (FILE_TYPE_PRESENTATION.has(extension)) return "presentation";
-  if (FILE_TYPE_SPREADSHEET.has(extension)) return "spreadsheet";
-  if (FILE_TYPE_IMAGE.has(extension) || FILE_MIME_IMAGE.has((file.type || "").toLowerCase())) return "image";
-  if (FILE_TYPE_PDF.has(extension) || file.type === "application/pdf") return "pdf";
-  if (FILE_TYPE_TEXT.has(extension) || file.type === "text/plain") return "text";
-  return "other";
-};
-
-const getSelectedTextModel = (config?: LLMConfig): string => {
-  if (!config) return "";
-  switch (config.LLM) {
-    case "openai":
-      return config.OPENAI_MODEL || "";
-    case "google":
-      return config.GOOGLE_MODEL || "";
-    case "custom":
-      return config.CUSTOM_MODEL || "";
-    default:
-      return "";
-  }
-};
-
-const getSelectedImageQuality = (config?: LLMConfig): string => {
-  if (!config) return "";
-  if (config.IMAGE_PROVIDER === "gpt-image-1.5") return config.GPT_IMAGE_1_5_QUALITY || "";
-  return "";
-};
 
 const getDocumentPaths = (files: unknown): string[] => {
   if (!Array.isArray(files)) {
@@ -111,7 +64,6 @@ const getDocumentPaths = (files: unknown): string[] => {
 
 const UploadPage = () => {
   const router = useRouter();
-  const pathname = usePathname();
   const dispatch = useDispatch();
   const llmConfig = useSelector((state: RootState) => state.userConfig.llm_config);
 
@@ -148,11 +100,6 @@ const UploadPage = () => {
         .then((presentation) => {
           if (!active) return;
           setCommunityReference(presentation);
-          trackEvent(MixpanelEvent.Smart_Mode_Reference_Selected, {
-            pathname,
-            reference_id: presentation.id,
-            source: "url_parameter",
-          });
         })
         .catch((loadError) => {
           if (!active) return;
@@ -166,7 +113,7 @@ const UploadPage = () => {
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     if (llmConfig?.WEB_GROUNDING !== undefined) {
@@ -185,49 +132,6 @@ const UploadPage = () => {
     extra_info: "",
   });
 
-  const getUploadSnapshotProps = () => {
-    const trimmedPrompt = config.prompt.trim();
-    const trimmedInstructions = (config.instructions || "").trim();
-    const attachmentCategories = Array.from(new Set(files.map(getFileCategory))).sort();
-    const imageGenerationEnabled = !llmConfig?.DISABLE_IMAGE_GENERATION;
-    const parsedSlides = parseLimitedSlideCount(config.slides);
-
-    return {
-      pathname,
-      generation_path: files.length > 0 ? "documents" : "prompt_only",
-      slides_selected: parsedSlides,
-      slides_mode: config.slides ? "selected" : "auto",
-      language: config.language || "",
-      tone: config.tone,
-      verbosity: config.verbosity,
-      include_table_of_contents: !!config.includeTableOfContents,
-      include_title_slide: !!config.includeTitleSlide,
-      web_search: !!config.webSearch,
-      generation_mode: generationMode,
-      community_reference_id: communityReference?.id ?? null,
-      has_prompt: Boolean(trimmedPrompt),
-      prompt_char_count: trimmedPrompt.length,
-      prompt_word_count: trimmedPrompt ? trimmedPrompt.split(/\s+/).filter(Boolean).length : 0,
-      has_instructions: Boolean(trimmedInstructions),
-      instructions_char_count: trimmedInstructions.length,
-      has_attachments: files.length > 0,
-      attachments_count: files.length,
-      attachment_categories: attachmentCategories.join(","),
-      text_provider: llmConfig?.LLM || "",
-      text_model: getSelectedTextModel(llmConfig),
-      image_generation_enabled: imageGenerationEnabled,
-      image_provider: imageGenerationEnabled ? (llmConfig?.IMAGE_PROVIDER || "") : "disabled",
-      image_quality: imageGenerationEnabled ? getSelectedImageQuality(llmConfig) : "",
-    };
-  };
-
-  const trackUploadValidationFailure = (reason: string) => {
-    trackEvent(MixpanelEvent.Upload_Configuration_Invalid, {
-      ...getUploadSnapshotProps(),
-      reason,
-    });
-  };
-
   const handleConfigChange = (key: keyof PresentationConfig, value: unknown) => {
     const nextValue =
       key === "slides" && typeof value === "string"
@@ -238,15 +142,7 @@ const UploadPage = () => {
 
   const handleGenerationModeChange = (mode: GenerationMode) => {
     if (mode === generationMode) return;
-    const previousMode = generationMode;
     setGenerationMode(mode);
-    if (mode === "smart") {
-      trackEvent(MixpanelEvent.Smart_Mode_Selected, {
-        pathname,
-        source: "upload_mode_selector",
-        previous_generation_mode: previousMode,
-      });
-    }
   };
 
   const getGenerationDestination = (presentationId: string) => {
@@ -260,26 +156,8 @@ const UploadPage = () => {
 
   const handleCommunityReferenceChange = (
     presentation: CommunityPresentation | null,
-    source: "community_picker" | "prompt_reference"
   ) => {
-    const previousReferenceId = communityReference?.id ?? null;
     setCommunityReference(presentation);
-    if (presentation) {
-      trackEvent(MixpanelEvent.Smart_Mode_Reference_Selected, {
-        pathname,
-        reference_id: presentation.id,
-        previous_reference_id: previousReferenceId,
-        source,
-      });
-      return;
-    }
-    if (previousReferenceId !== null) {
-      trackEvent(MixpanelEvent.Smart_Mode_Reference_Removed, {
-        pathname,
-        reference_id: previousReferenceId,
-        source,
-      });
-    }
   };
 
   /**
@@ -288,13 +166,11 @@ const UploadPage = () => {
    */
   const validateConfiguration = (): boolean => {
     if (!config.language) {
-      trackUploadValidationFailure("language_missing");
       notify.warning("Language required", "Please select a language.");
       return false;
     }
 
     if (files.length > 0 && config.language === LanguageType.Auto) {
-      trackUploadValidationFailure("language_auto_with_documents");
       notify.warning("Language required", "Please choose a language before processing uploaded documents.");
       return false;
     }
@@ -304,7 +180,6 @@ const UploadPage = () => {
       files.length === 0 &&
       !(generationMode === "smart" && communityReference)
     ) {
-      trackUploadValidationFailure("prompt_or_document_missing");
       notify.warning(
         "Input required",
         "Provide a prompt, upload a document, or select a community reference."
@@ -319,14 +194,6 @@ const UploadPage = () => {
    */
   const handleGeneratePresentation = async () => {
     if (!validateConfiguration()) return;
-    const snapshot = getUploadSnapshotProps();
-    trackEvent(MixpanelEvent.Upload_Generation_Started, snapshot);
-    if (generationMode === "smart") {
-      trackEvent(MixpanelEvent.Smart_Mode_Generation_Started, {
-        ...snapshot,
-        source: "upload",
-      });
-    }
 
     try {
       const hasUploadedAssets = files.length > 0;
@@ -411,24 +278,7 @@ const UploadPage = () => {
     }));
     dispatch(clearOutlines());
     dispatch(setPresentationId(createResponse.id));
-    trackEvent(MixpanelEvent.Upload_Documents_Processed, {
-      ...getUploadSnapshotProps(),
-      uploaded_documents_count: documents.length,
-      decompose_job_count: responses.length,
-      extracted_document_count: documentPaths.length,
-      destination:
-        generationMode === "smart" ? "/presentation" : "/outline",
-    });
-    trackEvent(MixpanelEvent.Upload_Outline_Generation_Requested, {
-      ...getUploadSnapshotProps(),
-      presentation_id: createResponse.id,
-      uploaded_documents_count: documents.length,
-      extracted_document_count: documentPaths.length,
-      destination:
-        generationMode === "smart" ? "/presentation" : "/outline",
-    });
     const destination = getGenerationDestination(createResponse.id);
-    trackEvent(MixpanelEvent.Navigation, { from: pathname, to: destination });
     router.push(destination);
   };
 
@@ -474,14 +324,7 @@ const UploadPage = () => {
     }));
     dispatch(clearOutlines());
     dispatch(setPresentationId(createResponse.id));
-    trackEvent(MixpanelEvent.Upload_Outline_Generation_Requested, {
-      ...getUploadSnapshotProps(),
-      presentation_id: createResponse.id,
-      destination:
-        generationMode === "smart" ? "/presentation" : "/outline",
-    });
     const destination = getGenerationDestination(createResponse.id);
-    trackEvent(MixpanelEvent.Navigation, { from: pathname, to: destination });
     router.push(destination);
   };
 
@@ -491,13 +334,6 @@ const UploadPage = () => {
   const handleGenerationError = (error: any) => {
     console.error("Error in upload page", error);
     captureError(error, { operation: "generate" });
-    if (generationMode === "smart") {
-      trackEvent(MixpanelEvent.Smart_Mode_Generation_Failed, {
-        ...getUploadSnapshotProps(),
-        stage: "presentation_setup",
-        error_message: sanitizeAnalyticsError(error, "Generation setup failed"),
-      });
-    }
     setLoadingState({
       isLoading: false,
       message: "",
@@ -546,7 +382,7 @@ const UploadPage = () => {
               : []
           }
           onRemoveReference={() =>
-            handleCommunityReferenceChange(null, "prompt_reference")
+            handleCommunityReferenceChange(null)
           }
           onChange={(value) => handleConfigChange("prompt", value)}
           onSubmit={handleGeneratePresentation}
@@ -568,7 +404,7 @@ const UploadPage = () => {
           <CommunityReferencePicker
             selectedId={communityReference?.id ?? null}
             onSelect={(presentation) =>
-              handleCommunityReferenceChange(presentation, "community_picker")
+              handleCommunityReferenceChange(presentation)
             }
           />
         </div>

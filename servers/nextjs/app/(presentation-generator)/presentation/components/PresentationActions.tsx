@@ -62,7 +62,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { notify } from "@/components/ui/sonner";
-import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import type { SlideElement } from "@/components/slide-editor/types";
 
 import {
@@ -988,11 +987,6 @@ export const BlocksPanel = ({
     const cached = templateBlocksCache.get(cacheKey);
     if (cached) {
       dispatchBlockState({ type: "cached", blocks: cached });
-      trackEvent(MixpanelEvent.Editor_Template_Blocks_Loaded, {
-        presentation_id: presentationId,
-        block_group_count: cached.length,
-        from_cache: true,
-      });
       return;
     }
 
@@ -1004,21 +998,12 @@ export const BlocksPanel = ({
           templateBlocksCache.set(cacheKey, nextBlocks);
         }
         dispatchBlockState({ type: "loaded", blocks: nextBlocks });
-        trackEvent(MixpanelEvent.Editor_Template_Blocks_Loaded, {
-          presentation_id: presentationId,
-          block_group_count: nextBlocks.length,
-          from_cache: false,
-        });
       })
       .catch(() => {
         if (cancelled) return;
         dispatchBlockState({
           type: "failed",
           message: "Could not load template components.",
-        });
-        trackEvent(MixpanelEvent.Editor_Template_Blocks_Load_Failed, {
-          presentation_id: presentationId,
-          error_message: "Could not load template components.",
         });
       });
 
@@ -1475,78 +1460,30 @@ const PresentationActions = (props: PresentationActionsProps) => {
   };
 
   const handleTextItemSelect = (item: PaletteItem) => {
-    if (insertEditorElements(createTextInsertElements(item.id), item.label)) {
-      trackEvent(MixpanelEvent.Editor_Insert_Palette_Item_Selected, {
-        presentation_id: props.presentationId,
-        category: "texts",
-        item_id: item.id,
-        item_label: item.label,
-        slide_index: props.currentSlide,
-      });
-    }
+    insertEditorElements(createTextInsertElements(item.id), item.label);
   };
 
   const handleChartItemSelect = (item: PaletteItem) => {
     const chartElements = createChartInsertElements(item.id);
     if (chartElements.length > 0) {
-      if (insertEditorElements(chartElements, item.label)) {
-        trackEvent(MixpanelEvent.Editor_Insert_Palette_Item_Selected, {
-          presentation_id: props.presentationId,
-          category: "charts",
-          item_id: item.id,
-          item_label: item.label,
-          slide_index: props.currentSlide,
-        });
-      }
+      insertEditorElements(chartElements, item.label);
       return;
     }
 
     const infographicElements = createInfographicInsertElements(item.id);
-    if (insertEditorElements(infographicElements, item.label)) {
-      trackEvent(MixpanelEvent.Editor_Insert_Palette_Item_Selected, {
-        presentation_id: props.presentationId,
-        category: "infographics",
-        item_id: item.id,
-        item_label: item.label,
-        slide_index: props.currentSlide,
-      });
-    }
+    insertEditorElements(infographicElements, item.label);
   };
 
   const handleTableItemSelect = (item: PaletteItem) => {
-    if (insertEditorElements(createTableInsertElements(item.id), item.label)) {
-      trackEvent(MixpanelEvent.Editor_Insert_Palette_Item_Selected, {
-        presentation_id: props.presentationId,
-        category: "tables",
-        item_id: item.id,
-        item_label: item.label,
-        slide_index: props.currentSlide,
-      });
-    }
+    insertEditorElements(createTableInsertElements(item.id), item.label);
   };
 
   const handleImageItemSelect = (item: PaletteItem) => {
-    if (insertEditorContent(createImageInsertContent(item.id), item.label)) {
-      trackEvent(MixpanelEvent.Editor_Insert_Palette_Item_Selected, {
-        presentation_id: props.presentationId,
-        category: "images",
-        item_id: item.id,
-        item_label: item.label,
-        slide_index: props.currentSlide,
-      });
-    }
+    insertEditorContent(createImageInsertContent(item.id), item.label);
   };
 
   const handleElementItemSelect = (item: PaletteItem) => {
-    if (insertEditorElements(createElementInsertElements(item.id), item.label)) {
-      trackEvent(MixpanelEvent.Editor_Insert_Palette_Item_Selected, {
-        presentation_id: props.presentationId,
-        category: "elements",
-        item_id: item.id,
-        item_label: item.label,
-        slide_index: props.currentSlide,
-      });
-    }
+    insertEditorElements(createElementInsertElements(item.id), item.label);
   };
 
   const handleBlockSelect = (block: TemplateBlock) => {
@@ -1557,19 +1494,10 @@ const PresentationActions = (props: PresentationActionsProps) => {
       hasUsableComponentSize(block.raw) &&
       readRecordArray(block.raw, "elements").length > 0
     ) {
-      const inserted = insertEditorContent(
+      insertEditorContent(
         { components: [block.raw as TemplateV2InsertComponent] },
         block.title,
       );
-      if (inserted) {
-        trackEvent(MixpanelEvent.Editor_Template_Block_Inserted, {
-          presentation_id: props.presentationId,
-          block_title: block.title,
-          block_index: block.index,
-          element_count: readRecordArray(block.raw, "elements").length,
-          slide_index: props.currentSlide,
-        });
-      }
       return;
     }
 
@@ -1582,15 +1510,7 @@ const PresentationActions = (props: PresentationActionsProps) => {
       return;
     }
 
-    if (insertEditorElements([element], block.title)) {
-      trackEvent(MixpanelEvent.Editor_Template_Block_Inserted, {
-        presentation_id: props.presentationId,
-        block_title: block.title,
-        block_index: block.index,
-        element_count: 1,
-        slide_index: props.currentSlide,
-      });
-    }
+    insertEditorElements([element], block.title);
   };
 
   const handleActionSelect = (nextAction: ActionId) => {
@@ -1606,11 +1526,6 @@ const PresentationActions = (props: PresentationActionsProps) => {
       return;
     }
 
-    trackEvent(MixpanelEvent.Editor_Side_Panel_Tab_Selected, {
-      presentation_id: props.presentationId,
-      tab: nextAction,
-      variant: "template-v2",
-    });
     dispatchUiState({ type: "selectAction", activeAction: nextAction });
     onPanelOpenChange(true);
   };

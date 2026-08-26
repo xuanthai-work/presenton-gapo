@@ -12,8 +12,6 @@ import { Loader2, Plus, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { notify } from "@/components/ui/sonner";
 
-import { usePathname } from "next/navigation";
-import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { RootState } from "@/store/store";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import {
@@ -172,7 +170,6 @@ const NewSlideV1 = ({
   onSlideAdded,
 }: NewSlideV1Props) => {
   const dispatch = useDispatch();
-  const pathname = usePathname();
   const presentationLayout = useSelector(
     (state: RootState) => state.presentationGeneration.presentationData?.layout
   );
@@ -224,13 +221,6 @@ const NewSlideV1 = ({
               id === BLANK_SLIDE_LAYOUT_ID ? "blank" : "layout",
           },
         );
-        trackEvent(MixpanelEvent.Presentation_Slide_Added, {
-          pathname,
-          presentation_id: presentationId,
-          inserted_after_index: index,
-          template_id: templateID,
-          layout_id: id,
-        });
         setShowNewSlideSelection(false);
       } catch (error: any) {
         console.error(error);
@@ -243,7 +233,6 @@ const NewSlideV1 = ({
       presentationId,
       dispatch,
       setShowNewSlideSelection,
-      pathname,
       onSlideAdded,
       slideCount,
     ]
