@@ -41,3 +41,23 @@ test("GSlide compose forwards PostHog env and does not start PostHog", async () 
   assert.doesNotMatch(compose, /clickhouse/i);
   assert.doesNotMatch(compose, /deploy\/posthog/);
 });
+test("posthog wrapper exists and does not import mixpanel", async () => {
+  const source = await readNext("utils/posthog.ts");
+  assert.match(source, /export type ErrorOperation/);
+  assert.match(source, /export function initPostHog/);
+  assert.match(source, /export function captureError/);
+  assert.match(source, /disable_session_recording:\s*true/);
+  assert.match(source, /sanitizeAnalyticsError/);
+  assert.doesNotMatch(source, /mixpanel-browser/);
+  assert.doesNotMatch(source, /NEXT_PUBLIC_POSTHOG/);
+});
+
+test("ClientRoot wires PostHogInitializer and MixpanelInitializer is gone", async () => {
+  const root = await readNext("app/ClientRoot.tsx");
+  assert.match(root, /PostHogInitializer/);
+  assert.doesNotMatch(root, /MixpanelInitializer/);
+  await assert.rejects(
+    () => access(path.join(nextRoot, "app/MixpanelInitializer.tsx")),
+    (error) => error && error.code === "ENOENT",
+  );
+});

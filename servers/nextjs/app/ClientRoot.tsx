@@ -1,6 +1,6 @@
 "use client";
 
-import MixpanelInitializer from "./MixpanelInitializer";
+import PostHogInitializer from "./PostHogInitializer";
 import { Providers } from "./providers";
 import TailwindBrowserRuntime from "@/components/runtime/TailwindBrowserRuntime";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,7 +12,7 @@ export default function ClientRoot({
 }) {
   return (
     <Providers>
-      <MixpanelInitializer>{children}</MixpanelInitializer>
+      <PostHogInitializer>{children}</PostHogInitializer>
       <TailwindBrowserRuntime />
       <Toaster position="top-center" />
     </Providers>

@@ -188,7 +188,7 @@ shadcn-style components:
 | `ImageSelectionConfig.tsx` | Image gen provider |
 | `ChatGptAuthRedirectHandler.tsx` | OAuth callback |
 | `ConfigurationInitializer.tsx` | Init config khi load page |
-| `MixpanelInitializer.tsx` | Analytics init (Presenton Mixpanel; replacement spec `docs/superpowers/specs/2026-08-26-posthog-error-reporting-design.md`, plan not started) |
+| `PostHogInitializer.tsx` | Error-reporting init (fail-closed PostHog; see `docs/superpowers/specs/2026-08-26-posthog-error-reporting-design.md`) |
 | `Auth/` | Auth components |
 | `OnBoarding/` | Onboarding flow |
 
@@ -243,7 +243,7 @@ Server-side helpers chỉ chạy trên server (NextJS server components):
 | `api.ts` | Fetch helpers |
 | `apiErrorMessages.ts` | Error messages |
 | `auth.ts`, `serverAuth.ts`, `authErrors.ts` | Auth helpers |
-| `analytics.ts`, `mixpanel.ts` | Analytics (`analytics.ts` = error sanitizer; `mixpanel.ts` still Presenton Mixpanel — PostHog swap is spec+plan only) |
+| `analytics.ts`, `posthog.ts` | Error reporting (`analytics.ts` = error sanitizer; `posthog.ts` = fail-closed PostHog wrapper, crash + generate/export/stream/save only) |
 | `chatgptAuth.ts` | ChatGPT OAuth client |
 | `constant.ts` | Constants |
 | `error_helpers.ts` | Error helpers |
