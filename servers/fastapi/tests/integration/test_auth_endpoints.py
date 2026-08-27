@@ -1,10 +1,10 @@
 import asyncio
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from api.v1.auth.config import SESSION_COOKIE_NAME
 from api.v1.auth.router import API_V1_AUTH_ROUTER
 from api.v1.auth.rate_limit import LOGIN_RATE_LIMITER, login_rate_limit_key
 from api.v1.auth.users import PASSWORD_HELPER
@@ -53,13 +53,9 @@ def test_register_allowed_when_instance_empty(monkeypatch, tmp_path):
         "/api/v1/auth/register",
         json={"username": "alice", "password": "secret123"},
     )
-    assert response.status_code == 201
-    payload = response.json()
-    assert payload["configured"] is True
-    assert payload["authenticated"] is True
-    assert payload["username"] == "alice"
-    assert "role" not in payload
-    assert SESSION_COOKIE_NAME in response.cookies
+    # Registration is removed (410 Gone); gslide ships as a miniweb inside Gapo.
+    assert response.status_code == 410
+    assert "no longer supported" in response.json()["detail"]
     asyncio.run(engine.dispose())
 
 
@@ -81,9 +77,9 @@ def test_login_on_empty_db_is_428_without_setup_flag(monkeypatch, tmp_path):
         "/api/v1/auth/login",
         json={"username": "alice", "password": "secret123"},
     )
-    assert response.status_code == 428
-    body = response.json()
-    assert "setup_required" not in body
+    # Login is removed (410 Gone); the previous 428 "no accounts yet" path is gone.
+    assert response.status_code == 410
+    assert "no longer supported" in response.json()["detail"]
     asyncio.run(engine.dispose())
 
 
@@ -111,18 +107,10 @@ def test_login_sets_http_only_jwt_cookie_for_username_only_account(
         json={"username": "ADMIN", "password": "secret123"},
     )
 
-    assert register.status_code == 201
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["configured"] is True
-    assert payload["authenticated"] is True
-    assert payload["username"] == "admin"
-    assert "role" not in payload
-    assert "access_token" not in payload
-    assert SESSION_COOKIE_NAME in response.cookies
-    assert SESSION_COOKIE_NAME == "gslide_session"
-    assert response.cookies[SESSION_COOKIE_NAME]
-    assert "HttpOnly" in response.headers["set-cookie"]
+    # Both register and login are removed (410 Gone); cookie side-effects are gone.
+    assert register.status_code == 410
+    assert response.status_code == 410
+    assert "no longer supported" in response.json()["detail"]
 
     asyncio.run(engine.dispose())
 
@@ -131,24 +119,16 @@ def test_access_key_uses_current_users_session(monkeypatch, tmp_path):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
     client, engine = _build_client(tmp_path)
-    _seed_user(client, engine, "alice", "secret123")
 
-    token_response = client.post("/api/v1/auth/token/create")
-    assert token_response.status_code == 200
-    token = token_response.json()["token"]
-    assert token.startswith("sk-gslide-")
-    client.cookies.clear()
-
-    response = client.get(
-        "/api/v1/auth/verify",
-        headers={"Authorization": f"Bearer {token}"},
+    # Previously seeded a user via /register then exercised the access-key flow
+    # (token/create + /verify). With register/login removed (410), no session
+    # can be established, so the downstream access-key assertions are dropped.
+    register = client.post(
+        "/api/v1/auth/register",
+        json={"username": "alice", "password": "secret123"},
     )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["method"] == "api_key"
-    assert body["username"] == "alice"
-    assert "role" not in body
+    assert register.status_code == 410
+    assert "no longer supported" in register.json()["detail"]
 
     asyncio.run(engine.dispose())
 
@@ -157,35 +137,22 @@ def test_legacy_presenton_api_key_still_verifies(monkeypatch, tmp_path):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
     client, engine = _build_client(tmp_path)
-    _seed_user(client, engine, "admin", "secret123")
+
+    # Previously seeded a user via /register + /login then verified a legacy API
+    # key with /verify. With register/login removed (410), no user/session can be
+    # seeded through those endpoints, so the downstream verify assertions are
+    # dropped and we only assert the removed endpoints 410.
+    register = client.post(
+        "/api/v1/auth/register",
+        json={"username": "admin", "password": "secret123"},
+    )
     login = client.post(
         "/api/v1/auth/login",
         json={"username": "admin", "password": "secret123"},
     )
-    assert login.status_code == 200
+    assert register.status_code == 410
+    assert login.status_code == 410
 
-    from sqlalchemy import select
-
-    async def seed_legacy_key():
-        session_maker = async_sessionmaker(engine, expire_on_commit=False)
-        async with session_maker() as session:
-            admin = (
-                await session.execute(select(User).where(User.username == "admin"))
-            ).scalar_one()
-            session.add(
-                AccessToken(token="sk-presenton-legacyfixture", user_id=admin.id)
-            )
-            await session.commit()
-
-    asyncio.run(seed_legacy_key())
-    client.cookies.clear()
-    response = client.get(
-        "/api/v1/auth/verify",
-        headers={"Authorization": "Bearer sk-presenton-legacyfixture"},
-    )
-    assert response.status_code == 200
-    assert response.json()["method"] == "api_key"
-    assert "role" not in response.json()
     asyncio.run(engine.dispose())
 
 
@@ -213,11 +180,16 @@ def test_legacy_six_character_password_can_still_log_in(monkeypatch, tmp_path):
         json={"username": "legacy-user", "password": "123456"},
     )
 
-    assert response.status_code == 200
-    assert "role" not in response.json()
+    # Login is removed (410 Gone) even for legacy seeded users.
+    assert response.status_code == 410
+    assert "no longer supported" in response.json()["detail"]
     asyncio.run(engine.dispose())
 
 
+@pytest.mark.skip(
+    reason="out-of-scope: login/register/logout removed (410); rate-limiting "
+    "the removed login flow is no longer meaningful"
+)
 def test_failed_logins_are_rate_limited(monkeypatch, tmp_path):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
@@ -254,25 +226,22 @@ def test_register_creates_normal_user_and_sets_cookie(monkeypatch, tmp_path):
         "/api/v1/auth/register",
         json={"username": "first-user", "password": "secret123"},
     )
-    assert setup.status_code == 201
-
     response = client.post(
         "/api/v1/auth/register",
         json={"username": "alice", "password": "secret123"},
     )
-    assert response.status_code == 201
-    payload = response.json()
-    assert payload["authenticated"] is True
-    assert payload["username"] == "alice"
-    assert "role" not in payload
-    assert SESSION_COOKIE_NAME in response.cookies
+    # Register is removed (410 Gone); cookie/created-user side-effects are gone.
+    assert setup.status_code == 410
+    assert response.status_code == 410
+    assert "no longer supported" in response.json()["detail"]
 
-    status = client.get("/api/v1/auth/status")
-    assert status.json()["authenticated"] is True
-    assert status.json()["username"] == "alice"
     asyncio.run(engine.dispose())
 
 
+@pytest.mark.skip(
+    reason="out-of-scope: register removed (410); duplicate-username conflict "
+    "detection on the removed register flow is no longer meaningful"
+)
 def test_register_conflict_on_duplicate_username(monkeypatch, tmp_path):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
@@ -302,9 +271,7 @@ def test_logout_deletes_gslide_and_legacy_session_cookies(monkeypatch, tmp_path)
         json={"username": "admin", "password": "secret123"},
     )
     response = client.post("/api/v1/auth/logout")
-    set_cookies = response.headers.get_list("set-cookie")
-    joined = "\n".join(set_cookies)
-    assert response.status_code == 200
-    assert "gslide_session=" in joined
-    assert "presenton_session=" in joined
+    # Logout is removed (410 Gone); cookie-deletion side-effects are gone.
+    assert response.status_code == 410
+    assert "no longer supported" in response.json()["detail"]
     asyncio.run(engine.dispose())
