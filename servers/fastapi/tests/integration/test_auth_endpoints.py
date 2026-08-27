@@ -5,9 +5,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from api.v1.auth.config import SESSION_COOKIE_NAME
 from api.v1.auth.router import API_V1_AUTH_ROUTER
 from api.v1.auth.rate_limit import LOGIN_RATE_LIMITER, login_rate_limit_key
-from api.v1.auth.users import PASSWORD_HELPER
+from api.v1.auth.users import PASSWORD_HELPER, get_jwt_strategy
 from models.sql.access_token import AccessToken
 from models.sql.provider_settings import ProviderSettings
 from models.sql.user import User
@@ -36,6 +37,37 @@ def _build_client(tmp_path) -> tuple[TestClient, object]:
     app.include_router(API_V1_AUTH_ROUTER)
     app.dependency_overrides[get_async_session] = override_session
     return TestClient(app), engine
+
+
+async def _seed_user_with_session(engine, username, password="secret123"):
+    """Insert a User directly and mint a JWT session token, returning (user, jwt).
+
+    Replaces the old `POST /api/v1/auth/register` seeding path (now 410 Gone).
+    The JWT is set as the `gslide_session` cookie on the TestClient by the caller
+    so cookie-authenticated endpoints (e.g. `token/create`) work without register.
+    """
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(
+            username=username,
+            hashed_password=PASSWORD_HELPER.hash(password),
+            is_active=True,
+            is_verified=True,
+            auth_version=1,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        jwt = await get_jwt_strategy().write_token(user)
+    return user, jwt
+
+
+async def _seed_access_token(engine, token, user_id):
+    """Insert an AccessToken row directly (used to restore /verify Bearer coverage)."""
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_maker() as session:
+        session.add(AccessToken(token=token, user_id=user_id))
+        await session.commit()
 
 
 def _seed_user(client: TestClient, engine, username: str, password: str) -> None:
@@ -120,15 +152,28 @@ def test_access_key_uses_current_users_session(monkeypatch, tmp_path):
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
     client, engine = _build_client(tmp_path)
 
-    # Previously seeded a user via /register then exercised the access-key flow
-    # (token/create + /verify). With register/login removed (410), no session
-    # can be established, so the downstream access-key assertions are dropped.
-    register = client.post(
-        "/api/v1/auth/register",
-        json={"username": "alice", "password": "secret123"},
+    # Seed alice directly via DB and load a JWT session cookie so the
+    # cookie-authenticated `token/create` endpoint works without the removed
+    # register/login endpoints.
+    _, jwt = asyncio.run(_seed_user_with_session(engine, "alice"))
+    client.cookies.set(SESSION_COOKIE_NAME, jwt)
+
+    token_response = client.post("/api/v1/auth/token/create")
+    assert token_response.status_code == 200
+    token = token_response.json()["token"]
+    assert token.startswith("sk-gslide-")
+    client.cookies.clear()
+
+    response = client.get(
+        "/api/v1/auth/verify",
+        headers={"Authorization": f"Bearer {token}"},
     )
-    assert register.status_code == 410
-    assert "no longer supported" in register.json()["detail"]
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["method"] == "api_key"
+    assert body["username"] == "alice"
+    assert "role" not in body
 
     asyncio.run(engine.dispose())
 
@@ -138,25 +183,26 @@ def test_legacy_presenton_api_key_still_verifies(monkeypatch, tmp_path):
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
     client, engine = _build_client(tmp_path)
 
-    # Previously seeded a user via /register + /login then verified a legacy API
-    # key with /verify. With register/login removed (410), no user/session can be
-    # seeded through those endpoints, so the downstream verify assertions are
-    # dropped and we only assert the removed endpoints 410.
-    register = client.post(
-        "/api/v1/auth/register",
-        json={"username": "admin", "password": "secret123"},
+    # Seed admin directly via DB, then insert the legacy `sk-presenton-*` API
+    # key directly (register/login are removed, so the old seed-via-login path
+    # no longer applies). /verify itself is unchanged and still accepts the
+    # legacy `sk-presenton-*` Bearer token via resolve_request_principal.
+    admin, _ = asyncio.run(_seed_user_with_session(engine, "admin"))
+    asyncio.run(
+        _seed_access_token(engine, "sk-presenton-legacyfixture", admin.id)
     )
-    login = client.post(
-        "/api/v1/auth/login",
-        json={"username": "admin", "password": "secret123"},
+    client.cookies.clear()
+    response = client.get(
+        "/api/v1/auth/verify",
+        headers={"Authorization": "Bearer sk-presenton-legacyfixture"},
     )
-    assert register.status_code == 410
-    assert login.status_code == 410
-
+    assert response.status_code == 200
+    assert response.json()["method"] == "api_key"
+    assert "role" not in response.json()
     asyncio.run(engine.dispose())
 
 
-def test_legacy_six_character_password_can_still_log_in(monkeypatch, tmp_path):
+def test_legacy_six_character_password_login_is_removed(monkeypatch, tmp_path):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
     monkeypatch.delenv("DISABLE_AUTH", raising=False)
     client, engine = _build_client(tmp_path)
