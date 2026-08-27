@@ -9,7 +9,7 @@ import {
   getLLMConfigValidationError,
   handleSaveLLMConfig,
 } from "@/utils/storeHelpers";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LLMConfig } from "@/types/llm_config";
 import { captureError } from "@/utils/posthog";
 import SettingSideBar, { SettingsSection } from "./SettingSideBar";
@@ -34,14 +34,12 @@ interface ButtonState {
 }
 
 const SettingsPage = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const [selectedProvider, setSelectedProvider] = useState<SettingsSection>("text-provider");
   const userConfigState = useSelector((state: RootState) => state.userConfig);
   const [llmConfig, setLlmConfig] = useState<LLMConfig>(
     userConfigState.llm_config
   );
-  const canChangeKeys = userConfigState.can_change_keys;
   const [buttonState, setButtonState] = useState<ButtonState>({
     isLoading: false,
     isDisabled: false,
@@ -114,16 +112,6 @@ const SettingsPage = () => {
       }));
     }
   };
-
-  useEffect(() => {
-    if (!canChangeKeys) {
-      router.push("/dashboard");
-    }
-  }, [canChangeKeys, router]);
-
-  if (!canChangeKeys) {
-    return null;
-  }
 
   const textProviderKey = llmConfig.LLM || "openai";
   const textProviderLabel =

@@ -22,10 +22,11 @@ test("proxy drops setup_required flag", async () => {
   assert.doesNotMatch(proxy, /setup_required/);
 });
 
-test("can-change-keys requires only authentication", async () => {
+test("can-change-keys reflects env flag without admin role or auth gate", async () => {
   const route = await readNext("app/api/can-change-keys/route.ts");
-  assert.match(route, /status\.authenticated/);
+  assert.match(route, /CAN_CHANGE_KEYS/);
   assert.doesNotMatch(route, /role === "admin"/);
+  assert.doesNotMatch(route, /authStatusForRequest|requireAuthenticatedApi/);
 });
 
 test("user-config forwards to /api/v1/settings/provider", async () => {
