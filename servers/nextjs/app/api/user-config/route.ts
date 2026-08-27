@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
-import { requireAuthenticatedApi } from "@/lib/server-auth-role";
 
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
 const INSTANCE_LEVEL_FIELDS = new Set(["DISABLE_ANONYMOUS_TRACKING"]);
@@ -48,8 +47,6 @@ async function forwardProviderSettings(
 }
 
 export async function GET(request: Request) {
-  const denied = await requireAuthenticatedApi(request);
-  if (denied) return denied;
   if (!canChangeKeys) return immutableResponse();
 
   try {
@@ -63,9 +60,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = await requireAuthenticatedApi(request);
-  if (denied) return denied;
-
   try {
     const body = await request.text();
     if (!body.trim()) {
