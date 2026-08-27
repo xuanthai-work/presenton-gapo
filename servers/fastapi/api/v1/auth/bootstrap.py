@@ -63,85 +63,55 @@ async def _find_bootstrap_user(session) -> User | None:
 
 
 async def bootstrap_database_user() -> None:
-    """Recover or seed the bootstrap user from env/file without an admin role."""
-    async with async_session_maker() as session:
-        user = await _find_bootstrap_user(session)
-        reset_requested = _truthy(os.getenv("RESET_AUTH"))
-        override_requested = _truthy(os.getenv("AUTH_OVERRIDE_FROM_ENV"))
-        env_username = (os.getenv("AUTH_USERNAME") or "").strip()
-        env_password = os.getenv("AUTH_PASSWORD")
-        _validate_new_environment_username(env_username)
-        if user is not None:
-            if (reset_requested or override_requested) and not env_password:
-                raise RuntimeError(
-                    "RESET_AUTH and AUTH_OVERRIDE_FROM_ENV require AUTH_PASSWORD so "
-                    "account ownership and data can be preserved"
-                )
-            if (reset_requested or override_requested) and env_password:
-                _validate_new_environment_password(env_password)
-                if env_username:
-                    user.username = env_username
-                user.hashed_password = PASSWORD_HELPER.hash(env_password)
-                user.auth_version += 1
-                await session.execute(
-                    delete(AccessToken).where(AccessToken.user_id == user.id)
-                )
-                await session.flush()
-                await session.commit()
-                persist_auth_credentials(
-                    user.username,
-                    user.hashed_password,
-                    rotate_secret=True,
-                )
-                logger.warning(
-                    "Recovered bootstrap user credentials from environment."
-                )
-            else:
-                await session.commit()
-            await _backfill_legacy_ownership(session, user)
-            return
+    """Upsert the demo user. Idempotent across restarts.
 
-        account_count = int(
-            await session.scalar(select(func.count()).select_from(User)) or 0
-        )
-        if account_count:
+    Honors RESET_AUTH only when DEMO_AUTH_FROM_ENV=true (escape hatch for
+    operators who want a non-default username/password sourced from env).
+    """
+    from api.v1.auth.demo_user import (
+        DEMO_USER_ID,
+        DEMO_USERNAME,
+        resolve_demo_user,
+    )
+
+    env_from_file = _truthy(os.getenv("DEMO_AUTH_FROM_ENV"))
+    env_username = (os.getenv("DEMO_USERNAME") or "").strip() or DEMO_USERNAME
+    env_password = os.getenv("DEMO_PASSWORD")
+    reset_requested = _truthy(os.getenv("RESET_AUTH"))
+    if env_from_file:
+        _validate_new_environment_username(env_username)
+        if env_password is not None:
+            _validate_new_environment_password(env_password)
+        if (reset_requested or env_password is None) and not env_password:
             raise RuntimeError(
-                "User accounts exist but no bootstrap user can be located"
+                "DEMO_AUTH_FROM_ENV with RESET_AUTH requires DEMO_PASSWORD"
             )
 
-        legacy_username, legacy_hash = get_legacy_admin_credentials()
-        use_environment = reset_requested or override_requested
-        username = (
-            env_username if use_environment and env_username else legacy_username
-        ) or env_username
-        if not username:
-            return
+    async with async_session_maker() as session:
+        existing = await session.get(User, DEMO_USER_ID)
 
-        if use_environment and env_password:
-            _validate_new_environment_password(env_password)
-            password_hash = PASSWORD_HELPER.hash(env_password)
-        elif legacy_hash:
-            password_hash = legacy_hash
-        elif env_password:
-            _validate_new_environment_password(env_password)
-            password_hash = PASSWORD_HELPER.hash(env_password)
+        if existing is None:
+            user = await resolve_demo_user(session)
+            password_hash = user.hashed_password
         else:
-            return
+            user = existing
+            password_hash = (
+                PASSWORD_HELPER.hash(env_password)
+                if env_from_file and env_password is not None
+                else user.hashed_password
+            )
+            if env_from_file and env_password is not None:
+                user.hashed_password = password_hash
+                user.username = env_username
+                await session.commit()
+                await session.refresh(user)
 
-        user = User(
-            username=username,
-            hashed_password=password_hash,
-            is_active=True,
-            is_verified=True,
-            auth_version=1,
-        )
-        session.add(user)
-        await session.flush()
-        await session.commit()
-        await session.refresh(user)
-        persist_auth_credentials(username, password_hash)
-        await _backfill_legacy_ownership(session, user)
-        logger.info("Migrated the bootstrap user into the user database.")
+        if existing is None:
+            await _backfill_legacy_ownership(session, user)
+            persist_auth_credentials(user.username, password_hash)
+            logger.info(
+                "Migrated the demo user into the user database (backfill complete)."
+            )
 
 
 async def _backfill_legacy_ownership(session, user: User) -> None:

@@ -1,6 +1,13 @@
 import asyncio
 import json
+import os
 import stat
+import tempfile
+
+# On Windows the default app-data path resolves to a non-writable `//tmp/gslide`
+# location; set APP_DATA_DIRECTORY BEFORE importing app modules so the SQLite
+# parent dir can be created. Mirrors test_default_user_principal.py.
+os.environ.setdefault("APP_DATA_DIRECTORY", tempfile.gettempdir())
 
 import pytest
 from sqlalchemy import select
@@ -106,7 +113,9 @@ def test_reset_auth_without_password_refuses_to_delete_or_replace_user(
 ):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
     monkeypatch.setenv("RESET_AUTH", "true")
+    monkeypatch.setenv("DEMO_AUTH_FROM_ENV", "true")
     monkeypatch.delenv("AUTH_PASSWORD", raising=False)
+    monkeypatch.delenv("DEMO_PASSWORD", raising=False)
     monkeypatch.delenv("AUTH_OVERRIDE_FROM_ENV", raising=False)
 
     async def runner():
@@ -127,7 +136,7 @@ def test_reset_auth_without_password_refuses_to_delete_or_replace_user(
                 original_id = user.id
 
             monkeypatch.setattr(bootstrap, "async_session_maker", session_maker)
-            with pytest.raises(RuntimeError, match="require AUTH_PASSWORD"):
+            with pytest.raises(RuntimeError, match="requires DEMO_PASSWORD"):
                 await bootstrap.bootstrap_database_user()
 
             async with session_maker() as session:
