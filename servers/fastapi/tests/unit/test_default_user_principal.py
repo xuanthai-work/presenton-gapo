@@ -33,7 +33,10 @@ def _bootstrap_schema(engine):
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(AccessToken.__table__.create)
 
-    asyncio.run(_runner())
+    return _runner()
+
+
+_run = asyncio.run
 
 
 def test_demo_user_constants_are_locked():
@@ -43,7 +46,7 @@ def test_demo_user_constants_are_locked():
 
 def test_resolve_demo_user_seeds_when_missing(tmp_path):
     engine = _make_engine(tmp_path / "demo.db")
-    _bootstrap_schema(engine)
+    _run(_bootstrap_schema(engine))
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
     async def _runner():
@@ -60,7 +63,7 @@ def test_resolve_demo_user_seeds_when_missing(tmp_path):
 
 def test_resolve_demo_user_is_idempotent(tmp_path):
     engine = _make_engine(tmp_path / "demo.db")
-    _bootstrap_schema(engine)
+    _run(_bootstrap_schema(engine))
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
     async def _runner():
@@ -81,3 +84,52 @@ def test_get_demo_principal_shape():
     assert principal.user_id == DEMO_USER_ID
     assert principal.username == DEMO_USERNAME
     assert principal.method == "default"
+
+
+from api.v1.auth.principal import resolve_request_principal
+
+
+def test_resolve_request_principal_returns_demo_when_no_cookie_no_bearer(tmp_path):
+    engine = _make_engine(tmp_path / "demo.db")
+    _run(_bootstrap_schema(engine))
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def _seed():
+        async with session_maker() as session:
+            await resolve_demo_user(session)
+
+    _run(_seed())
+
+    class _StubRequest:
+        cookies: dict = {}
+        headers: dict = {}
+
+    async def _resolve():
+        async with session_maker() as session:
+            return await resolve_request_principal(_StubRequest(), session)
+
+    principal, user = _run(_resolve())
+    assert principal is not None
+    assert principal.user_id == DEMO_USER_ID
+    assert principal.method == "default"
+    assert user is not None
+    assert user.username == DEMO_USERNAME
+
+
+def test_resolve_request_principal_demo_seeds_when_db_empty(tmp_path):
+    engine = _make_engine(tmp_path / "demo.db")
+    _run(_bootstrap_schema(engine))
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+
+    class _StubRequest:
+        cookies: dict = {}
+        headers: dict = {}
+
+    async def _resolve():
+        async with session_maker() as session:
+            return await resolve_request_principal(_StubRequest(), session)
+
+    principal, user = _run(_resolve())
+    assert principal is not None
+    assert user is not None
+    assert user.username == DEMO_USERNAME
