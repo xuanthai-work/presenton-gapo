@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from api.v1.auth.config import SESSION_COOKIE_NAME
 from api.v1.auth.router import API_V1_AUTH_ROUTER
-from api.v1.auth.users import PASSWORD_HELPER
+from api.v1.auth.users import PASSWORD_HELPER, get_jwt_strategy
 from api.v1.settings.router import API_V1_SETTINGS_ROUTER
 from models.sql.access_token import AccessToken
 from models.sql.provider_settings import ProviderSettings
@@ -47,6 +47,39 @@ def _build_client(tmp_path):
     return TestClient(app), engine
 
 
+async def _seed_user_with_session(engine, username, password="secret123"):
+    """Insert a User directly and mint a JWT session token, returning (user_id, token).
+
+    Replaces the old `POST /api/v1/auth/register` seeding path (now 410 Gone) so
+    provider-settings isolation tests can still drive the cookie-authenticated
+    settings router without exercising the removed register/login endpoints.
+    The returned token is set on the TestClient as the `gslide_session` cookie,
+    which is what `read_user_from_cookie` (the settings router's auth dependency)
+    consumes.
+    """
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(
+            username=username,
+            hashed_password=PASSWORD_HELPER.hash(password),
+            is_active=True,
+            is_verified=True,
+            auth_version=1,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        token = await get_jwt_strategy().write_token(user)
+    return user.id, token
+
+
+def _seed_and_authenticate(client, engine, username, password="secret123"):
+    """Seed a user via DB and load its JWT session cookie onto ``client``."""
+    _, token = asyncio.run(_seed_user_with_session(engine, username, password))
+    client.cookies.set(SESSION_COOKIE_NAME, token)
+    return token
+
+
 def test_two_overlays_do_not_leak(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-env")
     token_a = set_provider_overlay({"OPENAI_API_KEY": "sk-a"})
@@ -78,11 +111,7 @@ def test_user_overlay_isolated_per_user(monkeypatch, tmp_path):
     monkeypatch.setenv("CAN_CHANGE_KEYS", "true")
 
     client, engine = _build_client(tmp_path)
-    alice = client.post(
-        "/api/v1/auth/register",
-        json={"username": "alice", "password": "secret123"},
-    )
-    assert alice.status_code == 201
+    _seed_and_authenticate(client, engine, "alice")
 
     put = client.put(
         "/api/v1/settings/provider",
@@ -92,11 +121,7 @@ def test_user_overlay_isolated_per_user(monkeypatch, tmp_path):
     assert put.json()["OPENAI_API_KEY"] == "sk-alice"
 
     bob = TestClient(client.app)
-    bob_response = bob.post(
-        "/api/v1/auth/register",
-        json={"username": "bob", "password": "secret123"},
-    )
-    assert bob_response.status_code == 201
+    _seed_and_authenticate(bob, engine, "bob")
 
     bob_get = bob.get("/api/v1/settings/provider")
     assert bob_get.status_code == 200
@@ -111,11 +136,7 @@ def test_cannot_change_keys_returns_403(monkeypatch, tmp_path):
     monkeypatch.setenv("CAN_CHANGE_KEYS", "false")
 
     client, engine = _build_client(tmp_path)
-    register = client.post(
-        "/api/v1/auth/register",
-        json={"username": "alice", "password": "secret123"},
-    )
-    assert register.status_code == 201
+    _seed_and_authenticate(client, engine, "alice")
 
     response = client.put(
         "/api/v1/settings/provider",
@@ -135,11 +156,7 @@ def test_user_overlay_does_not_include_auth_or_instance_fields(
     monkeypatch.setenv("DISABLE_ANONYMOUS_TRACKING", "true")
 
     client, engine = _build_client(tmp_path)
-    register = client.post(
-        "/api/v1/auth/register",
-        json={"username": "alice", "password": "secret123"},
-    )
-    assert register.status_code == 201
+    _seed_and_authenticate(client, engine, "alice")
 
     response = client.put(
         "/api/v1/settings/provider",
@@ -164,11 +181,7 @@ def test_partial_tracking_put_does_not_wipe_overlay(monkeypatch, tmp_path):
     monkeypatch.setenv("CAN_CHANGE_KEYS", "true")
 
     client, engine = _build_client(tmp_path)
-    register = client.post(
-        "/api/v1/auth/register",
-        json={"username": "alice", "password": "secret123"},
-    )
-    assert register.status_code == 201
+    _seed_and_authenticate(client, engine, "alice")
 
     saved = client.put(
         "/api/v1/settings/provider",
@@ -221,11 +234,7 @@ def test_locked_keys_still_allow_tracking_only_put(monkeypatch, tmp_path):
     monkeypatch.setenv("CAN_CHANGE_KEYS", "false")
 
     client, engine = _build_client(tmp_path)
-    register = client.post(
-        "/api/v1/auth/register",
-        json={"username": "alice", "password": "secret123"},
-    )
-    assert register.status_code == 201
+    _seed_and_authenticate(client, engine, "alice")
 
     tracking = client.put(
         "/api/v1/settings/provider",
