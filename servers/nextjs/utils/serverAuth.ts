@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { isAuthDisabled } from "@/utils/auth";
 
 export type AuthStatus = {
@@ -29,9 +28,10 @@ function getServerFastApiBase(): string {
 }
 
 /**
- * Calls the same /api/v1/auth/status as the browser, using the incoming request cookies.
- * Used by server layouts so 404/unknown routes are not conflated with unauthenticated access
- * (the layout only runs for routes that exist and sit under the layout’s segment).
+ * In the no-auth-embedded default-user mode (when `isAuthDisabled()` is false),
+ * short-circuits to the fixed demo user without a network call. The
+ * network-call path below is retained for forward compatibility if auth is
+ * re-enabled (currently unreachable while default-user mode is on).
  */
 export async function getServerAuthStatus(): Promise<AuthStatus> {
   if (isAuthDisabled()) {
@@ -44,6 +44,15 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
     };
   }
 
+  return {
+    configured: true,
+    authenticated: true,
+    username: "demo",
+    user_id: "00000000-0000-0000-0000-000000000001",
+    available: true,
+  };
+
+  // Forward-compat network fallback (unreachable while default-user mode is on).
   const h = await headers();
   const cookie = h.get("cookie") ?? "";
 
@@ -86,17 +95,5 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
  * No-op in the no-auth-embedded default-user mode; kept for forward compatibility.
  */
 export async function requireAppSession() {
-  if (isAuthDisabled()) {
-    return;
-  }
-  const s = await getServerAuthStatus();
-  if (!s.available) {
-    redirect("/");
-  }
-  if (!s.configured) {
-    redirect("/");
-  }
-  if (!s.authenticated) {
-    redirect("/?reason=unauthorized");
-  }
+  return;
 }
