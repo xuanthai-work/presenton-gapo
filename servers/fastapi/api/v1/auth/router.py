@@ -3,6 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.v1.auth.assets import is_app_data_path_authorized
+from api.v1.auth.demo_user import resolve_demo_user
 from api.v1.auth.principal import resolve_request_principal
 from api.v1.auth.users import (
     read_user_from_cookie,
@@ -33,6 +34,20 @@ async def get_status(
             "authenticated": True,
             "username": "local",
             "user_id": None,
+        }
+    if user is None:
+        # No cookie/bearer session. In the default-on demo mode there is no
+        # login flow (login returns 410), so a cookieless browser can never
+        # obtain a gslide_session cookie. Fall back to the seeded demo user so
+        # proxy.ts /status checks see `authenticated: true` and API-driven
+        # interactions (settings, uploads, exports) work out of the box.
+        # A real cookie/Bearer session still wins via the `user` branch above.
+        demo = await resolve_demo_user(session)
+        return {
+            "configured": True,
+            "authenticated": True,
+            "username": demo.username,
+            "user_id": str(demo.id),
         }
     configured = await _account_count(session) > 0
     return {

@@ -4,7 +4,7 @@ from typing import Optional, Union
 from fastapi import HTTPException
 
 from utils.get_env import get_temp_directory_env
-from api.v1.auth.context import get_current_owner_id
+from api.v1.auth.context import get_current_owner_id_raw
 import uuid
 
 
@@ -19,7 +19,7 @@ class TempFileService:
         return os.path.realpath(self.base_dir)
 
     def _owner_base_dir_realpath(self) -> str:
-        owner_id = get_current_owner_id()
+        owner_id = get_current_owner_id_raw()
         if owner_id is None:
             return self._base_dir_realpath()
         owner_dir = os.path.realpath(os.path.join(self.base_dir, str(owner_id)))

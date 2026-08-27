@@ -1,5 +1,5 @@
 from api.v1.auth.config import SESSION_COOKIE_NAME
-from api.v1.auth.context import get_current_owner_id
+from api.v1.auth.context import get_current_owner_id_raw
 from api.v1.auth.users import get_jwt_strategy
 from models.sql.user import User
 from services.database import async_session_maker
@@ -11,7 +11,7 @@ async def authenticated_internal_request_headers() -> dict[str, str]:
     if is_disable_auth_enabled():
         return {}
 
-    owner_id = get_current_owner_id()
+    owner_id = get_current_owner_id_raw()
     if owner_id is None:
         return {}
 

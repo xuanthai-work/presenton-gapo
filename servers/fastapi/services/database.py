@@ -27,7 +27,7 @@ from models.sql.webhook_subscription import WebhookSubscription
 from models.sql.user import User
 from models.sql.access_token import AccessToken
 from models.sql.provider_settings import ProviderSettings
-from api.v1.auth.context import get_current_owner_id
+from api.v1.auth.context import get_current_owner_id_raw
 from utils.get_env import get_migrate_database_on_startup_env
 from utils.db_utils import get_database_url_and_connect_args, get_pool_kwargs
 
@@ -71,7 +71,7 @@ _STRICT_OWNER_MODELS = (
 @event.listens_for(Session, "do_orm_execute")
 def _scope_owned_selects(execute_state) -> None:
     """Apply tenant criteria to every ORM SELECT performed during a request."""
-    owner_id = get_current_owner_id()
+    owner_id = get_current_owner_id_raw()
     if (
         owner_id is None
         or not execute_state.is_select
@@ -103,7 +103,7 @@ def _scope_owned_selects(execute_state) -> None:
 
 @event.listens_for(Session, "before_flush")
 def _stamp_new_owned_rows(session, _flush_context, _instances) -> None:
-    owner_id = get_current_owner_id()
+    owner_id = get_current_owner_id_raw()
     if owner_id is None:
         return
     owner_models = _STRICT_OWNER_MODELS + (TemplateV2,)

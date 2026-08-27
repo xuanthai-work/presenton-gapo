@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError, model_validator
 
 from services.liteparse_service import _command_str, _snippet
-from api.v1.auth.context import get_current_owner_id
+from api.v1.auth.context import get_current_owner_id, get_current_owner_id_raw
 from utils.asset_directory_utils import (
     get_exports_directory,
     resolve_app_path_to_filesystem,
@@ -711,7 +711,7 @@ class ExportTaskService:
 
     @staticmethod
     def _move_export_to_owner(output_path: str) -> str:
-        if get_current_owner_id() is None:
+        if get_current_owner_id_raw() is None:
             return output_path
         destination_dir = get_exports_directory()
         app_data = get_app_data_directory_env()
