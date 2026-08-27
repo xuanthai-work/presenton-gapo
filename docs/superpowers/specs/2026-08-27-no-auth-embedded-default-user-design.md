@@ -54,8 +54,6 @@ When the parent Gapo app is ready, only **one function** changes: `resolve_reque
 ## Auth flow (post-cut)
 
 ```
-configured = (User count > 0)   # always true after demo user seeds
-
 GET /                           anonymous → 302 /dashboard
 GET /dashboard                  any principal → 200 (no auth gate)
 GET /api/v1/auth/status         any → { authenticated: true, user_id: <demo>, username: "demo" }
