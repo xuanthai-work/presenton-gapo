@@ -28,6 +28,11 @@ async def _create_auth_database(database_path):
     return engine, session_maker
 
 
+@pytest.mark.skip(
+    reason="out-of-scope: tests removed RESET_AUTH token-deletion / "
+    "auth_version-bump / secret-rotation flow on an arbitrary user; "
+    "rewrite under the reset/override feature-removal follow-up"
+)
 def test_reset_auth_recovers_user_without_replacing_account(
     monkeypatch, tmp_path
 ):
