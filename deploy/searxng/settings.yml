@@ -1,7 +1,7 @@
 use_default_settings: true
 
 general:
-  instance_name: "Presenton SearXNG"
+  instance_name: "GSlide SearXNG"
 
 search:
   safe_search: 0
@@ -13,10 +13,18 @@ search:
 
 server:
   # Recent SearXNG exits if this stays the image default "ultrasecretkey".
-  secret_key: "presenton-internal-searxng-not-for-public"
+  secret_key: "gslide-internal-searxng-not-for-public"
   limiter: false
   image_proxy: false
   method: "GET"
 
 outgoing:
   request_timeout: 8.0
+
+# Wikimedia 403s SearXNG's User-Agent on every container boot (SPARQL init).
+# GSlide web search does not need this engine; inactive skips load+init entirely.
+# (`disabled: true` still runs init and still logs the 403.)
+engines:
+  - name: wikidata
+    inactive: true
+

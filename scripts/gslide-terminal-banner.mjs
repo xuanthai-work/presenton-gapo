@@ -92,10 +92,13 @@ export function printGSlideStartupBanner(opts = {}) {
   const nextPort = opts.nextPort ?? 3000;
   const fastapiPort = opts.fastapiPort ?? 8000;
   const version = opts.version ?? loadPackageVersion();
-  const hostHttpPort =
+    const hostHttpPort =
     opts.hostHttpPort ??
+    process.env.GSLIDE_HTTP_HOST_PORT ??
     process.env.PRESENTON_HTTP_HOST_PORT ??
+    process.env.GSLIDE_HOST_HTTP_PORT ??
     process.env.PRESENTON_HOST_HTTP_PORT ??
+    process.env.GSLIDE_PUBLIC_PORT ??
     process.env.PRESENTON_PUBLIC_PORT ??
     "5001";
 

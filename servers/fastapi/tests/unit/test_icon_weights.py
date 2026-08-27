@@ -337,3 +337,22 @@ def test_template_placeholders_use_clean_url_fields():
     )
     assert "__image_url__" not in slide.content["hero"]
     assert "__icon_url__" not in slide.content["badge"]
+
+
+def test_icon_fastembed_cache_prefers_gslide_env(monkeypatch, tmp_path):
+    from services.icon_finder_service import _icon_fastembed_cache_directory
+
+    gslide = tmp_path / "gslide-cache"
+    presenton = tmp_path / "presenton-cache"
+    monkeypatch.setenv("GSLIDE_FASTEMBED_ICON_CACHE_DIR", str(gslide))
+    monkeypatch.setenv("PRESENTON_FASTEMBED_ICON_CACHE_DIR", str(presenton))
+    assert _icon_fastembed_cache_directory() == str(gslide.resolve())
+
+
+def test_icon_fastembed_cache_falls_back_to_presenton_env(monkeypatch, tmp_path):
+    from services.icon_finder_service import _icon_fastembed_cache_directory
+
+    presenton = tmp_path / "presenton-cache"
+    monkeypatch.delenv("GSLIDE_FASTEMBED_ICON_CACHE_DIR", raising=False)
+    monkeypatch.setenv("PRESENTON_FASTEMBED_ICON_CACHE_DIR", str(presenton))
+    assert _icon_fastembed_cache_directory() == str(presenton.resolve())

@@ -44,9 +44,9 @@ jobs:
       run:
         working-directory: servers/fastapi
     env:
-      APP_DATA_DIRECTORY: /tmp/presenton-app-data
-      TEMP_DIRECTORY: /tmp/presenton-temp
-      DATABASE_URL: sqlite+aiosqlite:////tmp/presenton-test.db
+      APP_DATA_DIRECTORY: /tmp/gslide-app-data
+      TEMP_DIRECTORY: /tmp/gslide-temp
+      DATABASE_URL: sqlite+aiosqlite:////tmp/gslide-test.db
       DISABLE_ANONYMOUS_TRACKING: "true"
       DISABLE_IMAGE_GENERATION: "true"
 

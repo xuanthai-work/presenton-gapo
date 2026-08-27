@@ -12,13 +12,13 @@ Yêu cầu: Docker Desktop.
 copy .env.example .env
 ```
 
-Điền một LLM provider và tài khoản admin trong `.env`, rồi:
+Điền một LLM provider trong `.env` (khóa API có thể để trống — mỗi user tự vào Settings thêm sau), rồi:
 
 ```powershell
 docker compose up production --build
 ```
 
-Mở [http://localhost:5001](http://localhost:5001). Lần đầu sẽ tạo tài khoản admin nếu chưa set `AUTH_USERNAME` / `AUTH_PASSWORD`.
+Mở [http://localhost:5001](http://localhost:5001). Lần đầu vào `/` sẽ có Sign in / Create account; tạo tài khoản đầu tiên luôn. Nếu đặt `AUTH_USERNAME` / `AUTH_PASSWORD` trong `.env` thì một user được seed sẵn lúc boot.
 
 Dev (hot-reload):
 
@@ -26,12 +26,12 @@ Dev (hot-reload):
 docker compose up development --build
 ```
 
-Đổi port host bằng `PRESENTON_HTTP_HOST_PORT`. Dữ liệu (deck, upload, SQLite, memory) nằm trong `./app_data`.
+Đổi port host bằng `GSLIDE_HTTP_HOST_PORT` (`.env` cũ `PRESENTON_HTTP_HOST_PORT` vẫn được). Dữ liệu (deck, upload, SQLite, memory) nằm trong `./app_data`.
 
-Compose **build từ Dockerfile trong repo**. Sau khi sửa `.env`, recreate container:
+Compose **build `Dockerfile.web` và `Dockerfile.api`**. `production` / `development` là nginx (cổng 5001); Next và FastAPI chạy container riêng. Sau khi sửa `.env`, recreate web + api (+ proxy):
 
 ```powershell
-docker compose up production --force-recreate
+docker compose up --build --force-recreate production web api
 ```
 
 ## Cấu hình
@@ -46,7 +46,7 @@ Biến môi trường nằm trong `.env` cạnh `docker-compose.yml`. Chỉ cầ
 | `CUSTOM_LLM_URL`, `CUSTOM_LLM_API_KEY`, `CUSTOM_MODEL` | Khi `LLM=custom` |
 | `IMAGE_PROVIDER` | `gpt-image-1.5` / `gemini_flash` / `nanobanana_pro` / `openai_compatible` |
 | `DISABLE_IMAGE_GENERATION` | `true` để tắt ảnh trên slide |
-| `AUTH_USERNAME`, `AUTH_PASSWORD` | Tạo admin lúc boot (password ≥ 8 ký tự) |
+| `AUTH_USERNAME`, `AUTH_PASSWORD` | Seed user đầu tiên lúc boot (password ≥ 8 ký tự) |
 | `CAN_CHANGE_KEYS` | `false` để khóa API key trên UI |
 | `MEM0_ENABLED` | Memory theo presentation (mặc định `false`) |
 | `WEB_GROUNDING` | Web search. `auto`: native OpenAI/Google; custom LLM dùng SearXNG sidecar |

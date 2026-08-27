@@ -152,7 +152,7 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
           if (!runtime.configured) {
             notify.error(
               "Instance not configured",
-              "Ask the administrator to configure the AI providers in the deployment environment.",
+              "Ask your operator to set AI provider keys in the deployment environment, or sign in and add your own keys in Settings.",
               { id: "instance-not-configured" }
             );
             setIsLoading(false);

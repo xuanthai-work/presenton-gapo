@@ -3,9 +3,12 @@
 import { useEffect } from "react";
 import type { TemplateV2ClipboardPayload } from "@/components/slide-editor/clipboard/clipboard";
 
-const CLIPBOARD_MIME = "application/x-presenton-template-v2";
-const CLIPBOARD_PREFIX = "PRESENTON_TEMPLATE_V2:";
-const CLIPBOARD_STORAGE_KEY = "presenton:template-v2-clipboard";
+const CLIPBOARD_MIME = "application/x-gslide-template-v2";
+const LEGACY_CLIPBOARD_MIME = "application/x-presenton-template-v2";
+const CLIPBOARD_PREFIX = "GSLIDE_TEMPLATE_V2:";
+const LEGACY_CLIPBOARD_PREFIX = "PRESENTON_TEMPLATE_V2:";
+const CLIPBOARD_STORAGE_KEY = "gslide:template-v2-clipboard";
+const LEGACY_CLIPBOARD_STORAGE_KEY = "presenton:template-v2-clipboard";
 const PASTE_OFFSET = 16;
 let pasteSequence = 0;
 let cachedSerializedPayload: string | null = null;
@@ -149,7 +152,10 @@ async function readNavigatorClipboardPayload() {
 }
 
 function readPayload(event: ClipboardEvent): TemplateV2ClipboardPayload | null {
-  const direct = event.clipboardData?.getData(CLIPBOARD_MIME) ?? "";
+  const direct =
+    event.clipboardData?.getData(CLIPBOARD_MIME) ||
+    event.clipboardData?.getData(LEGACY_CLIPBOARD_MIME) ||
+    "";
   const plain = event.clipboardData?.getData("text/plain") ?? "";
   const serialized =
     direct ||
@@ -166,9 +172,12 @@ function readSerializedPayload(text: string) {
 }
 
 function serializedPayloadFromPlainText(text: string) {
-  return text.startsWith(CLIPBOARD_PREFIX)
-    ? text.slice(CLIPBOARD_PREFIX.length)
-    : "";
+  for (const prefix of [CLIPBOARD_PREFIX, LEGACY_CLIPBOARD_PREFIX]) {
+    if (text.startsWith(prefix)) {
+      return text.slice(prefix.length);
+    }
+  }
+  return "";
 }
 
 function readCachedPayload(): TemplateV2ClipboardPayload | null {
@@ -178,7 +187,9 @@ function readCachedPayload(): TemplateV2ClipboardPayload | null {
   }
   if (typeof window === "undefined") return null;
   try {
-    const stored = window.localStorage.getItem(CLIPBOARD_STORAGE_KEY);
+    const stored =
+      window.localStorage.getItem(CLIPBOARD_STORAGE_KEY) ||
+      window.localStorage.getItem(LEGACY_CLIPBOARD_STORAGE_KEY);
     return stored ? parsePayload(stored) : null;
   } catch {
     return null;
@@ -216,7 +227,8 @@ function parsePayload(serialized: string): TemplateV2ClipboardPayload | null {
           isValidBox(item.absoluteBox),
       );
     if (
-      parsed.format !== "presenton/template-v2" ||
+      (parsed.format !== "gslide/template-v2" &&
+        parsed.format !== "presenton/template-v2") ||
       parsed.version !== 1 ||
       !isValidBox(box) ||
       (!hasLegacySingleComponent && !hasComponents)

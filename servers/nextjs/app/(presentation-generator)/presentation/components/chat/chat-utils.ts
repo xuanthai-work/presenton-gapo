@@ -137,7 +137,7 @@ export const conversationStorageKey = (
   scope: string,
   resourceId: string,
   presentationType: "standard" | "smart",
-) => `presenton:chat:${scope}:${presentationType}:conversationId:${resourceId}`;
+) => `gslide:chat:${scope}:${presentationType}:conversationId:${resourceId}`;
 
 export const readStoredConversationId = (key: string) => {
   if (typeof window === "undefined") return null;

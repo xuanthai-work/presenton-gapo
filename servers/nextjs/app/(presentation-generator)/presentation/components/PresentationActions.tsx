@@ -1045,15 +1045,11 @@ export const BlocksPanel = ({
         <button
           type="button"
           disabled={disabled}
-          className="flex h-[clamp(32px,2.5vw,36px)] w-[clamp(32px,2.5vw,36px)] shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-50"
-          style={{
-            background:
-              "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 35%, #FDE4C2 100%)",
-          }}
+          className="flex h-[clamp(32px,2.5vw,36px)] w-[clamp(32px,2.5vw,36px)] shrink-0 items-center justify-center rounded-full bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Create block"
         >
           <Search
-            className="h-[clamp(12px,0.9vw,14px)] w-[clamp(12px,0.9vw,14px)] text-[#101323]"
+            className="h-[clamp(12px,0.9vw,14px)] w-[clamp(12px,0.9vw,14px)] text-white"
             strokeWidth={1.9}
           />
         </button>

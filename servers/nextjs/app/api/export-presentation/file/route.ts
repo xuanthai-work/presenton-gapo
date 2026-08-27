@@ -22,7 +22,6 @@ function getExportsDirectory(): string {
 function getSafeExportName(
   request: NextRequest,
   userId: string | null,
-  isAdmin: boolean,
 ): string | null {
   const decodedName = request.nextUrl.searchParams.get("name");
 
@@ -47,7 +46,7 @@ function getSafeExportName(
   if (parts[0] === "users") {
     return parts.length >= 3 && parts[1] === userId ? normalized : null;
   }
-  return isAdmin && parts.length === 1 ? normalized : null;
+  return null;
 }
 
 function contentDisposition(filename: string): string {
@@ -63,7 +62,6 @@ export async function GET(request: NextRequest) {
   const filename = getSafeExportName(
     request,
     auth.user_id,
-    auth.role === "admin",
   );
   if (!filename) {
     return NextResponse.json({ error: "Invalid export file name" }, { status: 400 });

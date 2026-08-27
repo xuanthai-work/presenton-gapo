@@ -145,11 +145,7 @@ const AdvanceSettings = ({
                                 <Button
                                     type="button"
                                     onClick={handleSaveAdvanced}
-                                    style={{
-                                        background:
-                                            'linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)',
-                                    }}
-                                    className="rounded-full px-[28px] py-[10px] font-syne text-xs font-semibold text-[#1E1D2B] shadow-none hover:opacity-95 min-[1800px]:px-8 min-[1800px]:py-3 min-[1800px]:text-sm"
+                                    className="rounded-full px-[28px] py-[10px] font-syne text-xs font-semibold text-white shadow-none bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] min-[1800px]:px-8 min-[1800px]:py-3 min-[1800px]:text-sm"
                                 >
                                     Save
                                 </Button>

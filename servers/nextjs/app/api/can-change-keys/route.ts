@@ -8,6 +8,6 @@ const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
 export async function GET(request: Request) {
   const status = await authStatusForRequest(request);
   return NextResponse.json({
-    canChange: status.authenticated && status.role === "admin" && canChangeKeys,
+    canChange: status.authenticated && canChangeKeys,
   })
 }

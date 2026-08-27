@@ -107,7 +107,7 @@ const IDLE_LOADING_STATE: LoadingState = {
   extra_info: "",
 };
 
-const NAVIGATION_HINT_STORAGE_KEY = "presenton:editor-navigation-hint:v1";
+const NAVIGATION_HINT_STORAGE_KEY = "gslide:editor-navigation-hint:v1";
 const NAVIGATION_HINT_KEYS = ["←", "↑", "↓", "→"];
 const NAVIGATION_SCROLL_THRESHOLD = 240;
 const NAVIGATION_SCROLL_WINDOW_MS = 800;
@@ -894,13 +894,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             aria-controls="presentation-mobile-assistant"
             aria-expanded={isMobileAssistantOpen}
             onClick={() => setIsMobileAssistantOpen(true)}
-            className="fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-white/70 px-4 text-sm font-semibold text-[#101323] shadow-[0_8px_24px_rgba(29,111,232,0.24)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:hidden"
-            style={{
-              background:
-                "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
-            }}
+            className="fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-white/70 px-4 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(29,111,232,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--gslide-accent-hover)] bg-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:hidden"
           >
-            <Sparkles className="h-4 w-4 text-[#1D6FE8]" aria-hidden="true" />
+            <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
             AI Assistant
           </button>
 

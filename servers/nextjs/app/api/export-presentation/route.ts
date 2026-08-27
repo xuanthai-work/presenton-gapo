@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 
-import {
-  BundledPresentationExportFormat,
-  bundledExportPackageAvailable,
-  runBundledPresentationExport,
-} from "@/lib/run-bundled-presentation-export";
+import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
 import { authStatusForRequest } from "@/lib/server-auth-role";
 
-function isValidFormat(value: unknown): value is BundledPresentationExportFormat {
+type ExportFormat = "pdf" | "pptx";
+
+function isValidFormat(value: unknown): value is ExportFormat {
   return value === "pdf" || value === "pptx";
 }
 
@@ -31,56 +27,21 @@ async function readExportRequestBody(req: NextRequest): Promise<{
   return parsed as { format?: unknown; id?: unknown; title?: unknown };
 }
 
-function buildExportDownloadUrl(outPath: string): string {
-  const appDataDirectory = process.env.APP_DATA_DIRECTORY?.trim();
-  if (!appDataDirectory) {
-    throw new Error("APP_DATA_DIRECTORY is required to download exported files.");
+function toAppDataUrl(fastapiPath: string): string {
+  const trimmed = fastapiPath.trim().replace(/\\/g, "/");
+  if (trimmed.startsWith("/app_data/")) {
+    return trimmed;
   }
-
-  const exportsDirectory = path.join(appDataDirectory, "exports");
-  const relativePath = path.relative(exportsDirectory, outPath);
-  if (
-    !relativePath ||
-    relativePath.startsWith("..") ||
-    path.isAbsolute(relativePath)
-  ) {
-    throw new Error("Export finished outside the configured exports directory.");
+  const appData = (process.env.APP_DATA_DIRECTORY || "/app_data")
+    .replace(/\\/g, "/")
+    .replace(/\/+$/, "");
+  if (trimmed.startsWith(`${appData}/`)) {
+    return `/app_data/${trimmed.slice(appData.length + 1)}`;
   }
-
-  return `/api/export-presentation/file?name=${encodeURIComponent(relativePath)}`;
-}
-
-async function moveExportIntoOwnerDirectory(
-  outPath: string,
-  userId: string | null
-): Promise<string> {
-  if (!userId) {
-    return outPath;
+  if (trimmed.startsWith("app_data/")) {
+    return `/${trimmed}`;
   }
-
-  const appDataDirectory = process.env.APP_DATA_DIRECTORY?.trim();
-  if (!appDataDirectory) {
-    throw new Error("APP_DATA_DIRECTORY is required to scope exported files.");
-  }
-
-  const exportsDirectory = await fs.realpath(
-    path.join(appDataDirectory, "exports")
-  );
-  const sourcePath = await fs.realpath(outPath);
-  const ownerDirectory = path.join(exportsDirectory, "users", userId);
-  await fs.mkdir(ownerDirectory, { recursive: true });
-
-  const sourceParent = path.dirname(sourcePath);
-  if (sourceParent === ownerDirectory) {
-    return sourcePath;
-  }
-  if (sourceParent !== exportsDirectory) {
-    throw new Error("Export finished outside the current user's export directory.");
-  }
-
-  const destination = path.join(ownerDirectory, path.basename(sourcePath));
-  await fs.rename(sourcePath, destination);
-  return destination;
+  throw new Error("Export path is not under /app_data");
 }
 
 export async function POST(req: NextRequest) {
@@ -106,7 +67,7 @@ export async function POST(req: NextRequest) {
     throw error;
   }
 
-  const { format, id, title } = body;
+  const { format, id } = body;
   const cookieHeader = req.headers.get("cookie") ?? "";
 
   if (typeof id !== "string" || !id.trim()) {
@@ -124,26 +85,31 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (!(await bundledExportPackageAvailable())) {
-      throw new Error(
-        "presentation-export runtime is not available. Run scripts/sync-presentation-export.cjs to install it."
+    const response = await fetch(
+      `${getFastApiBaseUrl()}/api/v1/ppt/presentation/${encodeURIComponent(id.trim())}/export`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          cookie: cookieHeader,
+        },
+        body: JSON.stringify({ export_as: format }),
+      }
+    );
+    if (!response.ok) {
+      const detail = await response.text();
+      return NextResponse.json(
+        { error: detail || "Export failed", success: false },
+        { status: response.status }
       );
     }
-
-    const { path: unscopedOutPath } = await runBundledPresentationExport({
-      format,
-      presentationId: id.trim(),
-      title: typeof title === "string" ? title : undefined,
-      cookieHeader,
-    });
-    const outPath = await moveExportIntoOwnerDirectory(
-      unscopedOutPath,
-      auth.user_id
-    );
-
+    const payload = (await response.json()) as { path?: string };
+    if (!payload.path) {
+      throw new Error("No path returned from export");
+    }
     return NextResponse.json({
       success: true,
-      path: buildExportDownloadUrl(outPath),
+      path: toAppDataUrl(payload.path),
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

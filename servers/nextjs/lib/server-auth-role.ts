@@ -5,7 +5,6 @@ export type ServerAuthStatus = {
   authenticated: boolean;
   username: string | null;
   user_id: string | null;
-  role: "admin" | "user" | null;
 };
 
 function fastApiBase(): string {
@@ -31,7 +30,6 @@ export async function authStatusForRequest(
         authenticated: false,
         username: null,
         user_id: null,
-        role: null,
       };
     }
     return (await response.json()) as ServerAuthStatus;
@@ -41,23 +39,16 @@ export async function authStatusForRequest(
       authenticated: false,
       username: null,
       user_id: null,
-      role: null,
     };
   }
 }
 
-export async function requireAdminApi(
+export async function requireAuthenticatedApi(
   request: Request
 ): Promise<NextResponse | null> {
   const status = await authStatusForRequest(request);
   if (!status.authenticated) {
     return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
-  }
-  if (status.role !== "admin") {
-    return NextResponse.json(
-      { detail: "Admin access required" },
-      { status: 403 }
-    );
   }
   return null;
 }

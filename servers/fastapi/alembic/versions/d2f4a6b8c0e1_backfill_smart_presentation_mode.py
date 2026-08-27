@@ -1,7 +1,7 @@
 """backfill Smart presentation generation mode
 
 Revision ID: d2f4a6b8c0e1
-Revises: c6e8f1a3b5d7
+Revises: f3a7c1d9e5b2
 """
 
 from collections.abc import Sequence
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "d2f4a6b8c0e1"
-down_revision: str | None = "c6e8f1a3b5d7"
+down_revision: str | None = "f3a7c1d9e5b2"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

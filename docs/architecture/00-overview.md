@@ -38,10 +38,10 @@ flowchart LR
 
 ### Docker / Web
 
-- `docker-compose.yml` có hai service: **`production`** (image từ `Dockerfile`) và **`development`** (hot-reload từ `Dockerfile.dev`)
+- `docker-compose.yml` có **`production` / `development` là nginx** (cổng 5001). Chúng `depends_on` `web`+`api` (hoặc `web-dev`+`api-dev`) và SearXNG. Image: `Dockerfile.web` / `Dockerfile.api` (prod) và `Dockerfile.dev.*` (hot-reload).
 - Không có `production-gpu` / `development-gpu`. GPU (nếu dùng) thuộc server LLM riêng, Presenton chỉ HTTP client (`CUSTOM_LLM_URL`, `MEM0_LLM_BASE_URL`, image APIs)
-- Nginx trong image serve `/static` & `/app_data` và proxy `/api/*` tới FastAPI
-- `start.js` là orchestrator: khởi động FastAPI (uvicorn) + NextJS (`next dev` hoặc production)
+- Nginx proxy `/` tới Next (`web:3000`) và `/api/*`, `/static/`, `/app_data/` tới FastAPI (`api:8000`)
+- `scripts/start-api.js` chỉ bootstrap FastAPI (app_data, userConfig, uvicorn). Next và nginx là process riêng.
 
 ## Phạm vi fork (web-only)
 
@@ -60,7 +60,8 @@ So với upstream Presenton, fork này:
 
 | Entry | File | Vai trò |
 |-------|------|---------|
-| Docker / Web entry | `start.js` | Orchestrator: setup env, spawn FastAPI + NextJS, quản lý log |
+| Docker / Web entry | `scripts/start-api.js` | Bootstrap FastAPI only (app_data, userConfig, uvicorn) |
+| Next.js entry | `Dockerfile.web` CMD `node server.js` | UI process, container `web` |
 | FastAPI entry | `servers/fastapi/server.py` | Chạy uvicorn với `api.main:app` |
 | FastAPI app | `servers/fastapi/api/main.py` | Khởi tạo FastAPI app + routers + middlewares |
 | NextJS entry | `servers/nextjs/proxy.ts` | Proxy `/api/v1`, `/app_data`, `/static` → FastAPI |
@@ -69,9 +70,8 @@ So với upstream Presenton, fork này:
 
 | Client → Server | Method | Mục đích |
 |-----------------|--------|----------|
-| Browser → NextJS | HTTP | Render UI, SSR/RSC |
-| Browser → FastAPI (qua NextJS proxy) | HTTP | API calls |
-| NextJS (BFF) → FastAPI | `fetch` | LLM streaming, export, file upload |
+| Browser → nginx :5001 | HTTP | Một origin: `/` → Next, `/api` `/static` `/app_data` → FastAPI |
+| NextJS (BFF) → FastAPI | `fetch` via `FAST_API_INTERNAL_URL` | Auth status, export, streaming |
 
 ## 🔄 Luồng tính năng chính
 

@@ -10,9 +10,9 @@ from api.lifespan import app_lifespan
 from api.middlewares import SessionAuthMiddleware, UserConfigEnvUpdateMiddleware
 from api.v1.async_tasks.router import API_V1_ASYNC_TASKS_ROUTER
 from api.v1.auth.router import API_V1_AUTH_ROUTER
-from api.v1.admin.router import API_V1_ADMIN_ROUTER
 from api.v1.mock.router import API_V1_MOCK_ROUTER
 from api.v1.ppt.router import API_V1_PPT_ROUTER
+from api.v1.settings.router import API_V1_SETTINGS_ROUTER
 from api.v1.webhook.router import API_V1_WEBHOOK_ROUTER
 from utils.get_env import (
     get_app_data_directory_env,
@@ -67,7 +67,7 @@ app.include_router(API_V1_PPT_ROUTER)
 app.include_router(API_V1_WEBHOOK_ROUTER)
 app.include_router(API_V1_MOCK_ROUTER)
 app.include_router(API_V1_AUTH_ROUTER)
-app.include_router(API_V1_ADMIN_ROUTER)
+app.include_router(API_V1_SETTINGS_ROUTER)
 app.include_router(API_V1_ASYNC_TASKS_ROUTER)
 
 # Mount app_data and static assets (direct FastAPI access; nginx also serves /static in Docker).

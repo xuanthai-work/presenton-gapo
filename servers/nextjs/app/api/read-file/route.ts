@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const { filePath } = await request.json();
     const content = readReadableLocalFile(filePath, {
       userId: auth.user_id,
-      isAdmin: auth.role === 'admin',
+      isAdmin: false,
     });
     return NextResponse.json({ content });
   } catch (error) {

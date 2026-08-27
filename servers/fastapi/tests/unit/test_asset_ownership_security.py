@@ -7,9 +7,7 @@ from fastapi import HTTPException
 from api.v1.auth.assets import is_app_data_path_authorized
 from api.v1.auth.context import (
     reset_current_owner_id,
-    reset_current_owner_is_admin,
     set_current_owner_id,
-    set_current_owner_is_admin,
 )
 from services.export_task_service import ExportTaskService
 from utils.asset_directory_utils import resolve_app_path_to_filesystem
@@ -22,33 +20,25 @@ def test_browser_asset_paths_are_owner_scoped_and_traversal_safe():
     assert is_app_data_path_authorized(
         f"/app_data/images/users/{owner_id}/slide.png",
         user_id=owner_id,
-        is_admin=False,
     )
     assert not is_app_data_path_authorized(
         f"/app_data/images/users/{other_id}/slide.png",
         user_id=owner_id,
-        is_admin=False,
     )
     assert not is_app_data_path_authorized(
         "/app_data/images/%252e%252e/userConfig.json",
         user_id=owner_id,
-        is_admin=True,
     )
     assert not is_app_data_path_authorized(
         "/app_data/images/%2525252525252525252e%2525252525252525252e"
         "/userConfig.json",
         user_id=owner_id,
-        is_admin=True,
     )
+    # Legacy admin-only root: with the admin persona gone, this is denied
+    # to every signed-in user.
     assert not is_app_data_path_authorized(
         "/app_data/images/legacy.png",
         user_id=owner_id,
-        is_admin=False,
-    )
-    assert is_app_data_path_authorized(
-        "/app_data/images/legacy.png",
-        user_id=owner_id,
-        is_admin=True,
     )
 
 
@@ -67,7 +57,6 @@ def test_server_side_file_resolution_rejects_other_users_and_symlink_escape(
     monkeypatch.setenv("APP_DATA_DIRECTORY", str(app_data))
 
     owner_token = set_current_owner_id(owner_id)
-    admin_token = set_current_owner_is_admin(False)
     try:
         assert resolve_app_path_to_filesystem(
             f"/app_data/uploads/users/{owner_id}/own.pptx"
@@ -86,7 +75,6 @@ def test_server_side_file_resolution_rejects_other_users_and_symlink_escape(
             is None
         )
     finally:
-        reset_current_owner_is_admin(admin_token)
         reset_current_owner_id(owner_token)
 
 

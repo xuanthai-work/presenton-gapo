@@ -74,7 +74,7 @@ function cloneChildForAppend(child: unknown, index: number) {
   }
   const next = { ...(cloned as RawRecord) };
   delete next.id;
-  delete next.__presenton_manual_position;
+  delete next.__gslide_manual_position;
   if (typeof next.name === "string") {
     next.name = `${next.name}_copy_${index + 1}`;
   }

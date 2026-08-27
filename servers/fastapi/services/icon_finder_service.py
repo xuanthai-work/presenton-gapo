@@ -8,6 +8,7 @@ from utils.icon_weights import (
     DEFAULT_ICON_WEIGHT,
     normalize_icon_weight,
 )
+from utils.get_env import first_env
 from utils.path_helpers import get_resource_path, get_writable_path
 
 
@@ -15,7 +16,10 @@ def _icon_fastembed_cache_directory() -> str:
     """ONNX weights for icon search (MiniLM). Prefer a path outside ``APP_DATA_DIRECTORY``
     in Docker: ``./app_data`` is often bind-mounted and would hide weights baked at image build.
     """
-    override = (os.getenv("PRESENTON_FASTEMBED_ICON_CACHE_DIR") or "").strip()
+    override = first_env(
+        "GSLIDE_FASTEMBED_ICON_CACHE_DIR",
+        "PRESENTON_FASTEMBED_ICON_CACHE_DIR",
+    )
     if override:
         path = os.path.abspath(override)
         os.makedirs(path, exist_ok=True)

@@ -5,7 +5,7 @@ import { ArrowUp, Loader2, PenLine } from "lucide-react";
 import type { TemplateV2Layout } from "@/components/slide-editor/importing/template-v2-import";
 import { TemplateV2HtmlSlidePreview } from "../components/TemplateV2HtmlSlidePreview";
 import {
-  PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+  GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
   type BlankSlidePromptEventDetail,
 } from "./blank-slide-prompt-event";
 
@@ -80,7 +80,7 @@ export function TemplateV2PromptOverlay({
     if (typeof window === "undefined") return;
     window.dispatchEvent(
       new CustomEvent<BlankSlidePromptEventDetail>(
-        PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+        GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
         {
           detail: {
             prompt: trimmedPrompt,
@@ -163,11 +163,7 @@ export function TemplateV2PromptOverlay({
           type="submit"
           aria-label={submitting ? "Creating slide" : "Create slide"}
           disabled={!prompt.trim() || submitting}
-          style={{
-            background:
-              "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
-          }}
-          className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191919] transition hover:brightness-95 disabled:cursor-not-allowed disabled:text-[#9B9BA1] disabled:hover:brightness-100"
+          className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--gslide-accent)] text-white transition hover:bg-[var(--gslide-accent-hover)] disabled:cursor-not-allowed disabled:bg-[#EDEEEF] disabled:text-[#9B9BA1] disabled:hover:bg-[#EDEEEF]"
         >
           {submitting ? (
             <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.1} />

@@ -14,7 +14,7 @@ Work happens in:
 
 - `servers/fastapi` — Python backend
 - `servers/nextjs` — Next.js frontend
-- `docker-compose.yml`, `Dockerfile`, `Dockerfile.dev`
+- `docker-compose.yml`, `Dockerfile.web`, `Dockerfile.api`, `Dockerfile.dev.web`, `Dockerfile.dev.api`
 - `docs/` — architecture and operator docs
 
 LLM, image, and web-search providers are intentionally small: OpenAI, Google Gemini, and OpenAI-compatible (`custom`). Do not reintroduce dropped providers (Anthropic, Bedrock, in-app Ollama, ComfyUI, MCP, Electron, Tavily, Exa, Brave) unless that is an explicit product decision.

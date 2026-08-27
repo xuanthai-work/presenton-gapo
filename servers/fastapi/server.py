@@ -11,6 +11,12 @@ if __name__ == "__main__":
         "--reload", type=str, default="false", help="Reload the server on code changes"
     )
     parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",
+        help="Host interface to bind",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="info",
@@ -18,7 +24,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     reload = args.reload == "true"
-    host = "127.0.0.1"
+    host = args.host
 
     uvicorn.run(
         "api.main:app",

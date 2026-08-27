@@ -514,7 +514,7 @@ function syncElementCanvasFields(
       "size",
       "rotation",
       "points",
-      "__presenton_manual_position",
+      "__gslide_manual_position",
     ]);
     syncElementCanvasFields(targetElement.children, sourceElement.children);
     syncElementCanvasFields(targetElement.elements, sourceElement.elements);

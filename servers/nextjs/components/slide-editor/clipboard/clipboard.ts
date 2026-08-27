@@ -18,7 +18,7 @@ export type TemplateV2ClipboardItem = {
 };
 
 export type TemplateV2ClipboardPayload = {
-  format: "presenton/template-v2";
+  format: "gslide/template-v2" | "presenton/template-v2";
   version: 1;
   kind: "component" | "components";
   data?: TemplateV2ClipboardRecord;
@@ -47,7 +47,7 @@ export function createTemplateV2ClipboardPayload(
   );
 
   return {
-    format: "presenton/template-v2",
+    format: "gslide/template-v2",
     version: 1,
     kind: normalizedItems.length > 1 ? "components" : "component",
     ...(first ? { data: cloneJson(first.data) } : {}),

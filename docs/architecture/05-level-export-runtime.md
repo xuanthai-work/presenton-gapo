@@ -12,7 +12,7 @@ Level này mô tả 2 thành phần độc lập với web stack:
 ```mermaid
 graph TB
     Export["presentation-export/"]
-    Export --> Ver["version metadata:<br/>presenton-export-version.json"]
+    Export --> Ver["version metadata:<br/>gslide-export-version.json"]
     Export --> NodeMain["index.js<br/>Node entry"]
     Export --> CjsMain["index.cjs<br/>CommonJS entry"]
     Export --> Py["py/<br/>Python helpers"]
@@ -62,7 +62,7 @@ sequenceDiagram
 
 ### Runtime layout
 
-Trên Docker build (`Dockerfile`):
+Trên Docker build (`Dockerfile.api`):
 
 1. `sync-presentation-export.cjs --force` download release asset theo `TARGETARCH`
 2. Giải nén → `presentation-export/` chứa:
@@ -90,7 +90,7 @@ Runner script nằm ở `scripts/liteparse_runner.mjs` và được copy vào `/
 
 | Target | Lệnh | Output |
 |--------|------|--------|
-| Dev (Web) | `docker compose up development --build` | NextJS + FastAPI, hot-reload |
-| Docker production | `docker compose up production --build` | Web stack với Nginx (CPU; không GPU) |
+| Dev (Web) | `docker compose up development --build` | nginx + Next + FastAPI + SearXNG, hot-reload |
+| Docker production | `docker compose up production --build` | nginx + Next + FastAPI + SearXNG (CPU; không GPU) |
 | Sync export runtime | `npm run sync:presentation-export` | Download `presentation-export/` |
 | Verify export | `npm run check:presentation-export` | CI gate |

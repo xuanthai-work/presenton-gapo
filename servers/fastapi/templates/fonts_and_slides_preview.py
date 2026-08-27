@@ -569,7 +569,7 @@ def _tailwind_fallback_css_for_slide_html(slide_html: str) -> str:
 
 
 def _app_data_directory() -> str:
-    app_data_dir = get_app_data_directory_env() or "/tmp/presenton"
+    app_data_dir = get_app_data_directory_env() or "/tmp/gslide"
     os.makedirs(app_data_dir, exist_ok=True)
     return app_data_dir
 

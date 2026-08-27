@@ -51,7 +51,6 @@ graph TB
     Gen --> Settings["settings/"]
     Gen --> Theme["theme/"]
     Gen --> Templates["templates/"]
-    Gen --> Admin["admin/"]
     Gen --> Community["community/"]
 
     Bff --> ApiRoutes["can-change-keys,<br/>export-presentation,<br/>export-presentation-data,<br/>github-stars,<br/>has-required-key,<br/>read-file,<br/>runtime-config,<br/>telemetry-status,<br/>template,<br/>templates,<br/>update-svg,<br/>upload-image,<br/>user-config,<br/>validate-layout-code"]
@@ -71,8 +70,7 @@ graph TB
 | `(presentation-generator)/documents-preview` | Preview uploaded document |
 | `(presentation-generator)/theme` | Theme picker |
 | `(presentation-generator)/templates` | Built-in template gallery |
-| `(presentation-generator)/settings` | User settings (LLM keys, ...) |
-| `(presentation-generator)/admin` | Admin panel |
+| `(presentation-generator)/settings` | User settings (LLM keys, ...) — open to every signed-in user |
 | `(presentation-generator)/community` | Community templates |
 | `(export)/pdf-maker` | PDF export bridge |
 

@@ -2,7 +2,6 @@ import pytest
 from pydantic import ValidationError
 
 from api.v1.auth.schemas import (
-    AdminCreateUserRequest,
     AuthCredentialsRequest,
     InternalUserCreate,
     LoginCredentialsRequest,
@@ -14,7 +13,6 @@ from api.v1.auth.schemas import (
     (
         (InternalUserCreate, "secret123"),
         (AuthCredentialsRequest, "secret123"),
-        (AdminCreateUserRequest, "secret123"),
         (LoginCredentialsRequest, "secret"),
     ),
 )
@@ -29,7 +27,6 @@ def test_username_credentials_reject_whitespace(schema, password, username):
     (
         (InternalUserCreate, "secret123"),
         (AuthCredentialsRequest, "secret123"),
-        (AdminCreateUserRequest, "secret123"),
         (LoginCredentialsRequest, "secret"),
     ),
 )

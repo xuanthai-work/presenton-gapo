@@ -14,7 +14,7 @@ from api.v1.auth.assets import (
     is_app_data_path_authorized,
     normalized_app_data_parts,
 )
-from api.v1.auth.context import get_current_owner_id, get_current_owner_is_admin
+from api.v1.auth.context import get_current_owner_id
 
 
 def _owned_directory(root_name: str) -> str:
@@ -166,7 +166,6 @@ def _app_data_url_allowed(path: str) -> bool:
     return is_app_data_path_authorized(
         path,
         user_id=owner_id,
-        is_admin=get_current_owner_is_admin(),
     )
 
 
@@ -179,7 +178,7 @@ def _resolve_allowed_absolute_file(path: str) -> Optional[str]:
             app_url = "/app_data/" + relative.replace(os.sep, "/")
             return candidate if _app_data_url_allowed(app_url) else None
 
-    temp_root = get_temp_directory_env() or "/tmp/presenton"
+    temp_root = get_temp_directory_env() or "/tmp/gslide"
     owner_id = get_current_owner_id()
     allowed_temp_root = (
         os.path.join(temp_root, str(owner_id)) if owner_id is not None else temp_root

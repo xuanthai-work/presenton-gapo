@@ -21,14 +21,14 @@ async def _create_auth_database(database_path):
     return engine, session_maker
 
 
-def test_reset_auth_recovers_admin_without_replacing_account(
+def test_reset_auth_recovers_user_without_replacing_account(
     monkeypatch, tmp_path
 ):
     config_path = tmp_path / "userConfig.json"
     config_path.write_text(
         json.dumps(
             {
-                "AUTH_USERNAME": "old-admin",
+                "AUTH_USERNAME": "old-user",
                 "AUTH_PASSWORD_HASH": "old-hash",
                 "AUTH_SECRET_KEY": "old-secret",
                 "LLM_PROVIDER": "openai",
@@ -37,7 +37,7 @@ def test_reset_auth_recovers_admin_without_replacing_account(
     )
     monkeypatch.setenv("USER_CONFIG_PATH", str(config_path))
     monkeypatch.setenv("RESET_AUTH", "true")
-    monkeypatch.setenv("AUTH_USERNAME", "recovered-admin")
+    monkeypatch.setenv("AUTH_USERNAME", "recovered-user")
     monkeypatch.setenv("AUTH_PASSWORD", "new-secret-123")
     monkeypatch.delenv("AUTH_OVERRIDE_FROM_ENV", raising=False)
 
@@ -46,21 +46,20 @@ def test_reset_auth_recovers_admin_without_replacing_account(
         original_id = None
         try:
             async with session_maker() as session:
-                admin = User(
-                    username="old-admin",
+                user = User(
+                    username="old-user",
                     hashed_password=PASSWORD_HELPER.hash("old-secret-123"),
                     is_active=True,
                     is_verified=True,
-                    is_superuser=True,
                     auth_version=4,
                 )
-                session.add(admin)
+                session.add(user)
                 await session.flush()
-                original_id = admin.id
-                session.add(AccessToken(token="sk-test-old", user_id=admin.id))
+                original_id = user.id
+                session.add(AccessToken(token="sk-test-old", user_id=user.id))
                 await session.commit()
 
-            async def skip_ownership_backfill(_session, _admin):
+            async def skip_ownership_backfill(_session, _user):
                 return None
 
             monkeypatch.setattr(bootstrap, "async_session_maker", session_maker)
@@ -69,7 +68,7 @@ def test_reset_auth_recovers_admin_without_replacing_account(
                 "_backfill_legacy_ownership",
                 skip_ownership_backfill,
             )
-            await bootstrap.bootstrap_database_admin()
+            await bootstrap.bootstrap_database_user()
 
             async with session_maker() as session:
                 recovered = await session.scalar(select(User))
@@ -77,9 +76,11 @@ def test_reset_auth_recovers_admin_without_replacing_account(
 
             assert recovered is not None
             assert recovered.id == original_id
-            assert recovered.username == "recovered-admin"
-            assert recovered.admin_slot == "primary"
+            assert recovered.username == "recovered-user"
             assert recovered.auth_version == 5
+            assert not hasattr(recovered, "is_superuser") or getattr(
+                recovered, "is_superuser", False
+            ) is False
             verified, _ = PASSWORD_HELPER.verify_and_update(
                 "new-secret-123",
                 recovered.hashed_password,
@@ -92,7 +93,7 @@ def test_reset_auth_recovers_admin_without_replacing_account(
     asyncio.run(runner())
 
     config = json.loads(config_path.read_text())
-    assert config["AUTH_USERNAME"] == "recovered-admin"
+    assert config["AUTH_USERNAME"] == "recovered-user"
     assert config["AUTH_PASSWORD_HASH"] != "old-hash"
     assert config["AUTH_SECRET_KEY"] != "old-secret"
     assert config["LLM_PROVIDER"] == "openai"
@@ -100,7 +101,7 @@ def test_reset_auth_recovers_admin_without_replacing_account(
     assert stat.S_IMODE((tmp_path / "userConfig.json.bak").stat().st_mode) == 0o600
 
 
-def test_reset_auth_without_password_refuses_to_delete_or_replace_admin(
+def test_reset_auth_without_password_refuses_to_delete_or_replace_user(
     monkeypatch, tmp_path
 ):
     monkeypatch.setenv("USER_CONFIG_PATH", str(tmp_path / "userConfig.json"))
@@ -114,27 +115,26 @@ def test_reset_auth_without_password_refuses_to_delete_or_replace_admin(
         )
         try:
             async with session_maker() as session:
-                admin = User(
-                    username="admin",
+                user = User(
+                    username="user",
                     hashed_password=PASSWORD_HELPER.hash("old-secret-123"),
                     is_active=True,
                     is_verified=True,
-                    is_superuser=True,
                     auth_version=1,
                 )
-                session.add(admin)
+                session.add(user)
                 await session.commit()
-                original_id = admin.id
+                original_id = user.id
 
             monkeypatch.setattr(bootstrap, "async_session_maker", session_maker)
             with pytest.raises(RuntimeError, match="require AUTH_PASSWORD"):
-                await bootstrap.bootstrap_database_admin()
+                await bootstrap.bootstrap_database_user()
 
             async with session_maker() as session:
                 users = list(await session.scalars(select(User)))
             assert len(users) == 1
             assert users[0].id == original_id
-            assert users[0].username == "admin"
+            assert users[0].username == "user"
         finally:
             await engine.dispose()
 

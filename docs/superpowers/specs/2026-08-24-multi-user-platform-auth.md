@@ -3,6 +3,8 @@
 **Date:** 2026-08-24  
 **Status:** Approved direction (brainstorming)
 
+> **Superseded for admin/BYOK by [`2026-08-27-no-admin-per-user-keys-design.md`](./2026-08-27-no-admin-per-user-keys-design.md).** The current architecture drops the admin persona and `/api/v1/admin/*`, and lets every signed-in user save their own LLM/image/search keys (overlay on top of process env). This spec is preserved as the brainstorming record.
+
 ## Product goal
 
 Ship a multi-user web app where anyone can register and use presentations.  

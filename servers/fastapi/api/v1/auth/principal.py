@@ -16,7 +16,6 @@ from api.v1.auth.config import is_accepted_api_key, read_session_token
 class AuthPrincipal:
     user_id: uuid.UUID
     username: str
-    is_admin: bool
     method: Literal["jwt", "api_key"]
 
 
@@ -32,7 +31,6 @@ async def resolve_request_principal(
                 AuthPrincipal(
                     user_id=user.id,
                     username=user.username,
-                    is_admin=user.is_superuser,
                     method="jwt",
                 ),
                 user,
@@ -47,13 +45,12 @@ async def resolve_request_principal(
         if access_token is None:
             return None, None
         user = await session.get(User, access_token.user_id)
-        if user is None or not user.is_active or not user.is_superuser:
+        if user is None or not user.is_active:
             return None, None
         return (
             AuthPrincipal(
                 user_id=user.id,
                 username=user.username,
-                is_admin=True,
                 method="api_key",
             ),
             user,
@@ -66,11 +63,4 @@ def principal_from_request(request: Request) -> AuthPrincipal:
     principal = getattr(request.state, "auth_principal", None)
     if principal is None:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    return principal
-
-
-def require_browser_admin_principal(request: Request) -> AuthPrincipal:
-    principal = principal_from_request(request)
-    if principal.method != "jwt" or not principal.is_admin:
-        raise HTTPException(status_code=403, detail="Admin browser session required")
     return principal

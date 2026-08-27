@@ -4,7 +4,6 @@ import {
   BarChart3,
   Image as ImageIcon,
   Search as SearchIcon,
-  Settings as SettingsIcon,
   Type as TypeIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,8 +12,7 @@ export type SettingsSection =
   | "text-provider"
   | "image-provider"
   | "web-search-provider"
-  | "privacy"
-  | "admin";
+  | "privacy";
 
 const SECTIONS: {
   id: SettingsSection;
@@ -31,7 +29,6 @@ const SECTIONS: {
     Icon: BarChart3,
     hint: "Privacy controls",
   },
-  { id: "admin", label: "Admin", Icon: SettingsIcon },
 ];
 
 const SettingSideBar = ({

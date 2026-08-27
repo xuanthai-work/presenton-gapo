@@ -1,5 +1,15 @@
 import os
 
+from utils.provider_overlay import overlay_or_env
+
+
+def first_env(*names: str) -> str:
+    for name in names:
+        value = (os.getenv(name) or "").strip()
+        if value:
+            return value
+    return ""
+
 
 def _is_truthy(value: str | None) -> bool:
     if value is None:
@@ -47,39 +57,39 @@ def is_disable_auth_enabled():
 
 
 def get_llm_provider_env():
-    return os.getenv("LLM")
+    return overlay_or_env("LLM")
 
 
 def get_custom_llm_url_env():
-    return os.getenv("CUSTOM_LLM_URL")
+    return overlay_or_env("CUSTOM_LLM_URL")
 
 
 def get_openai_api_key_env():
-    return os.getenv("OPENAI_API_KEY")
+    return overlay_or_env("OPENAI_API_KEY")
 
 
 def get_openai_model_env():
-    return os.getenv("OPENAI_MODEL")
+    return overlay_or_env("OPENAI_MODEL")
 
 
 def get_google_api_key_env():
-    return os.getenv("GOOGLE_API_KEY")
+    return overlay_or_env("GOOGLE_API_KEY")
 
 
 def get_google_model_env():
-    return os.getenv("GOOGLE_MODEL")
+    return overlay_or_env("GOOGLE_MODEL")
 
 
 def get_custom_llm_api_key_env():
-    return os.getenv("CUSTOM_LLM_API_KEY")
+    return overlay_or_env("CUSTOM_LLM_API_KEY")
 
 
 def get_custom_model_env():
-    return os.getenv("CUSTOM_MODEL")
+    return overlay_or_env("CUSTOM_MODEL")
 
 
 def get_disable_image_generation_env():
-    return os.getenv("DISABLE_IMAGE_GENERATION")
+    return overlay_or_env("DISABLE_IMAGE_GENERATION")
 
 
 def is_parallel_image_generation_enabled() -> bool:
@@ -92,27 +102,27 @@ def is_parallel_image_generation_enabled() -> bool:
 
 
 def get_image_provider_env():
-    return os.getenv("IMAGE_PROVIDER")
+    return overlay_or_env("IMAGE_PROVIDER")
 
 
 def get_disable_thinking_env():
-    return os.getenv("DISABLE_THINKING")
+    return overlay_or_env("DISABLE_THINKING")
 
 
 def get_extended_reasoning_env():
-    return os.getenv("EXTENDED_REASONING")
+    return overlay_or_env("EXTENDED_REASONING")
 
 
 def get_web_grounding_env():
-    return os.getenv("WEB_GROUNDING")
+    return overlay_or_env("WEB_GROUNDING")
 
 
 def get_web_search_provider_env():
-    return os.getenv("WEB_SEARCH_PROVIDER")
+    return overlay_or_env("WEB_SEARCH_PROVIDER")
 
 
 def get_web_search_max_results_env():
-    return os.getenv("WEB_SEARCH_MAX_RESULTS")
+    return overlay_or_env("WEB_SEARCH_MAX_RESULTS")
 
 
 def get_searxng_base_url_env():
@@ -121,7 +131,7 @@ def get_searxng_base_url_env():
 
 # Gpt Image 1.5 Quality
 def get_gpt_image_1_5_quality_env():
-    return os.getenv("GPT_IMAGE_1_5_QUALITY")
+    return overlay_or_env("GPT_IMAGE_1_5_QUALITY")
 
 
 def get_migrate_database_on_startup_env():
@@ -142,12 +152,12 @@ def get_sentry_send_default_pii_env():
 
 # OpenAI Compatible Image Provider
 def get_openai_compat_image_base_url_env():
-    return os.getenv("OPENAI_COMPAT_IMAGE_BASE_URL")
+    return overlay_or_env("OPENAI_COMPAT_IMAGE_BASE_URL")
 
 
 def get_openai_compat_image_api_key_env():
-    return os.getenv("OPENAI_COMPAT_IMAGE_API_KEY")
+    return overlay_or_env("OPENAI_COMPAT_IMAGE_API_KEY")
 
 
 def get_openai_compat_image_model_env():
-    return os.getenv("OPENAI_COMPAT_IMAGE_MODEL")
+    return overlay_or_env("OPENAI_COMPAT_IMAGE_MODEL")

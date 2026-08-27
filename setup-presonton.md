@@ -50,11 +50,11 @@ Không cần NVIDIA Container Toolkit cho Presenton. LLM self-host (vLLM, Ollama
 Đổi port host:
 
 ```powershell
-$env:PRESENTON_HTTP_HOST_PORT=8080
+$env:GSLIDE_HTTP_HOST_PORT=8080
 docker compose up production --build
 ```
 
-Lần đầu, UI sẽ bắt tạo tài khoản admin (hoặc set `AUTH_USERNAME` / `AUTH_PASSWORD` như mục 6).
+Lần đầu, UI sẽ bắt tạo tài khoản đầu tiên (hoặc set `AUTH_USERNAME` / `AUTH_PASSWORD` như mục 6 để seed sẵn một user lúc boot). Mỗi user tự thêm API key của mình trong Settings; không có khái niệm admin.
 
 ---
 
@@ -155,16 +155,16 @@ LLM và image provider **không** cần cùng hãng (Google LLM + OpenAI image l
 
 ---
 
-## 6. Auth (admin / API)
+## 6. Auth (per-user)
 
-Lần đầu mở UI sẽ setup account. Hoặc tạo admin lúc boot:
+Mỗi user tự đăng ký trên UI Sign in / Create account, hoặc seed sẵn một user lúc boot:
 
 ```dotenv
-AUTH_USERNAME=admin
+AUTH_USERNAME=alice
 AUTH_PASSWORD=change-me-min-8-chars
 ```
 
-REST API: `http://localhost:5001/api/v1/...` với `Authorization: Bearer sk-presenton-...` (tạo key ở **Admin → API keys**). Fork này không còn MCP endpoint.
+API keys cá nhân cho REST API: `http://localhost:5001/api/v1/...` với `Authorization: Bearer sk-gslide-...` (tạo key trong **Settings → API keys**). Bearer token gắn với user hiện tại; không còn role admin. Fork này không còn MCP endpoint.
 
 ---
 
@@ -197,7 +197,7 @@ Tắt telemetry: `DISABLE_ANONYMOUS_TRACKING=true`.
 ## 8. `.env` mẫu để chạy ngay (OpenAI)
 
 ```dotenv
-PRESENTON_HTTP_HOST_PORT=5001
+GSLIDE_HTTP_HOST_PORT=5001
 
 LLM=openai
 OPENAI_API_KEY=sk-...
@@ -237,9 +237,9 @@ docker compose logs --tail 100 production
 
 1. **Mem0 fail dù generate được** — LLM chính OK nhưng Mem0 vẫn gọi endpoint mặc định không sẵn. Tắt Mem0 hoặc trỏ `MEM0_LLM_*` đúng endpoint.
 2. **Build rất lâu / hết disk** — image gồm Chromium, fonts, spaCy, FastEmbed. Cần vài GB trống.
-3. **Platform** — Compose default `linux/amd64`. Máy ARM (nếu có) có thể set `PRESENTON_DOCKER_PLATFORM=linux/arm64`.
+3. **Platform** — Compose default `linux/amd64`. Máy ARM (nếu có) có thể set `GSLIDE_DOCKER_PLATFORM=linux/arm64`.
 4. **Không persist data** — luôn giữ volume `./app_data:/app_data`. Xóa folder này là mất deck, user, memory.
-5. **Không pull `ghcr.io/presenton/presenton` cho fork này** — compose đang `build:` từ Dockerfile trong repo.
+5. **Không pull `ghcr.io/presenton/presenton` cho fork này** — compose build `Dockerfile.web` và `Dockerfile.api` trong repo.
 6. **`production-gpu` / `development-gpu` không còn** — dùng `production` hoặc `development`. GPU cho LLM nằm ở server AI, không trong container Presenton.
 
 ---

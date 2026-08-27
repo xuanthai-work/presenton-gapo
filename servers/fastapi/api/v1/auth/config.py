@@ -118,13 +118,17 @@ def get_legacy_admin_credentials() -> tuple[Optional[str], Optional[str]]:
     )
 
 
-def persist_admin_credentials(
+def persist_auth_credentials(
     username: str,
     password_hash: str,
     *,
     rotate_secret: bool = False,
 ) -> None:
-    """Keep the rollback/recovery credential copy in userConfig.json current."""
+    """Keep the rollback/recovery credential copy in userConfig.json current.
+
+    The bootstrap username/password no longer implies an admin role — this is
+    just the recovery copy used when the database cannot be opened.
+    """
     config = _load_user_config()
     config["AUTH_USERNAME"] = username.strip()
     config["AUTH_PASSWORD_HASH"] = password_hash

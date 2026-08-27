@@ -254,3 +254,15 @@ class TestMem0PresentationMemoryService:
             "user_id": f"presentation:{presentation_id}"
         }
         assert client.search_calls[0]["top_k"] == 5
+
+
+def test_oss_config_defaults_are_gslide(monkeypatch):
+    monkeypatch.delenv("APP_DATA_DIRECTORY", raising=False)
+    monkeypatch.delenv("MEM0_COLLECTION_NAME", raising=False)
+    monkeypatch.delenv("MEM0_DIR", raising=False)
+
+    _mem0_dir, _qdrant, _history, collection, _dims, config = mem0_oss._oss_config_from_env()
+
+    assert collection == "gslide_memories"
+    assert _mem0_dir.replace("\\", "/").startswith("/tmp/gslide")
+    assert config["vector_store"]["config"]["collection_name"] == "gslide_memories"

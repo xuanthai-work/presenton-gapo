@@ -54,3 +54,18 @@ def test_api_key_prefixes():
 def test_new_access_token_uses_gslide_prefix():
     token = AccessToken(user_id=uuid.uuid4())
     assert token.token.startswith("sk-gslide-")
+
+
+def test_reset_password_secret_is_gslide(tmp_path, monkeypatch):
+    monkeypatch.setenv("APP_DATA_DIRECTORY", str(tmp_path))
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{(tmp_path / 'fastapi.db').as_posix()}")
+
+    from api.v1.auth.users import UserManager
+
+    assert UserManager.reset_password_token_secret == "gslide-admin-managed-passwords"
+
+
+def test_owner_context_var_names_are_gslide():
+    from api.v1.auth.context import _CURRENT_OWNER_ID
+
+    assert _CURRENT_OWNER_ID.name == "gslide_current_owner_id"

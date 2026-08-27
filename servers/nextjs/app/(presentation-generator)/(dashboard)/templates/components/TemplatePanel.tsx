@@ -57,13 +57,8 @@ const LayoutPreview = () => {
           <div className="flex gap-2.5 max-sm:w-full max-md:justify-center max-sm:flex-wrap">
             <Link
               href="/custom-template"
-              className="inline-flex items-center font-syne font-semibold gap-2 rounded-xl px-4 py-2.5 text-black text-sm shadow-sm hover:shadow-md"
+              className="inline-flex items-center font-syne font-semibold gap-2 rounded-full px-4 py-2.5 text-white text-sm shadow-sm transition-colors hover:shadow-md bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)]"
               aria-label="Create new template"
-              style={{
-                borderRadius: "48px",
-                background:
-                  "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
-              }}
             >
               <span className="hidden md:inline">New Template</span>
               <span className="md:hidden">New</span>

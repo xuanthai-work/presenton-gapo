@@ -23,7 +23,7 @@ from models.sql.webhook_subscription import WebhookSubscription
 from services.database import async_session_maker
 from api.v1.auth.config import (
     get_legacy_admin_credentials,
-    persist_admin_credentials,
+    persist_auth_credentials,
 )
 
 
@@ -44,19 +44,34 @@ def _validate_new_environment_username(username: str) -> None:
         raise RuntimeError("AUTH_USERNAME must be at least 3 characters")
 
 
-async def bootstrap_database_admin() -> None:
-    """Migrate the old single-admin account or initialize it from environment."""
-    async with async_session_maker() as session:
-        admin = await session.scalar(
-            select(User).where(User.is_superuser.is_(True)).limit(1)
+async def _find_bootstrap_user(session) -> User | None:
+    """Find the user that the legacy/admin bootstrap should recover.
+
+    The migration looks up by ``AUTH_USERNAME`` from the recovery file/env,
+    falling back to the first user the database has if any exist.
+    """
+    env_username = (os.getenv("AUTH_USERNAME") or "").strip()
+    if env_username:
+        existing = await session.scalar(
+            select(User).where(func.lower(User.username) == env_username.casefold())
         )
+        if existing is not None:
+            return existing
+    # No env hint, but if the instance already has an account, take the first
+    # one so the bootstrap always operates on a real user row.
+    return await session.scalar(select(User).order_by(User.created_at.asc()).limit(1))
+
+
+async def bootstrap_database_user() -> None:
+    """Recover or seed the bootstrap user from env/file without an admin role."""
+    async with async_session_maker() as session:
+        user = await _find_bootstrap_user(session)
         reset_requested = _truthy(os.getenv("RESET_AUTH"))
         override_requested = _truthy(os.getenv("AUTH_OVERRIDE_FROM_ENV"))
         env_username = (os.getenv("AUTH_USERNAME") or "").strip()
         env_password = os.getenv("AUTH_PASSWORD")
         _validate_new_environment_username(env_username)
-        if admin is not None:
-            admin.admin_slot = "primary"
+        if user is not None:
             if (reset_requested or override_requested) and not env_password:
                 raise RuntimeError(
                     "RESET_AUTH and AUTH_OVERRIDE_FROM_ENV require AUTH_PASSWORD so "
@@ -65,25 +80,25 @@ async def bootstrap_database_admin() -> None:
             if (reset_requested or override_requested) and env_password:
                 _validate_new_environment_password(env_password)
                 if env_username:
-                    admin.username = env_username
-                admin.hashed_password = PASSWORD_HELPER.hash(env_password)
-                admin.auth_version += 1
+                    user.username = env_username
+                user.hashed_password = PASSWORD_HELPER.hash(env_password)
+                user.auth_version += 1
                 await session.execute(
-                    delete(AccessToken).where(AccessToken.user_id == admin.id)
+                    delete(AccessToken).where(AccessToken.user_id == user.id)
                 )
                 await session.flush()
                 await session.commit()
-                persist_admin_credentials(
-                    admin.username,
-                    admin.hashed_password,
+                persist_auth_credentials(
+                    user.username,
+                    user.hashed_password,
                     rotate_secret=True,
                 )
                 logger.warning(
-                    "Recovered bootstrap administrator credentials from environment."
+                    "Recovered bootstrap user credentials from environment."
                 )
             else:
                 await session.commit()
-            await _backfill_legacy_ownership(session, admin)
+            await _backfill_legacy_ownership(session, user)
             return
 
         account_count = int(
@@ -91,7 +106,7 @@ async def bootstrap_database_admin() -> None:
         )
         if account_count:
             raise RuntimeError(
-                "User accounts exist but no bootstrap administrator is configured"
+                "User accounts exist but no bootstrap user can be located"
             )
 
         legacy_username, legacy_hash = get_legacy_admin_credentials()
@@ -113,25 +128,23 @@ async def bootstrap_database_admin() -> None:
         else:
             return
 
-        admin = User(
+        user = User(
             username=username,
             hashed_password=password_hash,
             is_active=True,
             is_verified=True,
-            is_superuser=True,
-            admin_slot="primary",
             auth_version=1,
         )
-        session.add(admin)
+        session.add(user)
         await session.flush()
         await session.commit()
-        await session.refresh(admin)
-        persist_admin_credentials(username, password_hash)
-        await _backfill_legacy_ownership(session, admin)
-        logger.info("Migrated the bootstrap administrator into the user database.")
+        await session.refresh(user)
+        persist_auth_credentials(username, password_hash)
+        await _backfill_legacy_ownership(session, user)
+        logger.info("Migrated the bootstrap user into the user database.")
 
 
-async def _backfill_legacy_ownership(session, admin: User) -> None:
+async def _backfill_legacy_ownership(session, user: User) -> None:
     owned_models = (
         PresentationModel,
         SlideModel,
@@ -148,18 +161,18 @@ async def _backfill_legacy_ownership(session, admin: User) -> None:
         await session.execute(
             update(model)
             .where(model.owner_id.is_(None))
-            .values(owner_id=admin.id)
+            .values(owner_id=user.id)
         )
     # Built-in templates intentionally remain shared; only custom templates
-    # migrate into the bootstrap admin's private workspace.
+    # migrate into the bootstrap user's private workspace.
     await session.execute(
         update(TemplateV2)
         .where(TemplateV2.owner_id.is_(None), TemplateV2.is_default.is_(False))
-        .values(owner_id=admin.id)
+        .values(owner_id=user.id)
     )
     await session.execute(
         update(KeyValueSqlModel)
         .where(KeyValueSqlModel.key == "presentation_custom_themes")
-        .values(key=f"presentation_custom_themes:{admin.id}")
+        .values(key=f"presentation_custom_themes:{user.id}")
     )
     await session.commit()

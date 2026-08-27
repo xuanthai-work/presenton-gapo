@@ -30,8 +30,6 @@ def test_internal_headers_use_current_users_database_jwt(monkeypatch, tmp_path):
                     hashed_password=PASSWORD_HELPER.hash("secret123"),
                     is_active=True,
                     is_verified=True,
-                    is_superuser=True,
-                    admin_slot="primary",
                 )
                 session.add(user)
                 await session.commit()

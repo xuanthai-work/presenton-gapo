@@ -30,7 +30,7 @@ function allowedReadableFileBaseDirs(scope?: FileOwnerScope): string[] {
   const appDataDirectory =
     process.env.APP_DATA_DIRECTORY?.trim() || "/app/user_data";
   const tempDirectory =
-    process.env.TEMP_DIRECTORY?.trim() || path.join(os.tmpdir(), "presenton");
+    process.env.TEMP_DIRECTORY?.trim() || path.join(os.tmpdir(), "gslide");
 
   if (scope?.userId) {
     const userId = scope.userId;

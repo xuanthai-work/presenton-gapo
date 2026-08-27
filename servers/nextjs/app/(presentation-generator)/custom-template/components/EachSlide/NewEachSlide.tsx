@@ -228,12 +228,9 @@ const EachSlide: React.FC<EachSlideProps> = ({
                       rounded-full transition-all duration-200
                       ${!isSlideReady
                     ? "opacity-40 cursor-not-allowed bg-gradient-to-r from-[#F3F4F6] to-[#E5E7EB] text-[#9CA3AF]"
-                    : "text-[#111827] shadow-sm hover:shadow-md"
+                    : "bg-[var(--gslide-accent)] text-white hover:bg-[var(--gslide-accent-hover)] shadow-sm hover:shadow-md"
                   }
                     `}
-                style={isSlideReady ? {
-                  background: 'linear-gradient(135deg, #D5CAFC 0%, #E3D2EB 35%, #F4DCD3 70%, #FDE4C2 100%)',
-                } : undefined}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Re-Construct

@@ -2,7 +2,7 @@ export const TAILWIND_BROWSER_VERSION = "4.3.3";
 export const TAILWIND_BROWSER_SCRIPT_URL =
   `/vendor/tailwindcss-browser-${TAILWIND_BROWSER_VERSION}.js`;
 
-const TAILWIND_BROWSER_SCRIPT_ATTRIBUTE = "data-presenton-tailwind-browser";
+const TAILWIND_BROWSER_SCRIPT_ATTRIBUTE = "data-gslide-tailwind-browser";
 
 export function ensureTailwindBrowserScript() {
   if (typeof document === "undefined") return null;

@@ -506,11 +506,7 @@ const IconsEditor = ({
                     type="button"
                     onClick={handleReplaceIcons}
                     disabled={!selectedIconUrl && !currentIconUrl}
-                    style={{
-                      background:
-                        "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
-                    }}
-                    className="ml-auto flex h-10 items-center justify-center gap-1.5 rounded-full px-5 text-[13px] font-semibold text-[#101323] shadow-none transition hover:brightness-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="ml-auto flex h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--gslide-accent)] px-5 text-[13px] font-semibold text-white shadow-none transition hover:bg-[var(--gslide-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Replace icon
                     <ChevronRight className="size-4" aria-hidden="true" />

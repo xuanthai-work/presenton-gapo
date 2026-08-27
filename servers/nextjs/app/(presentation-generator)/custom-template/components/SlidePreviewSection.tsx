@@ -133,13 +133,10 @@ export const SlidePreviewSection: React.FC<SlidePreviewSectionProps> = ({
                             size="lg"
                             onClick={handlePrimaryAction}
                             disabled={isLoading}
-                            className="px-4 py-2 h-auto text-xs font-syne font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300 "
-                            style={{
-                                background: isLoading
-                                    ? '#E5E7EB'
-                                    : 'linear-gradient(135deg, #D5CAFC 0%, #E3D2EB 35%, #F4DCD3 70%, #FDE4C2 100%)',
-                                color: isLoading ? '#9CA3AF' : '#111827',
-                            }}
+                            className={`px-4 py-2 h-auto text-xs font-syne font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ${isLoading
+                                ? "bg-[#E5E7EB] text-[#9CA3AF]"
+                                : "bg-[var(--gslide-accent)] text-white hover:bg-[var(--gslide-accent-hover)]"
+                                }`}
                         >
                             {isLoading ? (
                                 <>

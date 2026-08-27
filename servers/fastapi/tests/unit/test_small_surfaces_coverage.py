@@ -476,6 +476,54 @@ def test_export_includes_optional_fastapi_param():
     asyncio.run(runner())
 
 
+def test_export_url_includes_export_session_query():
+    async def runner():
+        fake_result = MagicMock(path="/exports/deck.pdf")
+        dummy = uuid.uuid4()
+        mock_pdf = AsyncMock(return_value=fake_result)
+        with patch.dict(
+            os.environ,
+            {
+                "EXPORT_PAGE_BASE_URL": "http://proxy",
+                "NEXT_PUBLIC_URL": "http://localhost:5001",
+            },
+            clear=False,
+        ), patch.object(EXPORT_TASK_SERVICE, "export_from_url", mock_pdf):
+            await export_presentation(
+                dummy,
+                title="safe",
+                export_as="pdf",
+                cookie_header="gslide_session=jwt-token; theme=dark",
+            )
+        url = mock_pdf.await_args.kwargs["url"]
+        assert url.startswith("http://proxy/pdf-maker?")
+        assert "exportSession=jwt-token" in url
+        assert "#exportCookie=" in url
+
+    asyncio.run(runner())
+
+
+def test_export_page_base_url_prefers_export_env():
+    async def runner():
+        fake_result = MagicMock(path="/exports/deck.pdf")
+        dummy = uuid.uuid4()
+        mock_pdf = AsyncMock(return_value=fake_result)
+        with patch.dict(
+            os.environ,
+            {
+                "EXPORT_PAGE_BASE_URL": "http://proxy",
+                "NEXT_PUBLIC_URL": "http://localhost:5001",
+            },
+            clear=False,
+        ), patch.object(EXPORT_TASK_SERVICE, "export_from_url", mock_pdf):
+            await export_presentation(dummy, title="safe", export_as="pdf")
+        assert mock_pdf.await_args.kwargs["url"].startswith(
+            "http://proxy/pdf-maker?"
+        )
+
+    asyncio.run(runner())
+
+
 def test_export_task_output_permissions_are_readable(tmp_path):
     export_dir = tmp_path / "exports"
     export_dir.mkdir(mode=0o700)

@@ -7,9 +7,8 @@ ARG TARGETARCH
 ARG CHROMIUM_VERSION=149.0.7827.196-1~deb13u1
 ARG CHROMIUM_SNAPSHOT=20260625T180000Z
 
-# LiteParse (Node + @llamaindex/liteparse) for document extraction; OCR via Tesseract.
 ENV APP_DATA_DIRECTORY=/app_data \
-    TEMP_DIRECTORY=/tmp/presenton \
+    TEMP_DIRECTORY=/tmp/gslide \
     UV_SYSTEM_PYTHON=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -18,15 +17,17 @@ ENV APP_DATA_DIRECTORY=/app_data \
     EXPORT_RUNTIME_DIR=/app/presentation-export \
     BUILT_PYTHON_MODULE_PATH=/app/presentation-export/py/convert-linux-current \
     PRESENTON_APP_ROOT=/app \
+    GSLIDE_APP_ROOT=/app \
     HF_HOME=/root/.cache/huggingface \
-    PRESENTON_FASTEMBED_ICON_CACHE_DIR=/root/.cache/presenton/fastembed-icons \
+    PRESENTON_FASTEMBED_ICON_CACHE_DIR=/root/.cache/gslide/fastembed-icons \
+    GSLIDE_FASTEMBED_ICON_CACHE_DIR=/root/.cache/gslide/fastembed-icons \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot \
     && printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s trixie-security main\n' "$CHROMIUM_SNAPSHOT" > /etc/apt/sources.list.d/chromium-snapshot.list \
     && apt-get update && apt-get install -y --no-install-recommends --allow-downgrades \
     ca-certificates curl unzip \
-    nginx fontconfig imagemagick zstd \
+    fontconfig imagemagick zstd \
     fonts-liberation fonts-noto-core fonts-noto-extra fonts-noto-mono fonts-noto-ui-core fonts-noto-ui-extra \
     fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-color-emoji xdg-utils \
     libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 \
@@ -42,7 +43,6 @@ RUN printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snaps
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-# Remove any non-Noto fonts that may have been installed as dependencies.
 RUN find /usr/share/fonts -type f ! -iname 'Noto*' -delete \
     && find /usr/share/fonts -type d -empty -delete \
     && fc-cache -fsv
@@ -61,9 +61,10 @@ RUN mkdir -p /app/document-extraction-liteparse \
 COPY scripts/liteparse_runner.mjs /app/document-extraction-liteparse/liteparse_runner.mjs
 
 COPY scripts/sync-presentation-export.cjs /app/scripts/sync-presentation-export.cjs
-COPY scripts/presenton-terminal-banner.mjs /app/scripts/presenton-terminal-banner.mjs
+COPY scripts/gslide-terminal-banner.mjs /app/scripts/gslide-terminal-banner.mjs
 COPY scripts/gslide-ascii.txt /app/scripts/gslide-ascii.txt
 COPY scripts/user-config-env.cjs /app/scripts/user-config-env.cjs
+COPY scripts/start-api.js /app/scripts/start-api.js
 RUN rm -rf /app/presentation-export \
     && EXPORT_RUNTIME_ARCH="${TARGETARCH}" node /app/scripts/sync-presentation-export.cjs --force \
     && find /app/presentation-export/py -maxdepth 1 -type f -name "convert-linux-*" -exec chmod +x {} \; \
@@ -79,8 +80,6 @@ RUN rm -rf /app/presentation-export \
     chmod +x "/app/presentation-export/py/convert-linux-${export_arch}"; \
     ls -lah /app/presentation-export/py
 
-# Bind mount `.:/app` hides any .venv under servers/fastapi at runtime — install deps into
-# system site-packages (same interpreter `start.js` uses as `python`).
 COPY servers/fastapi /app/servers/fastapi
 COPY templates /app/templates
 WORKDIR /app/servers/fastapi
@@ -88,19 +87,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
     && uv pip install --system -r /tmp/requirements.txt \
     && uv pip install --system --no-deps .
-# Mem0 BM25 lemmatization requires a spaCy language model at runtime.
-# Installing it in the image avoids per-run downloads and startup self-disable.
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system \
     "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
 
-# FastEmbed + Hugging Face Hub weights for icon search and Mem0 (no cache-only mount here:
-# those files must remain in the image layer).
 WORKDIR /app/servers/fastapi
 RUN python scripts/warm_fastembed_cache.py
 
 WORKDIR /app
-COPY nginx.conf /etc/nginx/nginx.conf
-
-EXPOSE 80
-CMD ["node", "/app/start.js", "--dev"]
+EXPOSE 8000
+CMD ["node", "/app/scripts/start-api.js", "--dev"]

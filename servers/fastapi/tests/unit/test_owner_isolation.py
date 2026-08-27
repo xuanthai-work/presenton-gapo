@@ -29,7 +29,6 @@ def test_owned_queries_are_isolated_and_only_default_templates_are_shared():
                         username="first",
                         hashed_password="unused",
                         is_active=True,
-                        is_superuser=False,
                         is_verified=True,
                     ),
                     User(
@@ -37,7 +36,6 @@ def test_owned_queries_are_isolated_and_only_default_templates_are_shared():
                         username="second",
                         hashed_password="unused",
                         is_active=True,
-                        is_superuser=False,
                         is_verified=True,
                     ),
                     PresentationModel(

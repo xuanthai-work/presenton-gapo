@@ -1,7 +1,7 @@
 """Paths relative to the FastAPI process working directory (Docker / local dev).
 
 The API is always started with cwd set to the `servers/fastapi` package root
-(see start.js), without OS-specific layout handling.
+(see scripts/start-api.js), without OS-specific layout handling.
 
 Writable caches must use ``APP_DATA_DIRECTORY`` when set.
 """

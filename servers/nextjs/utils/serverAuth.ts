@@ -8,11 +8,10 @@ export type AuthStatus = {
   username: string | null;
   user_id: string | null;
   available: boolean;
-  role: "admin" | "user" | null;
 };
 
 /**
- * Resolves the FastAPI base used from Next server components (same as start.js).
+ * Resolves the FastAPI base used from Next server components (same as proxy.ts).
  */
 function getServerFastApiBase(): string {
   const internal = process.env.FAST_API_INTERNAL_URL?.trim();
@@ -42,7 +41,6 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
       username: "local",
       user_id: null,
       available: true,
-      role: "admin",
     };
   }
 
@@ -63,7 +61,6 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
         username: null,
         user_id: null,
         available: false,
-        role: null,
       };
     }
     const data = (await response.json()) as Partial<AuthStatus>;
@@ -73,7 +70,6 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
       username: data.username ?? null,
       user_id: data.user_id ?? null,
       available: true,
-      role: data.role === "admin" ? "admin" : data.role === "user" ? "user" : null,
     };
   } catch {
     return {
@@ -82,7 +78,6 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
       username: null,
       user_id: null,
       available: false,
-      role: null,
     };
   }
 }
@@ -104,18 +99,5 @@ export async function requireAppSession() {
   }
   if (!s.authenticated) {
     redirect("/?reason=unauthorized");
-  }
-}
-
-export async function requireAdminSession() {
-  if (isAuthDisabled()) {
-    return;
-  }
-  const status = await getServerAuthStatus();
-  if (!status.available || !status.authenticated) {
-    redirect("/?reason=unauthorized");
-  }
-  if (status.role !== "admin") {
-    redirect("/dashboard");
   }
 }

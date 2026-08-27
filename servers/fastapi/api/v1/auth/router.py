@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
 from api.v1.auth.schemas import (
-    AuthCredentialsRequest,
     LoginCredentialsRequest,
     RegisterCredentialsRequest,
 )
@@ -27,7 +26,6 @@ from api.v1.auth.config import (
     LEGACY_SESSION_COOKIE_NAME,
     SESSION_COOKIE_NAME,
     SESSION_TTL_SECONDS,
-    persist_admin_credentials,
 )
 from api.v1.auth.token import TOKEN_ROUTER
 
@@ -99,7 +97,6 @@ async def get_status(
             "authenticated": True,
             "username": "local",
             "user_id": None,
-            "role": "admin",
         }
     configured = await _account_count(session) > 0
     return {
@@ -107,7 +104,6 @@ async def get_status(
         "authenticated": user is not None,
         "username": user.username if user else None,
         "user_id": str(user.id) if user else None,
-        "role": "admin" if user and user.is_superuser else ("user" if user else None),
     }
 
 
@@ -120,7 +116,6 @@ async def verify_session(
         return {
             "authenticated": True,
             "username": "local",
-            "role": "admin",
             "method": "local",
         }
     principal, user = await resolve_request_principal(request, session)
@@ -130,58 +125,12 @@ async def verify_session(
     if original_uri and not is_app_data_path_authorized(
         original_uri,
         user_id=principal.user_id,
-        is_admin=principal.is_admin,
     ):
         raise HTTPException(status_code=403, detail="Asset access denied")
     return {
         "authenticated": True,
         **serialize_user(user),
         "method": principal.method,
-    }
-
-
-@API_V1_AUTH_ROUTER.post("/setup")
-async def setup_credentials(
-    body: AuthCredentialsRequest,
-    request: Request,
-    session: AsyncSession = Depends(get_async_session),
-):
-    if await _account_count(session):
-        raise HTTPException(status_code=409, detail="Credentials already configured")
-
-    username = normalize_username(body.username)
-    if len(username) < 3:
-        raise HTTPException(
-            status_code=422,
-            detail="Username must be at least 3 characters",
-        )
-    password_hash = PASSWORD_HELPER.hash(body.password)
-    user = User(
-        username=username,
-        hashed_password=password_hash,
-        is_active=True,
-        is_verified=True,
-        is_superuser=True,
-        admin_slot="primary",
-        auth_version=1,
-    )
-    session.add(user)
-    try:
-        await session.flush()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Credentials already configured",
-        )
-    await session.commit()
-    await session.refresh(user)
-    persist_admin_credentials(username, password_hash)
-    return {
-        "configured": True,
-        "authenticated": False,
-        "username": user.username,
-        "role": "admin",
     }
 
 
@@ -192,7 +141,7 @@ async def login(
     session: AsyncSession = Depends(get_async_session),
 ):
     if not await _account_count(session):
-        raise HTTPException(status_code=428, detail="Login setup is required")
+        raise HTTPException(status_code=428, detail="No accounts yet")
     username = normalize_username(body.username)
     rate_limit_key = login_rate_limit_key(
         _login_client_host(request),
@@ -244,8 +193,6 @@ async def register(
 ):
     if is_disable_auth_enabled():
         raise HTTPException(status_code=400, detail="Auth is disabled")
-    if not await _account_count(session):
-        raise HTTPException(status_code=428, detail="Login setup is required")
 
     username = normalize_username(body.username)
     rate_limit_key = login_rate_limit_key(_login_client_host(request), username)
@@ -272,7 +219,6 @@ async def register(
         hashed_password=PASSWORD_HELPER.hash(body.password),
         is_active=True,
         is_verified=True,
-        is_superuser=False,
         auth_version=1,
     )
     session.add(user)

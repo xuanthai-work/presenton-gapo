@@ -15,7 +15,7 @@ graph TB
     subgraph V1["api/v1/"]
         PptRouter["ppt/router.py<br/>/api/v1/ppt/*"]
         AuthRouter["auth/router.py<br/>/api/v1/auth/*"]
-        AdminRouter["admin/router.py<br/>/api/v1/admin/*"]
+        SettingsRouter["settings/router.py<br/>/api/v1/settings/*"]
         AsyncRouter["async_tasks/router.py"]
         MockRouter["mock/router.py"]
         WebhookRouter["webhook/router.py"]
@@ -111,7 +111,7 @@ sequenceDiagram
     A->>A: CORS middleware (allow NextJS origin)
     A->>A: SessionAuthMiddleware
     A->>A: UserConfigEnvUpdateMiddleware
-    A->>A: include routers (ppt, auth, admin, ...)
+    A->>A: include routers (ppt, auth, settings, ...)
 ```
 
 ## 🌐 Routers (`api/v1/`)
@@ -142,23 +142,27 @@ graph LR
 
 ### Auth Router — `api/v1/auth/`
 
-OAuth2 PKCE flow, session-based:
+OAuth2 PKCE flow, session-based. There is **no admin persona**: every signed-in user is the same role. `bootstrap.py` seeds a normal user (the legacy first-admin bootstrap is renamed to `bootstrap_database_user`).
 - `assets.py` — auth assets
-- `bootstrap.py` — bootstrap admin
+- `bootstrap.py` — bootstrap first user from `AUTH_USERNAME`/`AUTH_PASSWORD`
 - `config.py` — auth config
-- `context.py` — auth context
+- `context.py` — auth context (owner_id only)
 - `internal.py` — internal routes
 - `presenton_oauth.py` — OAuth provider
 - `principal.py` — current user principal
 - `rate_limit.py` — rate limiting
-- `router.py` — auth routes
+- `router.py` — auth routes (login/register/logout/status)
 - `schemas.py` — pydantic schemas
-- `token.py` — token management
+- `token.py` — token management (Bearer tokens are current-user scoped)
 - `users.py` — user management
 
-### Admin Router — `api/v1/admin/router.py`
+### Settings Router — `api/v1/settings/router.py`
 
-Admin-only endpoints.
+Per-user provider overlay:
+- `GET /api/v1/settings/provider` — effective config (overlay ∪ process env)
+- `PUT /api/v1/settings/provider` — save current user's overlay (sanitized)
+
+The middleware loads the current user's overlay into a `ContextVar` so `get_*_env()` providers see overlay before `os.environ`. Overlay **does not** store `AUTH_*`, `DATABASE_URL`, `DISABLE_AUTH`, etc.
 
 ### Async Tasks — `api/v1/async_tasks/router.py`
 

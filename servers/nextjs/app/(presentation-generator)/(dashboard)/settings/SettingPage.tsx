@@ -23,7 +23,6 @@ import {
   WEB_SEARCH_PROVIDERS,
 } from "@/utils/providerConstants";
 import LogoutButton from "@/components/Auth/LogoutButton";
-import AdminPanel from "../admin/AdminPanel";
 
 // Button state interface
 interface ButtonState {
@@ -214,10 +213,6 @@ const SettingsPage = () => {
 
   }, [llmConfig, pathname]);
 
-
-
-  const showSave = selectedProvider !== "admin";
-
   return (
     <div className="flex min-h-[100dvh] flex-col font-syne">
       <GSlideHeader
@@ -228,22 +223,20 @@ const SettingsPage = () => {
               label="Sign out"
               className="inline-flex items-center gap-2 rounded-full border border-[var(--gslide-border)] bg-[var(--gslide-card)] px-5 py-3 text-xs font-semibold text-[var(--gslide-ink)] transition hover:bg-[var(--gslide-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
             />
-            {showSave ? (
-              <GSlideButton
-                className="inline-flex items-center"
-                onClick={handleSaveConfig}
-                disabled={buttonState.isDisabled}
-              >
-                {buttonState.isLoading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {buttonState.text}
-                  </span>
-                ) : (
-                  buttonState.text
-                )}
-              </GSlideButton>
-            ) : null}
+            <GSlideButton
+              className="inline-flex items-center"
+              onClick={handleSaveConfig}
+              disabled={buttonState.isDisabled}
+            >
+              {buttonState.isLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {buttonState.text}
+                </span>
+              ) : (
+                buttonState.text
+              )}
+            </GSlideButton>
           </div>
         }
       />
@@ -257,7 +250,7 @@ const SettingsPage = () => {
           {textSummary}, {imageSummary}, {webSearchSummary}
         </p>
 
-        <div className={selectedProvider === "admin" ? "mt-8 w-full" : "mt-8 max-w-3xl"}>
+        <div className="mt-8 max-w-3xl">
           {selectedProvider === "text-provider" && (
             <TextProvider
               onInputChange={handleTextProviderInputChange}
@@ -274,7 +267,6 @@ const SettingsPage = () => {
             />
           )}
           {selectedProvider === "privacy" && <PrivacySettings />}
-          {selectedProvider === "admin" && <AdminPanel embedded />}
         </div>
       </div>
     </div>

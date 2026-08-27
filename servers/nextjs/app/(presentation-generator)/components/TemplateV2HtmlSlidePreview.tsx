@@ -13,7 +13,7 @@ import {
   templateV2UiToHtmlFragment,
 } from "@/lib/template-v2-json-to-html";
 
-type PresentonChartGlobalState = {
+type GSlideChartGlobalState = {
   status: "pending" | "ready" | "error";
   pending: number;
   rendered: number;
@@ -22,25 +22,25 @@ type PresentonChartGlobalState = {
 
 declare global {
   interface Window {
-    __PRESENTON_JSON_CHARTS__?: PresentonChartGlobalState;
+    __GSLIDE_JSON_CHARTS__?: GSlideChartGlobalState;
   }
 }
 
 const useChartLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-function chartGlobalState(): PresentonChartGlobalState | null {
+function chartGlobalState(): GSlideChartGlobalState | null {
   if (typeof window === "undefined") return null;
 
-  const existing = window.__PRESENTON_JSON_CHARTS__;
+  const existing = window.__GSLIDE_JSON_CHARTS__;
   if (existing) return existing;
 
-  const state: PresentonChartGlobalState = {
+  const state: GSlideChartGlobalState = {
     status: "ready",
     pending: 0,
     rendered: 0,
   };
-  window.__PRESENTON_JSON_CHARTS__ = state;
+  window.__GSLIDE_JSON_CHARTS__ = state;
   return state;
 }
 
@@ -121,16 +121,16 @@ function hydrateScales(scales: unknown): void {
   Object.values(scaleRecords).forEach((scaleValue) => {
     const scale = readRecord(scaleValue);
     const ticks = readRecord(scale.ticks);
-    if (ticks.presentonFormat) {
+    if (ticks.gslideFormat) {
       ticks.callback = formatAxisTick;
-      delete ticks.presentonFormat;
+      delete ticks.gslideFormat;
     }
 
     const radial = readRecord(scale.r);
     const radialTicks = readRecord(radial.ticks);
-    if (radialTicks.presentonFormat) {
+    if (radialTicks.gslideFormat) {
       radialTicks.callback = formatAxisTick;
-      delete radialTicks.presentonFormat;
+      delete radialTicks.gslideFormat;
     }
   });
 }
@@ -177,16 +177,16 @@ function hydrateBarBorderRadii(config: ChartConfiguration): void {
   datasets.forEach((dataset) => {
     const record = dataset as {
       borderRadius?: unknown;
-      presentonBarRadius?: unknown;
+      gslideBarRadius?: unknown;
     };
-    const options = readRecord(record.presentonBarRadius);
+    const options = readRecord(record.gslideBarRadius);
     if (!Object.keys(options).length) return;
 
     const horizontal = Boolean(options.horizontal);
     const radius = readNumber(options.radius) ?? 7;
     record.borderRadius = (context: { raw?: unknown }) =>
       barBorderRadius(context?.raw, horizontal, radius);
-    delete record.presentonBarRadius;
+    delete record.gslideBarRadius;
   });
 }
 
@@ -198,8 +198,8 @@ function hydrateDataLabels(config: ChartConfiguration): void {
   if (!Object.keys(options).length) return;
 
   options.formatter = (value: unknown) => formatChartValue(chartValue(value));
-  delete options.presentonOutsideColor;
-  delete options.presentonPosition;
+  delete options.gslideOutsideColor;
+  delete options.gslidePosition;
 }
 
 export function shouldRenderTemplateV2HtmlPreview(
@@ -268,29 +268,29 @@ export function TemplateV2HtmlSlidePreview({
     const finishReady = () => {
       if (completed) return;
       completed = true;
-      element.dataset.presentonCharts = "ready";
+      element.dataset.gslideCharts = "ready";
       markChartsReady(registeredPendingCount);
     };
 
     const finishError = (message: string) => {
       if (completed) return;
       completed = true;
-      element.dataset.presentonCharts = "error";
+      element.dataset.gslideCharts = "error";
       markChartsError(message);
     };
 
     const renderCharts = async () => {
       const canvases = Array.from(
-        element.querySelectorAll<HTMLCanvasElement>("canvas[data-presenton-chart]")
+        element.querySelectorAll<HTMLCanvasElement>("canvas[data-gslide-chart]")
       ).filter((canvas) => canvas.getAttribute("data-chart-config"));
 
       if (!canvases.length) {
-        element.dataset.presentonCharts = "ready";
+        element.dataset.gslideCharts = "ready";
         return;
       }
 
       registeredPendingCount = canvases.length;
-      element.dataset.presentonCharts = "pending";
+      element.dataset.gslideCharts = "pending";
       markChartsPending(registeredPendingCount);
 
       try {
@@ -319,7 +319,7 @@ export function TemplateV2HtmlSlidePreview({
 
           const chart = new Chart(canvas, config);
           chart.update("none");
-          canvas.dataset.presentonChartRendered = "true";
+          canvas.dataset.gslideChartRendered = "true";
           charts.push(chart);
         });
 

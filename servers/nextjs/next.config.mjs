@@ -2,19 +2,22 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const nextjsRoot = path.dirname(fileURLToPath(import.meta.url));
+const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig = {
   reactStrictMode: false,
-  distDir: ".next-build",
-  output: "standalone",
+  distDir: isProd ? ".next-build" : ".next",
+  ...(isProd ? { output: "standalone" } : {}),
   turbopack: {
     root: nextjsRoot,
   },
-  ...(process.env.NODE_ENV !== "production"
+  ...(!isProd
     ? {
         allowedDevOrigins: [
           "127.0.0.1",
           "localhost",
+          // Chromium in the api container opens http://proxy/pdf-maker.
+          "proxy",
         ],
       }
     : {}),

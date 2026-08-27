@@ -72,7 +72,7 @@ export function groupTemplateV2ComponentsInUi<TUi extends RawRecord>(
         children: entries.map((entry) =>
           componentGroupElement(entry, groupBox),
         ),
-        __presenton_manual_position: true,
+        __gslide_manual_position: true,
       },
     ],
   };
@@ -161,7 +161,7 @@ function componentGroupElement(
     ...(designVariables.length > 0
       ? { design_variables: cloneJson(designVariables) }
       : {}),
-    __presenton_manual_position: true,
+    __gslide_manual_position: true,
   };
 }
 

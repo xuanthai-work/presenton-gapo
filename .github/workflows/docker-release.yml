@@ -14,13 +14,23 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_NAME: ghcr.io/presenton/presenton
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/gslide
   MOVING_TAG: dev
 
 jobs:
   build-and-push:
-    name: Build and push multi-architecture image
+    name: Build and push ${{ matrix.component }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: web
+            dockerfile: Dockerfile.web
+            image_suffix: -web
+          - component: api
+            dockerfile: Dockerfile.api
+            image_suffix: -api
 
     steps:
       - name: Checkout source
@@ -50,11 +60,13 @@ jobs:
           else
             IMAGE_TAG="${MOVING_TAG}"
           fi
+          IMAGE="${IMAGE_NAME}${{ matrix.image_suffix }}"
 
           {
             echo "tags<<EOF"
-            echo "${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "${IMAGE}:${IMAGE_TAG}"
             echo "EOF"
+            echo "verify_image=${IMAGE}"
             echo "verify_tag=${IMAGE_TAG}"
           } >> "${GITHUB_OUTPUT}"
 
@@ -62,6 +74,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.docker-tags.outputs.tags }}
@@ -70,8 +83,9 @@ jobs:
 
       - name: Verify image
         env:
+          VERIFY_IMAGE: ${{ steps.docker-tags.outputs.verify_image }}
           VERIFY_TAG: ${{ steps.docker-tags.outputs.verify_tag }}
         run: |
-          docker buildx imagetools inspect "${IMAGE_NAME}:${VERIFY_TAG}" | tee image-inspect.txt
+          docker buildx imagetools inspect "${VERIFY_IMAGE}:${VERIFY_TAG}" | tee image-inspect.txt
           grep -q "linux/amd64" image-inspect.txt
           grep -q "linux/arm64" image-inspect.txt

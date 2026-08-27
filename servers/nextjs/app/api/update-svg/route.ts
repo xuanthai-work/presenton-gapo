@@ -30,7 +30,8 @@ const resolveStaticIconsRoot = async (): Promise<string> => {
         return staticIconsRootPromise;
     }
 
-    const appRoot = process.env.PRESENTON_APP_ROOT?.trim();
+    const appRoot =
+        process.env.GSLIDE_APP_ROOT?.trim();
     const candidates = [
         ...(appRoot
             ? [

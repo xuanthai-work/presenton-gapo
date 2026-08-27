@@ -31,10 +31,10 @@ GitHub Actions workflow.
 ```bash
 cd servers/fastapi
 uv sync --locked --dev
-mkdir -p /tmp/presenton-tests/app-data /tmp/presenton-tests/temp
-APP_DATA_DIRECTORY=/tmp/presenton-tests/app-data \
-TEMP_DIRECTORY=/tmp/presenton-tests/temp \
-DATABASE_URL=sqlite+aiosqlite:////tmp/presenton-tests/test.db \
+mkdir -p /tmp/gslide-tests/app-data /tmp/gslide-tests/temp
+APP_DATA_DIRECTORY=/tmp/gslide-tests/app-data \
+TEMP_DIRECTORY=/tmp/gslide-tests/temp \
+DATABASE_URL=sqlite+aiosqlite:////tmp/gslide-tests/test.db \
 DISABLE_ANONYMOUS_TRACKING=true \
 DISABLE_IMAGE_GENERATION=true \
 uv run --locked python -m pytest --verbose --tb=short

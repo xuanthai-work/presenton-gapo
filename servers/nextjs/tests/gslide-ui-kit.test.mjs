@@ -182,13 +182,9 @@ test("settings chrome has no filter rail", async () => {
   const tabs = await readNext(
     "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
   );
-  const account = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/UserAccountSettings.tsx",
-  );
   assert.match(settings, /GSlideHeader/);
   assert.doesNotMatch(settings, /FILTER BY/);
   assert.doesNotMatch(tabs, /FILTER BY/);
-  assert.doesNotMatch(account, /FILTER BY/);
   assert.match(tabs, /role="tablist"/);
   assert.doesNotMatch(tabs, /session/);
   assert.doesNotMatch(tabs, /motion\/react/);
@@ -301,8 +297,6 @@ const CHROME_FILES = [
   "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
   "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
   "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/UserAccountSettings.tsx",
-  "app/(presentation-generator)/(dashboard)/admin/AdminPanel.tsx",
   "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
   "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
   "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",

@@ -47,7 +47,6 @@ def is_app_data_path_authorized(
     path_or_uri: str,
     *,
     user_id: uuid.UUID,
-    is_admin: bool,
 ) -> bool:
     """Authorize a browser-visible app_data path for one authenticated user."""
     parts = normalized_app_data_parts(path_or_uri)
@@ -67,6 +66,6 @@ def is_app_data_path_authorized(
             and relative_parts[1] == str(user_id)
         )
 
-    # Pre-multi-user assets remain in the legacy root and belong only to the
-    # migrated primary administrator.
-    return is_admin
+    # Pre-multi-user assets remain in the legacy root and are no longer
+    # accessible to anyone — they were never claimed by a signed-in user.
+    return False

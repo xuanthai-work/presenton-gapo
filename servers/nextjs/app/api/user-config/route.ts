@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
-import { requireAdminApi } from "@/lib/server-auth-role";
+import { requireAuthenticatedApi } from "@/lib/server-auth-role";
 
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
+const INSTANCE_LEVEL_FIELDS = new Set(["DISABLE_ANONYMOUS_TRACKING"]);
+
+function isTrackingOnlyBody(parsed: Record<string, unknown>): boolean {
+  const keys = Object.keys(parsed);
+  return (
+    keys.length > 0 && keys.every((key) => INSTANCE_LEVEL_FIELDS.has(key))
+  );
+}
 
 function immutableResponse() {
   return NextResponse.json(
@@ -18,7 +26,7 @@ async function forwardProviderSettings(
 ) {
   const cookie = request.headers.get("cookie") || "";
   const response = await fetch(
-    `${getFastApiBaseUrl()}/api/v1/admin/provider-settings`,
+    `${getFastApiBaseUrl()}/api/v1/settings/provider`,
     {
       method,
       headers: {
@@ -40,7 +48,7 @@ async function forwardProviderSettings(
 }
 
 export async function GET(request: Request) {
-  const denied = await requireAdminApi(request);
+  const denied = await requireAuthenticatedApi(request);
   if (denied) return denied;
   if (!canChangeKeys) return immutableResponse();
 
@@ -55,9 +63,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = await requireAdminApi(request);
+  const denied = await requireAuthenticatedApi(request);
   if (denied) return denied;
-  if (!canChangeKeys) return immutableResponse();
 
   try {
     const body = await request.text();
@@ -73,6 +80,10 @@ export async function POST(request: Request) {
         { error: "Invalid user config JSON body", status: 400 },
         { status: 400 }
       );
+    }
+    const record = parsed as Record<string, unknown>;
+    if (!canChangeKeys && !isTrackingOnlyBody(record)) {
+      return immutableResponse();
     }
     return await forwardProviderSettings(request, "PUT", body);
   } catch (error) {

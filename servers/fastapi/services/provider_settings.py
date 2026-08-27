@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.sql.provider_settings import ProviderSettings
+from models.sql.user_provider_settings import UserProviderSettings
 from utils.datetime_utils import get_current_utc_datetime
 from utils.db_utils import get_database_url_and_connect_args, to_sync_sqlalchemy_url
 from utils.get_env import get_user_config_path_env
@@ -19,6 +20,10 @@ _CLOUD_STATUS_FIELDS = {
     "PRESENTON_EMAIL",
 }
 
+# Fields that are stored at the instance level, not per user. Saving these in
+# an overlay would leak operator-only state into a user row.
+_INSTANCE_LEVEL_FIELDS = {"DISABLE_ANONYMOUS_TRACKING"}
+
 
 def sanitize_provider_settings(config: dict[str, Any]) -> dict[str, Any]:
     """Keep provider/runtime settings and exclude legacy auth and Cloud status."""
@@ -30,6 +35,35 @@ def sanitize_provider_settings(config: dict[str, Any]) -> dict[str, Any]:
     if cleaned.get("LLM") == "presenton":
         cleaned.pop("LLM", None)
     return cleaned
+
+
+def sanitize_user_overlay(config: dict[str, Any]) -> dict[str, Any]:
+    """Per-user overlay cannot include AUTH_, Cloud status, or instance-level fields."""
+    cleaned = sanitize_provider_settings(config)
+    for key in _INSTANCE_LEVEL_FIELDS:
+        cleaned.pop(key, None)
+    return cleaned
+
+
+def persist_instance_level_fields(incoming: dict[str, Any]) -> None:
+    """Write Analytics/telemetry flags to instance userConfig.json, not the overlay."""
+    path = get_user_config_path_env()
+    if not path:
+        return
+    updates = {
+        key: incoming[key]
+        for key in _INSTANCE_LEVEL_FIELDS
+        if key in incoming
+    }
+    if not updates:
+        return
+
+    def patch(existing: dict[str, Any]) -> dict[str, Any]:
+        next_config = dict(existing)
+        next_config.update(updates)
+        return next_config
+
+    update_user_config_file(path, patch)
 
 
 def merge_provider_settings(
@@ -168,3 +202,40 @@ def sync_legacy_file_to_provider_settings() -> None:
                 )
     finally:
         engine.dispose()
+
+
+async def get_user_provider_overlay(
+    session: AsyncSession, user_id: Any
+) -> dict[str, Any]:
+    """Effective provider config for a user: overlay merged with process env.
+
+    The result is sanitized so callers never see another user's keys or
+    instance-level fields the user cannot edit.
+    """
+    row = await session.get(UserProviderSettings, user_id)
+    overlay = dict(row.config) if row is not None and row.config else {}
+    return fill_unset_from_runtime(sanitize_user_overlay(overlay))
+
+
+async def save_user_provider_overlay(
+    session: AsyncSession, user_id: Any, incoming: dict[str, Any]
+) -> dict[str, Any]:
+    """Merge a sanitized overlay for one user and return the new effective config.
+
+    Partial bodies (Analytics-only POSTs) must not wipe keys already saved in
+    the overlay. Incoming overlay fields overwrite matching keys; omitted keys
+    stay. Instance-level fields are stripped before persist.
+    """
+    sanitized = sanitize_user_overlay(incoming or {})
+    row = await session.get(UserProviderSettings, user_id)
+    existing = sanitize_user_overlay(dict(row.config or {})) if row is not None else {}
+    merged = {**existing, **sanitized}
+    if row is None:
+        row = UserProviderSettings(user_id=user_id, config=merged)
+        session.add(row)
+    else:
+        row.config = merged
+    row.updated_at = get_current_utc_datetime()
+    await session.commit()
+    await session.refresh(row)
+    return fill_unset_from_runtime(dict(row.config or {}))

@@ -16,8 +16,8 @@ async function readJson(relativePath) {
 test("Docker pins the presentation export version", async () => {
   const [rootPackage, dockerfile, dockerfileDev] = await Promise.all([
     readJson("package.json"),
-    readFile(path.join(repoRoot, "Dockerfile"), "utf8"),
-    readFile(path.join(repoRoot, "Dockerfile.dev"), "utf8"),
+    readFile(path.join(repoRoot, "Dockerfile.api"), "utf8"),
+    readFile(path.join(repoRoot, "Dockerfile.dev.api"), "utf8"),
   ]);
 
   assert.match(dockerfile, /COPY package\.json \/app\//);

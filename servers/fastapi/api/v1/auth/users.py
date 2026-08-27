@@ -106,9 +106,9 @@ async def get_user_db(
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
-    # Presenton intentionally exposes neither self-service password reset nor
-    # verification routes. FastAPI Users still requires these class attributes.
-    reset_password_token_secret = "presenton-admin-managed-passwords"
+    # FastAPI Users still requires these class attributes even though GSlide
+    # does not expose self-service password reset or verification routes.
+    reset_password_token_secret = "gslide-admin-managed-passwords"
     verification_token_secret = reset_password_token_secret
 
     def __init__(self, user_db: UsernameUserDatabase):
@@ -215,18 +215,9 @@ async def get_current_user(
     return user
 
 
-async def get_current_admin(
-    user: User = Depends(get_current_user),
-) -> User:
-    if not user.is_superuser:
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return user
-
-
 def serialize_user(user: User) -> dict[str, Any]:
     return {
         "id": str(user.id),
         "username": user.username,
-        "role": "admin" if user.is_superuser else "user",
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }

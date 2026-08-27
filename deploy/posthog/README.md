@@ -80,7 +80,7 @@ Requires Docker Compose 2.24+ for the `!override` YAML tag.
 5. Recreate **only** the GSlide container so it picks up the new env:
 
 ```bash
-docker compose up -d --force-recreate production
+docker compose up -d --force-recreate web
 ```
 
 `POSTHOG_HOST` must be browser-reachable. Never use a Docker-internal hostname

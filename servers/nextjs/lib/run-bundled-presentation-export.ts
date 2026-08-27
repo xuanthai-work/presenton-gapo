@@ -16,9 +16,9 @@ export function getExportPackageRoot(): string {
   );
 }
 
-export function getPresentonAppRoot(): string {
+export function getGSlideAppRoot(): string {
   return (
-    process.env.PRESENTON_APP_ROOT?.trim() ||
+    process.env.GSLIDE_APP_ROOT?.trim() ||
     path.join(process.cwd(), "..", "..")
   );
 }
@@ -180,7 +180,7 @@ async function runBundledPresentationExportLocked(params: {
   const exportRoot = getExportPackageRoot();
   const entrypoint = await resolveExportEntrypoint(exportRoot);
   const converter = bundledConverterPath(exportRoot);
-  const appRoot = getPresentonAppRoot();
+  const appRoot = getGSlideAppRoot();
 
   await fs.access(converter);
 
@@ -201,7 +201,7 @@ async function runBundledPresentationExportLocked(params: {
     : basePptUrl;
 
   const tempBase =
-    process.env.TEMP_DIRECTORY?.trim() || path.join(os.tmpdir(), "presenton");
+    process.env.TEMP_DIRECTORY?.trim() || path.join(os.tmpdir(), "gslide");
   await fs.mkdir(tempBase, { recursive: true });
   const workDir = await fs.mkdtemp(path.join(tempBase, "export-"));
   const exportTaskPath = path.join(workDir, "export_task.json");

@@ -7,9 +7,9 @@ import { useEffect, useState } from "react";
 import { TAILWIND_BROWSER_SCRIPT_URL } from "@/lib/tailwind-browser";
 
 export const TAILWIND_RUNTIME_READY_EVENT =
-  "presenton:tailwind-runtime-ready";
+  "gslide:tailwind-runtime-ready";
 export const TAILWIND_RUNTIME_REQUEST_EVENT =
-  "presenton:tailwind-runtime-request";
+  "gslide:tailwind-runtime-request";
 
 let runtimeReady = false;
 

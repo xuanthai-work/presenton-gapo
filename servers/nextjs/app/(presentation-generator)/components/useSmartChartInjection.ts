@@ -106,7 +106,7 @@ export function useSmartChartInjection({
             const chart = Chart.getChart(canvas);
             if (!chart) return;
             chart.update("none");
-            canvas.dataset.presentonChartRendered = "true";
+            canvas.dataset.gslideChartRendered = "true";
           });
         });
       } catch (error) {

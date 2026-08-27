@@ -29,9 +29,9 @@ import {
 import { normalizeMathLatex } from "@/lib/math";
 
 export const COMMIT_TEMPLATE_V2_INLINE_TEXT_EVENT =
-  "presenton:commit-template-v2-inline-text";
+  "gslide:commit-template-v2-inline-text";
 const NON_BREAKING_SPACE = "\u00A0";
-const LATEX_RUN_FOCUS_EVENT = "presenton:latex-run-focus";
+const LATEX_RUN_FOCUS_EVENT = "gslide:latex-run-focus";
 
 type RunStyleAttrs = {
   family?: string | null;

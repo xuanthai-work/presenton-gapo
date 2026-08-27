@@ -40,10 +40,10 @@ test_repository_tools() {
 test_fastapi() {
     cd "$SCRIPT_DIR/servers/fastapi" || return 1
     uv sync --locked --dev || return 1
-    mkdir -p /tmp/presenton-tests/app-data /tmp/presenton-tests/temp || return 1
-    APP_DATA_DIRECTORY=/tmp/presenton-tests/app-data \
-        TEMP_DIRECTORY=/tmp/presenton-tests/temp \
-        DATABASE_URL=sqlite+aiosqlite:////tmp/presenton-tests/test.db \
+    mkdir -p /tmp/gslide-tests/app-data /tmp/gslide-tests/temp || return 1
+    APP_DATA_DIRECTORY=/tmp/gslide-tests/app-data \
+        TEMP_DIRECTORY=/tmp/gslide-tests/temp \
+        DATABASE_URL=sqlite+aiosqlite:////tmp/gslide-tests/test.db \
         DISABLE_ANONYMOUS_TRACKING=true \
         DISABLE_IMAGE_GENERATION=true \
         uv run --locked python -m pytest --verbose --tb=short

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 
 import migrations
 
@@ -89,13 +89,15 @@ def test_upgrade_from_baseline_stamp_skips_existing_theme_column(tmp_path):
         assert "async_tasks" in tables
         assert "presenton_oauth_identity" not in tables
         assert "presenton_cloud_provider" not in tables
-        assert "admin_slot" in user_columns
-        assert "uq_user_admin_slot" in user_indexes
+        assert migrations.REVISION_HEAD == migrations.REVISION_USER_PROVIDER_SETTINGS
+        assert "admin_slot" not in user_columns
+        assert "is_superuser" not in user_columns
+        assert "user_provider_settings" in tables
     finally:
         engine.dispose()
 
 
-def test_upgrade_from_smart_mode_backfill_drops_presenton_cloud_provider(tmp_path):
+def test_startup_drops_leftover_cloud_provider_table(tmp_path):
     database_url = f"sqlite:///{tmp_path / 'drop-cloud.db'}"
     engine = create_engine(database_url)
     try:
@@ -105,20 +107,10 @@ def test_upgrade_from_smart_mode_backfill_drops_presenton_cloud_provider(tmp_pat
                     "CREATE TABLE presenton_cloud_provider (id INTEGER PRIMARY KEY)"
                 )
             )
-            connection.execute(
-                text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
-            )
-            connection.execute(
-                text("INSERT INTO alembic_version (version_num) VALUES (:revision)"),
-                {"revision": migrations.REVISION_SMART_MODE_BACKFILL},
-            )
 
-        command.upgrade(_alembic_config(database_url), "head")
+        migrations._drop_removed_tables(database_url)
 
         with engine.connect() as connection:
-            version = connection.execute(
-                text("SELECT version_num FROM alembic_version")
-            ).scalar_one()
             tables = {
                 row[0]
                 for row in connection.execute(
@@ -126,7 +118,6 @@ def test_upgrade_from_smart_mode_backfill_drops_presenton_cloud_provider(tmp_pat
                 )
             }
 
-        assert version == migrations.REVISION_HEAD
         assert "presenton_cloud_provider" not in tables
     finally:
         engine.dispose()
@@ -422,7 +413,7 @@ def test_smart_mode_backfill_repairs_html_presentations(tmp_path):
             )
             connection.execute(
                 text("INSERT INTO alembic_version (version_num) VALUES (:revision)"),
-                {"revision": migrations.REVISION_PRESENTON_CLOUD_PROVIDER},
+                {"revision": migrations.REVISION_SMART_GENERATION},
             )
 
         command.upgrade(_alembic_config(database_url), "head")
@@ -841,5 +832,114 @@ def test_removed_intermediate_revision_upgrades_through_consolidated_migration(
         assert "is_default" in template_columns
         assert "cluster_candidates" not in template_columns
         assert "clusters" not in template_columns
+    finally:
+        engine.dispose()
+
+
+def test_infer_revision_does_not_stamp_head_without_overlay_table(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'infer-no-overlay.db'}"
+    engine = create_engine(database_url)
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE user ("
+                    "id TEXT PRIMARY KEY, "
+                    "is_superuser BOOLEAN, "
+                    "hashed_password TEXT"
+                    ")"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE provider_settings ("
+                    "id INTEGER PRIMARY KEY, "
+                    "config JSON"
+                    ")"
+                )
+            )
+            inspector = inspect(connection)
+            tables = set(inspector.get_table_names())
+            revision = migrations._infer_revision_from_schema(
+                inspector, tables, "ignored"
+            )
+        assert revision == migrations.REVISION_USERNAME_PROVIDER_SETTINGS
+        assert revision != migrations.REVISION_HEAD
+    finally:
+        engine.dispose()
+
+
+def test_infer_revision_stamps_backfill_when_generation_mode_exists(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'infer-smart.db'}"
+    engine = create_engine(database_url)
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE user ("
+                    "id TEXT PRIMARY KEY, "
+                    "is_superuser BOOLEAN, "
+                    "admin_slot VARCHAR"
+                    ")"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE provider_settings ("
+                    "id INTEGER PRIMARY KEY, "
+                    "config JSON"
+                    ")"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE presentations ("
+                    "id TEXT PRIMARY KEY, "
+                    "owner_id TEXT, "
+                    "generation_mode VARCHAR"
+                    ")"
+                )
+            )
+            inspector = inspect(connection)
+            tables = set(inspector.get_table_names())
+            revision = migrations._infer_revision_from_schema(
+                inspector, tables, "ignored"
+            )
+        assert revision == migrations.REVISION_SMART_MODE_BACKFILL
+        assert revision != migrations.REVISION_HEAD
+    finally:
+        engine.dispose()
+
+
+def test_infer_revision_stamps_head_only_when_overlay_ready(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'infer-head.db'}"
+    engine = create_engine(database_url)
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text("CREATE TABLE user (id TEXT PRIMARY KEY, hashed_password TEXT)")
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE provider_settings ("
+                    "id INTEGER PRIMARY KEY, "
+                    "config JSON"
+                    ")"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE user_provider_settings ("
+                    "user_id TEXT PRIMARY KEY, "
+                    "config JSON"
+                    ")"
+                )
+            )
+            inspector = inspect(connection)
+            tables = set(inspector.get_table_names())
+            revision = migrations._infer_revision_from_schema(
+                inspector, tables, "ignored"
+            )
+        assert revision == migrations.REVISION_HEAD
     finally:
         engine.dispose()

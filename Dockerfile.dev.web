@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1.4
+FROM node:20-bookworm-slim
+
+WORKDIR /app/servers/nextjs
+
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
+
+COPY servers/nextjs/package.json servers/nextjs/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+EXPOSE 3000
+CMD ["sh", "-c", "if [ ! -x node_modules/.bin/next ]; then npm ci; fi; exec npx next dev -H 0.0.0.0 -p 3000"]

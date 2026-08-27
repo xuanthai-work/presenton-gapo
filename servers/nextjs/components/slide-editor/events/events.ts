@@ -1,11 +1,11 @@
 import type { SlideElement } from "@/components/slide-editor/types";
 
 export const TEMPLATE_V2_INSERT_ELEMENTS_EVENT =
-  "presenton:template-v2-insert-elements";
+  "gslide:template-v2-insert-elements";
 export const TEMPLATE_V2_SURFACE_SELECTED_EVENT =
-  "presenton:template-v2-surface-selected";
+  "gslide:template-v2-surface-selected";
 export const TEMPLATE_V2_ACTIVATE_SURFACE_EVENT =
-  "presenton:template-v2-activate-surface";
+  "gslide:template-v2-activate-surface";
 
 export type TemplateV2InsertComponent = {
   id?: string;

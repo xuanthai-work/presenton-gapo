@@ -237,7 +237,7 @@ function ungroupedElement(
       : {}),
     position: { x: 0, y: 0 },
     size: { width: sourceBox.width, height: sourceBox.height },
-    __presenton_manual_position: true,
+    __gslide_manual_position: true,
   };
 }
 

@@ -1405,7 +1405,7 @@
                     "y": 0
                   },
                   "rotation": 0,
-                  "__presenton_manual_position": true
+                  "__gslide_manual_position": true
                 },
                 {
                   "type": "text",
@@ -1445,7 +1445,7 @@
                     "y": 82.03
                   },
                   "rotation": 0,
-                  "__presenton_manual_position": true
+                  "__gslide_manual_position": true
                 }
               ],
               "name": "upper_text_column",
@@ -10825,7 +10825,7 @@
                     "y": 0
                   },
                   "rotation": 0,
-                  "__presenton_manual_position": true
+                  "__gslide_manual_position": true
                 },
                 {
                   "type": "text",
@@ -10865,7 +10865,7 @@
                     "y": 82.03
                   },
                   "rotation": 0,
-                  "__presenton_manual_position": true
+                  "__gslide_manual_position": true
                 }
               ],
               "name": "upper_text_column",

@@ -15,7 +15,7 @@ import {
     isTemplateV2Slide as isTemplateV2PresentationSlide,
 } from "../_shared/blank-slide";
 import {
-    PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+    GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
     type BlankSlidePromptEventDetail,
 } from "../_shared/blank-slide-prompt-event";
 
@@ -61,7 +61,7 @@ function TemplateV2PromptOverlay({
 
         window.dispatchEvent(
             new CustomEvent<BlankSlidePromptEventDetail>(
-                PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+                GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
                 {
                     detail: {
                         prompt: trimmedPrompt,
@@ -142,11 +142,7 @@ function TemplateV2PromptOverlay({
                     type="submit"
                     aria-label="Create slide"
                     disabled={!prompt.trim()}
-                    style={{
-                        background:
-                            "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
-                    }}
-                    className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full  text-[#191919] transition hover:bg-[#E1E3E8] disabled:cursor-not-allowed disabled:text-[#9B9BA1] disabled:hover:bg-[#ECEEF2]"
+                    className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--gslide-accent)] text-white transition hover:bg-[var(--gslide-accent-hover)] disabled:cursor-not-allowed disabled:bg-[#ECEEF2] disabled:text-[#9B9BA1] disabled:hover:bg-[#ECEEF2]"
                 >
                     <ArrowUp className="h-5 w-5" strokeWidth={2.1} />
                 </button>

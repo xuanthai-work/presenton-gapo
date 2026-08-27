@@ -32,7 +32,7 @@ import MarkdownRenderer from "@/components/MarkDownRender";
 import { ImagesApi } from "../../services/api/images";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import {
-  PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+  GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
   type BlankSlidePromptEventDetail,
 } from "../../_shared/blank-slide-prompt-event";
 import type {
@@ -1402,12 +1402,12 @@ const Chat = ({
     };
 
     window.addEventListener(
-      PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+      GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
       handleBlankSlidePrompt,
     );
     return () => {
       window.removeEventListener(
-        PRESENTON_BLANK_SLIDE_PROMPT_EVENT,
+        GSLIDE_BLANK_SLIDE_PROMPT_EVENT,
         handleBlankSlidePrompt,
       );
     };
@@ -2137,12 +2137,10 @@ const Chat = ({
                     chatInputDisabled ||
                     isUploadingPastedImage
                   }
-                  className="flex h-8 w-10 shrink-0 items-center justify-center rounded-full text-[#191919] transition-opacity disabled:cursor-not-allowed"
-                  style={{
-                    background: input.trim()
-                      ? "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)"
-                      : "#EDEEEF",
-                  }}
+                  className={`flex h-8 w-10 shrink-0 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed ${input.trim()
+                    ? "bg-[var(--gslide-accent)] text-white hover:bg-[var(--gslide-accent-hover)]"
+                    : "bg-[#EDEEEF] text-[#9B9BA1]"
+                    }`}
                   aria-label="Send prompt"
                 >
                   <ArrowUp className="h-4 w-4" />
@@ -2789,14 +2787,10 @@ const Chat = ({
                   chatInputDisabled ||
                   isUploadingPastedImage
                 }
-                className="flex h-[34px] w-[34px] items-center justify-center rounded-full text-[#191919] transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background:
-                    "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
-                }}
+                className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--gslide-accent)] text-white transition hover:bg-[var(--gslide-accent-hover)] transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Send prompt"
               >
-                <ArrowUp className="h-4 w-4 text-[#191919]" />
+                <ArrowUp className="h-4 w-4" />
               </button>
             )}
           </div>

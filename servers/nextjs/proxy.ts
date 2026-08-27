@@ -160,7 +160,7 @@ export async function proxy(request: NextRequest) {
   }
   if (!authStatus.configured) {
     return NextResponse.json(
-      { detail: "Login setup is required", setup_required: true },
+      { detail: "No accounts yet" },
       { status: 428, headers: { "Cache-Control": "no-store" } }
     );
   }

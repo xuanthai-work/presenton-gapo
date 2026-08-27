@@ -30,10 +30,22 @@ REVISION_MULTI_USER_AUTH = "c9f1a2b3d4e5"
 REVISION_USERNAME_PROVIDER_SETTINGS = "d0a2b4c6e8f1"
 REVISION_PRIMARY_ADMIN_SLOT = "e1b3c5d7f9a2"
 REVISION_SMART_GENERATION = "f3a7c1d9e5b2"
-REVISION_PRESENTON_CLOUD_PROVIDER = "c6e8f1a3b5d7"
 REVISION_SMART_MODE_BACKFILL = "d2f4a6b8c0e1"
-REVISION_DROP_PRESENTON_CLOUD_PROVIDER = "e4b6c8d0a2f3"
-REVISION_HEAD = REVISION_DROP_PRESENTON_CLOUD_PROVIDER
+REVISION_USER_PROVIDER_SETTINGS = "e5a7c9d1f3b4"
+REVISION_HEAD = REVISION_USER_PROVIDER_SETTINGS
+REMOVED_TABLES = ("presenton_cloud_provider",)
+
+
+def _drop_removed_tables(database_url: str) -> None:
+    engine = create_engine(database_url)
+    try:
+        with engine.begin() as connection:
+            tables = set(inspect(connection).get_table_names())
+            for name in REMOVED_TABLES:
+                if name in tables:
+                    connection.execute(text(f"DROP TABLE {name}"))
+    finally:
+        engine.dispose()
 
 
 async def migrate_database_on_startup() -> None:
@@ -61,6 +73,7 @@ def _run_migrations() -> None:
     database_url = to_sync_sqlalchemy_url(database_url)
 
     config.set_main_option("sqlalchemy.url", database_url)
+    _drop_removed_tables(database_url)
     _repair_orphan_alembic_revision(config, database_url)
     _stamp_legacy_database_if_needed(config, database_url)
 
@@ -137,12 +150,15 @@ def _infer_revision_from_schema(
         for table in owned_tables
     )
     if "provider_settings" in tables and "user" in tables and ownership_ready:
-        if "presenton_cloud_provider" in tables:
-            return REVISION_PRESENTON_CLOUD_PROVIDER
+        overlay_ready = "user_provider_settings" in tables and not _has_column(
+            inspector, "user", "is_superuser"
+        )
+        if overlay_ready:
+            return REVISION_USER_PROVIDER_SETTINGS
         if "presentations" in tables and _has_column(
             inspector, "presentations", "generation_mode"
         ):
-            return REVISION_SMART_GENERATION
+            return REVISION_SMART_MODE_BACKFILL
         if _has_column(inspector, "user", "admin_slot"):
             return REVISION_PRIMARY_ADMIN_SLOT
         return REVISION_USERNAME_PROVIDER_SETTINGS
@@ -304,7 +320,6 @@ def _is_unversioned_populated_database(database_url: str) -> bool:
         "user",
         "access_tokens",
         "provider_settings",
-        "presenton_cloud_provider",
     }
     engine = create_engine(database_url)
     try:

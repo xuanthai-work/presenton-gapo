@@ -84,9 +84,6 @@ const studioSteps: { id: StudioStep; label: string }[] = [
   { id: 4, label: "Review" },
 ];
 
-const pillGradient =
-  "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)";
-
 const FONT_FALLBACK_OPTION_HEIGHT = 40;
 const FONT_FALLBACK_MAX_VISIBLE_ROWS = 7;
 const FONT_FALLBACK_OVERSCAN_ROWS = 4;
@@ -186,11 +183,10 @@ function GradientPillButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex ${fullWidth ? "w-full" : ""} h-10 items-center justify-center gap-2 rounded-[58px] px-5 text-sm font-medium text-black shadow-none transition disabled:cursor-not-allowed ${isMuted
+      className={`inline-flex ${fullWidth ? "w-full" : ""} h-10 items-center justify-center gap-2 rounded-[58px] px-5 text-sm font-medium shadow-none transition disabled:cursor-not-allowed ${isMuted
         ? "bg-[#ECECF1] text-[#5C5E68] disabled:opacity-100"
-        : "disabled:opacity-60"
+        : "bg-[var(--gslide-accent)] text-white hover:bg-[var(--gslide-accent-hover)] disabled:opacity-60"
         } ${className}`}
-      style={isMuted ? undefined : { background: pillGradient }}
     >
       {children}
     </button>
@@ -818,8 +814,7 @@ function AnalyzePanel({
                 <button
                   type="button"
                   onClick={() => setResolvingFont(null)}
-                  className="h-9 rounded-full px-5 text-sm font-medium text-black"
-                  style={{ background: pillGradient }}
+                  className="h-9 rounded-full px-5 text-sm font-medium text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors"
                 >
                   Save
                 </button>
@@ -1445,8 +1440,7 @@ function SaveTemplateModal({
             type="button"
             onClick={handleSubmit}
             disabled={isSaving || !name.trim()}
-            className="inline-flex h-8 2xl:h-9 min-w-[78px] 2xl:min-w-[88px] items-center justify-center rounded-[58px] px-5 2xl:px-6 text-[13px] 2xl:text-sm font-medium text-black disabled:cursor-not-allowed disabled:opacity-60"
-            style={{ background: pillGradient }}
+            className="inline-flex h-8 2xl:h-9 min-w-[78px] 2xl:min-w-[88px] items-center justify-center rounded-[58px] px-5 2xl:px-6 text-[13px] 2xl:text-sm font-medium text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? <Loader2 className="h-4 w-4 2xl:h-5 2xl:w-5 animate-spin" /> : submitLabel}
           </button>

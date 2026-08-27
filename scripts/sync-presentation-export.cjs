@@ -25,7 +25,7 @@ const targetIndexJs = path.join(targetRoot, "index.js");
 const targetIndexCjs = path.join(targetRoot, "index.cjs");
 const versionManifestPath = path.join(
   targetRoot,
-  "presenton-export-version.json"
+  "gslide-export-version.json"
 );
 const packageJsonFile = path.join(repoRoot, "package.json");
 const cacheDir = path.join(repoRoot, ".cache", "presentation-export");
@@ -122,7 +122,7 @@ function requestJson(url, redirects = 5) {
       url,
       {
         headers: {
-          "User-Agent": "presenton-presentation-export-sync",
+          "User-Agent": "gslide-presentation-export-sync",
           Accept: "application/vnd.github+json",
         },
       },
@@ -310,7 +310,7 @@ function downloadFile(url, outputPath, redirects = 5) {
       url,
       {
         headers: {
-          "User-Agent": "presenton-presentation-export-sync",
+          "User-Agent": "gslide-presentation-export-sync",
           Accept: "application/octet-stream",
         },
       },

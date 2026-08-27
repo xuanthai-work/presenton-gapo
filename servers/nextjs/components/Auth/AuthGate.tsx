@@ -19,16 +19,14 @@ type AuthStatus = {
   configured: boolean;
   authenticated: boolean;
   username: string | null;
-  role?: "admin" | "user" | null;
 };
 
-type AuthMode = "setup" | "login" | "register";
+type AuthMode = "login" | "register";
 
 const initialStatus: AuthStatus = {
   configured: false,
   authenticated: false,
   username: null,
-  role: null,
 };
 
 export default function AuthGate() {
@@ -40,14 +38,7 @@ export default function AuthGate() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [configuredView, setConfiguredView] = useState<"login" | "register">(
-    "login"
-  );
-
-  const authMode: AuthMode = useMemo(() => {
-    if (!status.configured) return "setup";
-    return configuredView;
-  }, [configuredView, status.configured]);
+  const [configuredView, setConfiguredView] = useState<AuthMode>("login");
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -63,7 +54,6 @@ export default function AuthGate() {
         configured: true,
         authenticated: true,
         username: "local",
-        role: "admin",
       });
       setIsLoading(false);
       return;
@@ -121,7 +111,6 @@ export default function AuthGate() {
         configured: Boolean(data.configured),
         authenticated: Boolean(data.authenticated),
         username: data.username ?? null,
-        role: data.role ?? null,
       });
     } catch (fetchError) {
       console.error(fetchError);
@@ -134,7 +123,7 @@ export default function AuthGate() {
     }
   };
 
-  const switchConfiguredView = (next: "login" | "register") => {
+  const switchConfiguredView = (next: AuthMode) => {
     setConfiguredView(next);
     setPassword("");
     setConfirmPassword("");
@@ -144,8 +133,7 @@ export default function AuthGate() {
     event.preventDefault();
 
     const cleanedUsername = username.trim();
-    const isSetupMode = authMode === "setup";
-    const isRegisterMode = authMode === "register";
+    const isRegisterMode = configuredView === "register";
 
     if (cleanedUsername.length < 3) {
       notify.warning(
@@ -155,7 +143,7 @@ export default function AuthGate() {
       return;
     }
 
-    const minimumPasswordLength = isSetupMode || isRegisterMode ? 8 : 6;
+    const minimumPasswordLength = isRegisterMode ? 8 : 6;
     if (password.length < minimumPasswordLength) {
       notify.warning(
         "Password too short",
@@ -164,7 +152,7 @@ export default function AuthGate() {
       return;
     }
 
-    if ((isSetupMode || isRegisterMode) && password !== confirmPassword) {
+    if (isRegisterMode && password !== confirmPassword) {
       notify.warning(
         "Passwords do not match",
         "Make sure both password fields match before continuing."
@@ -174,11 +162,9 @@ export default function AuthGate() {
 
     setIsSubmitting(true);
 
-    const endpoint = isSetupMode
-      ? "/api/v1/auth/setup"
-      : isRegisterMode
-        ? "/api/v1/auth/register"
-        : "/api/v1/auth/login";
+    const endpoint = isRegisterMode
+      ? "/api/v1/auth/register"
+      : "/api/v1/auth/login";
 
     try {
       const response = await fetch(getApiUrl(endpoint), {
@@ -211,8 +197,9 @@ export default function AuthGate() {
           );
         } else if (response.status === 428) {
           notify.error(
-            "Setup required",
-            detail || "An admin must finish setup before new accounts can be created."
+            "No accounts yet",
+            detail ||
+              "This instance does not have any accounts. Create an account to get started."
           );
         } else if (response.status === 429) {
           notify.error(
@@ -221,7 +208,7 @@ export default function AuthGate() {
           );
         } else {
           notify.error(
-            isSetupMode || isRegisterMode
+            isRegisterMode
               ? "Could not create account"
               : "Sign-in failed",
             detail || "Something went wrong. Please try again."
@@ -230,29 +217,10 @@ export default function AuthGate() {
         return;
       }
 
-      if (isSetupMode) {
-        setStatus({
-          configured: true,
-          authenticated: false,
-          username: (payload as AuthStatus).username ?? cleanedUsername,
-          role: (payload as AuthStatus).role ?? "admin",
-        });
-        setConfiguredView("login");
-        setPassword("");
-        setConfirmPassword("");
-        notify.success(
-          "Admin account created",
-          "Sign in with your new username and password to continue.",
-          { duration: 6000 }
-        );
-        return;
-      }
-
       setStatus({
         configured: Boolean((payload as AuthStatus).configured),
         authenticated: Boolean((payload as AuthStatus).authenticated),
         username: (payload as AuthStatus).username ?? cleanedUsername,
-        role: (payload as AuthStatus).role ?? null,
       });
 
       if (isRegisterMode) {
@@ -272,7 +240,7 @@ export default function AuthGate() {
     } catch (submitError) {
       console.error(submitError);
       notify.error(
-        isSetupMode || isRegisterMode ? "Registration unavailable" : "Login unavailable",
+        isRegisterMode ? "Registration unavailable" : "Login unavailable",
         "The login service is unavailable right now. Please try again in a moment."
       );
     } finally {
@@ -281,32 +249,18 @@ export default function AuthGate() {
   };
 
   const headline =
-    authMode === "setup"
-      ? "Create your admin login"
-      : authMode === "register"
-        ? "Create your account"
-        : "Sign in";
+    configuredView === "register" ? "Create your account" : "Sign in";
 
   const description =
-    authMode === "setup"
-      ? "One-time setup for this deployment. You will use the same username and password on future visits."
-      : authMode === "register"
-        ? "Choose a username and password to start creating presentations."
-        : "Welcome back. Enter your credentials to open the app.";
+    configuredView === "register"
+      ? "Choose a username and password to start creating presentations."
+      : "Welcome back. Enter your credentials to open the app.";
 
   const submitLabel =
-    authMode === "setup"
-      ? "Create admin"
-      : authMode === "register"
-        ? "Create account"
-        : "Sign in";
+    configuredView === "register" ? "Create account" : "Sign in";
 
   const submittingLabel =
-    authMode === "setup"
-      ? "Saving credentials…"
-      : authMode === "register"
-        ? "Creating account…"
-        : "Signing in…";
+    configuredView === "register" ? "Creating account…" : "Signing in…";
 
   if (
     isLoading ||
@@ -336,44 +290,42 @@ export default function AuthGate() {
           {description}
         </p>
 
-        {status.configured ? (
-          <div
-            className="mt-6 flex rounded-lg border border-[var(--gslide-border)] p-1"
-            role="tablist"
-            aria-label="Authentication mode"
+        <div
+          className="mt-6 flex rounded-lg border border-[var(--gslide-border)] p-1"
+          role="tablist"
+          aria-label="Authentication mode"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={configuredView === "login"}
+            onClick={() => switchConfiguredView("login")}
+            disabled={isSubmitting}
+            className={
+              "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 " +
+              (configuredView === "login"
+                ? "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]"
+                : "text-[var(--gslide-muted)]")
+            }
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authMode === "login"}
-              onClick={() => switchConfiguredView("login")}
-              disabled={isSubmitting}
-              className={
-                "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 " +
-                (authMode === "login"
-                  ? "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]"
-                  : "text-[var(--gslide-muted)]")
-              }
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authMode === "register"}
-              onClick={() => switchConfiguredView("register")}
-              disabled={isSubmitting}
-              className={
-                "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 " +
-                (authMode === "register"
-                  ? "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]"
-                  : "text-[var(--gslide-muted)]")
-              }
-            >
-              Create account
-            </button>
-          </div>
-        ) : null}
+            Sign in
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={configuredView === "register"}
+            onClick={() => switchConfiguredView("register")}
+            disabled={isSubmitting}
+            className={
+              "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 " +
+              (configuredView === "register"
+                ? "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]"
+                : "text-[var(--gslide-muted)]")
+            }
+          >
+            Create account
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-5">
           <div className="space-y-2">
@@ -412,23 +364,23 @@ export default function AuthGate() {
               id="password"
               type="password"
               autoComplete={
-                authMode === "login" ? "current-password" : "new-password"
+                configuredView === "login" ? "current-password" : "new-password"
               }
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder={
-                authMode === "login"
+                configuredView === "login"
                   ? "Enter your password"
                   : "At least 8 characters"
               }
-              minLength={authMode === "login" ? 6 : 8}
+              minLength={configuredView === "login" ? 6 : 8}
               maxLength={128}
               required
               disabled={isSubmitting}
             />
           </div>
 
-          {authMode === "setup" || authMode === "register" ? (
+          {configuredView === "register" ? (
             <div className="space-y-2">
               <label
                 htmlFor="confirmPassword"

@@ -51,7 +51,7 @@ declare global {
   interface Window {
     Chart?: ChartConstructorLike;
     ChartDataLabels?: unknown;
-    __PRESENTON_CHART_BROWSER_RUNTIME__?: Promise<ChartBrowserRuntime>;
+    __GSLIDE_CHART_BROWSER_RUNTIME__?: Promise<ChartBrowserRuntime>;
   }
 }
 
@@ -63,13 +63,13 @@ function ensureLocalScript(
   if (isReady()) return Promise.resolve();
 
   let script = document.querySelector<HTMLScriptElement>(
-    `script[data-presenton-chart-runtime="${marker}"]`,
+    `script[data-gslide-chart-runtime="${marker}"]`,
   );
   if (!script) {
     script = document.createElement("script");
     script.src = src;
     script.async = true;
-    script.dataset.presentonChartRuntime = marker;
+    script.dataset.gslideChartRuntime = marker;
     document.head.appendChild(script);
   }
 
@@ -102,7 +102,7 @@ export function loadChartBrowserRuntime(): Promise<ChartBrowserRuntime> {
     );
   }
 
-  const existing = window.__PRESENTON_CHART_BROWSER_RUNTIME__;
+  const existing = window.__GSLIDE_CHART_BROWSER_RUNTIME__;
   if (existing) return existing;
 
   const runtime = (async () => {
@@ -126,10 +126,10 @@ export function loadChartBrowserRuntime(): Promise<ChartBrowserRuntime> {
     return { Chart, ChartDataLabels };
   })();
 
-  window.__PRESENTON_CHART_BROWSER_RUNTIME__ = runtime;
+  window.__GSLIDE_CHART_BROWSER_RUNTIME__ = runtime;
   void runtime.catch(() => {
-    if (window.__PRESENTON_CHART_BROWSER_RUNTIME__ === runtime) {
-      delete window.__PRESENTON_CHART_BROWSER_RUNTIME__;
+    if (window.__GSLIDE_CHART_BROWSER_RUNTIME__ === runtime) {
+      delete window.__GSLIDE_CHART_BROWSER_RUNTIME__;
     }
   });
   return runtime;

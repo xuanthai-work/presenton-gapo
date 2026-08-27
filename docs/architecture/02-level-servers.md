@@ -97,11 +97,11 @@ Chi tiết xem [04-level-nextjs.md](./04-level-nextjs.md).
 
 | URL Pattern | Server xử lý | Mục đích |
 |-------------|--------------|----------|
-| `/`, `/upload`, `/outline`, `/presentation`, `/custom-template`, `/dashboard`, `/theme`, `/settings`, `/templates`, `/admin` | **NextJS** | App Router pages |
+| `/`, `/upload`, `/outline`, `/presentation`, `/custom-template`, `/dashboard`, `/theme`, `/settings`, `/templates` | **NextJS** | App Router pages |
 | `/api/upload-image`, `/api/templates`, `/api/user-config`, `/api/export-presentation`, `/api/runtime-config` | **NextJS** | BFF routes (gọi xuống FastAPI hoặc xử lý riêng) |
 | `/api/v1/ppt/*` | **FastAPI** (qua NextJS proxy) | Main PPT API |
 | `/api/v1/auth/*` | **FastAPI** (qua NextJS proxy) | OAuth, session |
-| `/api/v1/admin/*` | **FastAPI** (qua NextJS proxy) | Admin |
+| `/api/v1/settings/*` | **FastAPI** (qua NextJS proxy) | Per-user provider overlay (LLM/image/search) |
 | `/api/v1/async-tasks/*` | **FastAPI** (qua NextJS proxy) | Async task tracking |
 | `/api/v1/mock/*` | **FastAPI** (qua NextJS proxy) | Mock endpoints (testing) |
 | `/api/v1/webhook/*` | **FastAPI** (qua NextJS proxy) | Webhook |
@@ -139,7 +139,7 @@ Session được quản lý ở **cả 2 phía**:
 | `FAST_API_INTERNAL_URL` | NextJS | URL trỏ tới FastAPI (mặc định `http://127.0.0.1:8000`) |
 | `NEXT_PUBLIC_FAST_API` | NextJS | URL public cho client |
 | `NEXT_PUBLIC_URL` | FastAPI | CORS origin |
-| `CAN_CHANGE_KEYS` | start.js | Cho phép user đổi API key qua UI |
+| `CAN_CHANGE_KEYS` | start-api.js / FastAPI | Cho phép user đổi API key qua UI |
 | `LLM` / `CUSTOM_LLM_URL` | FastAPI | Provider text: `openai` / `google` / `custom` (HTTP tới LLM server) |
 | `NODE_ENV` | Cả hai | development/production |
 | `SENTRY_DSN` | Cả hai | Error tracking (optional) |

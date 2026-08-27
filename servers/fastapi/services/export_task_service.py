@@ -242,7 +242,7 @@ class ExportTaskService:
         env["APP_DATA_DIRECTORY"] = app_data_directory
 
         temp_directory = get_temp_directory_env() or os.path.join(
-            tempfile.gettempdir(), "presenton"
+            tempfile.gettempdir(), "gslide"
         )
         owner_id = get_current_owner_id()
         if owner_id is not None:
@@ -311,7 +311,7 @@ class ExportTaskService:
 
         allowed_roots = [
             get_app_data_directory_env(),
-            get_temp_directory_env() or os.path.join(tempfile.gettempdir(), "presenton"),
+            get_temp_directory_env() or os.path.join(tempfile.gettempdir(), "gslide"),
         ]
         try:
             resolved = os.path.realpath(os.path.abspath(candidate))
@@ -342,7 +342,7 @@ class ExportTaskService:
     @staticmethod
     def _create_task_paths() -> tuple[str, str, str]:
         temp_root = get_temp_directory_env() or os.path.join(
-            tempfile.gettempdir(), "presenton"
+            tempfile.gettempdir(), "gslide"
         )
         owner_id = get_current_owner_id()
         if owner_id is not None:

@@ -35,10 +35,10 @@ graph TD
 
     Scripts --> Conv["convert-template.mjs"]
     Scripts --> Sync["sync-presentation-export.cjs"]
-    Scripts --> Banner["gslide-ascii.txt + presenton-terminal-banner.mjs"]
+    Scripts --> Banner["gslide-ascii.txt + gslide-terminal-banner.mjs"]
     Scripts --> Tests["*.test.mjs"]
 
-    Infra --> Dockerfile["Dockerfile + Dockerfile.dev"]
+    Infra --> Dockerfile["Dockerfile.web / Dockerfile.api"]
     Infra --> NginxConf["nginx.conf"]
     Infra --> DockerCompose["docker-compose.yml"]
 ```
@@ -88,10 +88,10 @@ Các template này được **copy vào `app_data/templates/`** lúc runtime.
 
 | File | Vai trò |
 |------|---------|
-| `Dockerfile` | Production image (web) |
-| `Dockerfile.dev` | Dev image, hot-reload |
-| `docker-compose.yml` | Hai service: `production`, `development` (không GPU; LLM là HTTP API) |
-| `nginx.conf` | Reverse proxy: serve NextJS, proxy `/api/*` tới FastAPI, serve `/static` & `/app_data` |
+| `Dockerfile.web` / `Dockerfile.api` | Production images (Next only / FastAPI+Chromium) |
+| `Dockerfile.dev.web` / `Dockerfile.dev.api` | Dev images, hot-reload |
+| `docker-compose.yml` | `production`/`development` = nginx; plus `web`/`api` or `web-dev`/`api-dev` + `searxng` |
+| `nginx.conf` | Reverse proxy: `/` → Next (`web:3000`), `/api/*` `/static/` `/app_data/` → FastAPI (`api:8000`) |
 | `.env.example` | Template cho environment variables |
 
 ## ⚙️ Root package.json scripts
@@ -108,27 +108,26 @@ Các template này được **copy vào `app_data/templates/`** lúc runtime.
 
 Root chỉ có vài script orchestration — các script chính của NextJS/FastAPI nằm trong từng sub-project.
 
-## 🚦 Orchestrator: `start.js`
+## 🚦 Entrypoints
 
-Khi chạy Docker hoặc dev mode, file `start.js` ở root là **orchestrator** duy nhất:
+Compose starts **nginx** (`production` / `development`), **Next** (`web` / `web-dev`), and **FastAPI** (`api` / `api-dev` via `scripts/start-api.js`).
 
 ```mermaid
 flowchart LR
-    Start["start.js"] -->|1. ensure| Dirs["Tạo app_data dirs<br/>(exports, images, uploads,<br/>fonts, templates, ...)"]
-    Start -->|2. read| Config["Đọc userConfig.json<br/>(backup .bak nếu thiếu)"]
-    Start -->|3. install| Npm["npm install cho NextJS<br/>(nếu thiếu)"]
-    Start -->|4. spawn| FastAPI["uvicorn :8000"]
-    Start -->|5. spawn| NextJS["next dev :3000"]
-    Start -->|6. forward| Logs["Forward logs<br/>tới stdout"]
-    Start -->|7. wait| Exit["Đợi 1 trong 2 exit"]
+    Proxy["nginx :80"] -->|"/"| Next["Next.js :3000"]
+    Proxy -->|"/api /static /app_data"| API["FastAPI :8000"]
+    Start["start-api.js"] -->|1. ensure| Dirs["app_data dirs"]
+    Start -->|2. userConfig| Config["userConfig.json"]
+    Start -->|3. spawn| Uvicorn["uvicorn 0.0.0.0:8000"]
 ```
 
-Các port mặc định:
+Internal ports (not published on the host by default):
 
 | Service | Port |
 |---------|------|
 | FastAPI | `8000` |
-| NextJS | `3000` |
+| Next.js | `3000` |
+| nginx (host) | `5001` → `80` |
 
 ## 🧪 Test scripts
 
