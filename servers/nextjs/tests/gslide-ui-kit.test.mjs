@@ -148,17 +148,7 @@ test("global loading copy is GSlide not Presenton", async () => {
   assert.doesNotMatch(config, /revalidatePresentonConnection/);
 });
 
-test("AuthGate uses GSlide tokens/kit instead of AUTH_THEME", async () => {
-  const auth = await readNext("components/Auth/AuthGate.tsx");
-  assert.doesNotMatch(auth, /const AUTH_THEME/);
-  assert.match(auth, /GSlideWordmark|GSlideCard|var\(--gslide-/);
-  assert.doesNotMatch(auth, /PresentonSplashLoader/);
-  assert.doesNotMatch(auth, /PRESENTON_SPLASH_MIN_DURATION_MS/);
-});
-
 test("landing and metadata say GSlide", async () => {
-  const landing = await readNext("app/page.tsx");
-  assert.match(landing, /GSlide/);
   const layout = await readNext("app/layout.tsx");
   assert.match(layout, /GSlide/);
   assert.doesNotMatch(layout, /title: "Presenton/);
@@ -171,7 +161,6 @@ test("dashboard sidebar uses GSlideSidebar and accent active states", async () =
   assert.match(sidebar, /GSlideSidebar/);
   assert.doesNotMatch(sidebar, /#7C51F8/);
   assert.doesNotMatch(sidebar, /#5146E5/);
-  assert.doesNotMatch(sidebar, /LogoutButton/);
   assert.match(sidebar, /mailto:help@placeholder\.example/);
 });
 
@@ -285,7 +274,6 @@ const CHROME_FILES = [
   "app/layout.tsx",
   "app/not-found.tsx",
   "app/ConfigurationInitializer.tsx",
-  "components/Auth/AuthGate.tsx",
   "components/Home.tsx",
   "components/Header.tsx",
   "components/OnBoarding/OnboardingMode.tsx",

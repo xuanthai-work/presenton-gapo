@@ -83,8 +83,7 @@ export async function getServerAuthStatus(): Promise<AuthStatus> {
 }
 
 /**
- * If credentials are not configured yet, send the user to `/` (setup in AuthGate).
- * If configured but not signed in, send to login with a query flag the client turns into a toast.
+ * No-op in the no-auth-embedded default-user mode; kept for forward compatibility.
  */
 export async function requireAppSession() {
   if (isAuthDisabled()) {

@@ -22,7 +22,6 @@ import {
   LLM_PROVIDERS,
   WEB_SEARCH_PROVIDERS,
 } from "@/utils/providerConstants";
-import LogoutButton from "@/components/Auth/LogoutButton";
 
 // Button state interface
 interface ButtonState {
@@ -218,26 +217,20 @@ const SettingsPage = () => {
       <GSlideHeader
         title="Settings"
         actions={
-          <div className="flex items-center gap-2">
-            <LogoutButton
-              label="Sign out"
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--gslide-border)] bg-[var(--gslide-card)] px-5 py-3 text-xs font-semibold text-[var(--gslide-ink)] transition hover:bg-[var(--gslide-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <GSlideButton
-              className="inline-flex items-center"
-              onClick={handleSaveConfig}
-              disabled={buttonState.isDisabled}
-            >
-              {buttonState.isLoading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {buttonState.text}
-                </span>
-              ) : (
-                buttonState.text
-              )}
-            </GSlideButton>
-          </div>
+          <GSlideButton
+            className="inline-flex items-center"
+            onClick={handleSaveConfig}
+            disabled={buttonState.isDisabled}
+          >
+            {buttonState.isLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {buttonState.text}
+              </span>
+            ) : (
+              buttonState.text
+            )}
+          </GSlideButton>
         }
       />
 

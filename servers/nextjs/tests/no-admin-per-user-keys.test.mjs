@@ -2,7 +2,6 @@
 //
 // Covers the architectural shift from a single admin-managed provider slot to
 // per-user overlay keys backed by process env. Catches:
-//   - the old admin setup flow sneaking back into AuthGate,
 //   - leftover role-gating on settings/key endpoints,
 //   - deleted files returning because someone re-added them.
 
@@ -17,13 +16,6 @@ async function readNext(...parts) {
   const filePath = path.join(ROOT, ...parts);
   return fs.readFile(filePath, "utf8");
 }
-
-test("AuthGate no longer references admin setup", async () => {
-  const auth = await readNext("components/Auth/AuthGate.tsx");
-  assert.doesNotMatch(auth, /\/api\/v1\/auth\/setup/);
-  assert.doesNotMatch(auth, /Create your admin login/i);
-  assert.doesNotMatch(auth, /Create admin/i);
-});
 
 test("proxy drops setup_required flag", async () => {
   const proxy = await readNext("proxy.ts");
